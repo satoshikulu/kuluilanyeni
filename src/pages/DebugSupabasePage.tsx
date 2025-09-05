@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, SUPABASE_READY } from '../lib/supabaseClient'
 
 function DebugSupabasePage() {
-  const [envOk, setEnvOk] = useState<boolean>(SUPABASE_READY)
+  const [envOk] = useState<boolean>(SUPABASE_READY)
   const [status, setStatus] = useState<string>('Hazırlanıyor...')
   const [count, setCount] = useState<number | null>(null)
   const [error, setError] = useState<string>('')

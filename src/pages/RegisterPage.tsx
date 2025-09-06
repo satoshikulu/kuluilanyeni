@@ -58,7 +58,13 @@ function RegisterPage() {
       setFullName('')
       setPhone('')
     } catch (e: any) {
-      setError(e.message || 'Kayıt yapılamadı.')
+      const msg: string = e?.message || ''
+      const code: string | undefined = e?.code
+      if (code === '23505' || /duplicate key value/i.test(msg) || /unique constraint/i.test(msg)) {
+        setError('Bu telefon numarası ile daha önce başvuru yapılmış. Lütfen giriş yapmayı deneyin veya mevcut başvurunuzun admin onayını bekleyin.')
+      } else {
+        setError(msg || 'Kayıt yapılamadı.')
+      }
     } finally {
       setSubmitting(false)
     }

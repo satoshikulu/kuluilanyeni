@@ -71,9 +71,9 @@ function HomePage() {
     },
     {
       title: '4+1 Villa · 180 m²',
-      neighborhood: 'Yeşiltepe Mahallesi',
-      currentPrice: '3.200.000',
-      originalPrice: '3.800.000',
+      neighborhood: 'Zincirlikuyu Mahallesi',
+      currentPrice: '4.200.000',
+      originalPrice: '5.800.000',
       discount: '%16',
       image: opportunityImages[2]
     }

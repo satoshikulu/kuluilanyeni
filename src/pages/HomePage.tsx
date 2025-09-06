@@ -49,7 +49,7 @@ function HomePage() {
   const opportunityImages = [
     'https://images.unsplash.com/photo-1502672023488-70e25813eb80?q=80&w=1200&auto=format&fit=crop', // modern house exterior
     'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?q=80&w=1200&auto=format&fit=crop', // luxury villa
-    'https://images.unsplash.com/photo-1448630360428-65456885c650?q=80&w=1200&auto=format&fit=crop', // suburban house
+    'https://images.unsplash.com/photo-1560185008-b033106af2d0?q=80&w=1200&auto=format&fit=crop', // beautiful exterior house
   ]
 
   const opportunityListings = [

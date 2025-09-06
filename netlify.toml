@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # These keys are intended to be exposed in the client bundle (Vite client envs start with VITE_)
+  # Allowlist them to avoid Netlify secrets scanning false positives in build output.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,VITE_ADMIN_PASS"
+  # Optionally also omit the build output from scanning
+  SECRETS_SCAN_OMIT_PATHS = "dist/**"

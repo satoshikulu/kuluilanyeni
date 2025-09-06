@@ -8,16 +8,31 @@ function LoginPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
+  function normalizeName(name: string) {
+    return name.replace(/\s+/g, ' ').trim()
+  }
+
+  function normalizePhone(raw: string) {
+    const digits = (raw || '').replace(/\D/g, '')
+    return digits
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setMessage('')
     setError('')
     try {
+      const nameN = normalizeName(fullName)
+      const phoneN = normalizePhone(phone)
+      if (phoneN.length < 10) {
+        setError('Telefon numarasını eksiksiz girin (en az 10 hane).')
+        return
+      }
+
       const { data, error } = await supabase
         .from('users_min')
         .select('*')
-        .eq('phone', phone)
-        .eq('full_name', fullName)
+        .eq('phone', phoneN)
         .limit(1)
         .maybeSingle()
       if (error) throw error
@@ -29,7 +44,11 @@ function LoginPage() {
         setError('Hesabınız onay bekliyor. Admin onayından sonra giriş yapabilirsiniz.')
         return
       }
-      setMessage('Giriş başarılı! (Not: Basit akış, token yok)')
+      const storedNameN = normalizeName(data.full_name || '')
+      const nameWarn = storedNameN !== nameN
+      setMessage(nameWarn 
+        ? `Giriş başarılı! (Kaydedilen ad: "${data.full_name}")`
+        : 'Giriş başarılı! (Not: Basit akış, token yok)')
     } catch (e: any) {
       setError(e.message || 'Giriş başarısız')
     }

@@ -30,7 +30,7 @@ function SellPage() {
       // 1) Görselleri (varsa) Supabase Storage'a yükle ve public URL'lerini topla
       let imageUrls: string[] = []
       if (files && files.length > 0) {
-        const bucket = 'listing-images'
+        const bucket = 'listings.images'
         const uploads = Array.from(files).slice(0, 5).map(async (file, idx) => {
           const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
           const safeTitle = title.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 40)

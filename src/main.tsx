@@ -13,6 +13,7 @@ import SubmitListingPage from './pages/SubmitListingPage.tsx'
 import AdminPage from './pages/AdminPage.tsx'
 import DebugSupabasePage from './pages/DebugSupabasePage.tsx'
 import DebugStoragePage from './pages/DebugStoragePage.tsx'
+import AdminDashboard from './pages/admin-dashboard.tsx'
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { path: 'admin', element: <AdminPage /> },
       { path: 'debug/supabase', element: <DebugSupabasePage /> },
       { path: 'debug/storage', element: <DebugStoragePage /> },
+      { path: 'admin-dashboard', element: <AdminDashboard /> },
     ],
   },
 ])

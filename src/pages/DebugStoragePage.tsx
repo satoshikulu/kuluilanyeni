@@ -10,7 +10,7 @@ interface ObjItem {
 }
 
 function DebugStoragePage() {
-  const [bucket] = useState('listing-images')
+  const [bucket] = useState('listings.images')
   const [items, setItems] = useState<ObjItem[]>([])
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('Hazır')

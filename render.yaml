@@ -1,11 +1,10 @@
 services:
-  - type: static_site
+  - type: static
     name: kulu-ilan
-    env: node
     plan: free
     branch: main
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    publish: dist
     # Vite/React SPA yönlendirmesi: tüm yolları index.html'e düşür
     routes:
       - type: rewrite

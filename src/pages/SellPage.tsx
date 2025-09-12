@@ -16,6 +16,7 @@ function SellPage() {
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
+  const [files, setFiles] = useState<FileList | null>(null)
 
   async function handleSubmit() {
     setSubmitting(true)
@@ -26,6 +27,29 @@ function SellPage() {
         setError('Başlık, ad-soyad ve telefon zorunludur.')
         return
       }
+      // 1) Görselleri (varsa) Supabase Storage'a yükle ve public URL'lerini topla
+      let imageUrls: string[] = []
+      if (files && files.length > 0) {
+        const bucket = 'listing-images'
+        const uploads = Array.from(files).slice(0, 5).map(async (file, idx) => {
+          const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+          const safeTitle = title.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 40)
+          const path = `${safeTitle}_${Date.now()}_${idx}.${ext}`
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .upload(path, file, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: file.type || undefined,
+            })
+          if (uploadError) throw uploadError
+          const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+          if (data?.publicUrl) imageUrls.push(data.publicUrl)
+        })
+        await Promise.all(uploads)
+      }
+
+      // 2) İlan kaydını oluştur (images alanına public URL listesini ekle)
       const { error: insertError } = await supabase.from('listings').insert({
         title,
         owner_name: ownerName,
@@ -37,6 +61,7 @@ function SellPage() {
         price_tl: price ? Number(price) : null,
         is_for: isFor,
         description: description || null,
+        images: imageUrls.length ? imageUrls : null,
         status: 'pending',
       })
       if (insertError) throw insertError
@@ -52,6 +77,7 @@ function SellPage() {
       setPrice('')
       setIsFor('satilik')
       setDescription('')
+      setFiles(null)
     } catch (e: any) {
       setError(e.message || 'Bir hata oluştu.')
     } finally {
@@ -121,8 +147,14 @@ function SellPage() {
 
         <div className="sm:col-span-2">
           <label className="block text-sm mb-1">Görsel(ler)</label>
-          <input type="file" multiple className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-orange-500" />
-          <p className="text-xs text-gray-500 mt-1">En fazla 5 görsel yükleyin. (Supabase entegrasyonunda kaydedilecek)</p>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => setFiles(e.target.files)}
+            className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-orange-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">En fazla 5 görsel yükleyin. Yüklenen görseller Supabase Storage'a kaydedilir.</p>
         </div>
 
         {error && <div className="sm:col-span-2 text-red-600 text-sm">{error}</div>}

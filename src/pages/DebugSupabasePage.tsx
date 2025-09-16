@@ -68,5 +68,3 @@ function DebugSupabasePage() {
 }
 
 export default DebugSupabasePage
-
-

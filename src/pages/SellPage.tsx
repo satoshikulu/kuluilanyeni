@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { supabase } from '../lib/supabaseClient'
+import { uploadListingImage } from '../lib/storage'
 
 function SellPage() {
   const [title, setTitle] = useState<string>('')
@@ -27,44 +28,49 @@ function SellPage() {
         setError('Başlık, ad-soyad ve telefon zorunludur.')
         return
       }
-      // 1) Görselleri (varsa) Supabase Storage'a yükle ve public URL'lerini topla
-      let imageUrls: string[] = []
-      if (files && files.length > 0) {
-        const bucket = 'listings.images'
-        const uploads = Array.from(files).slice(0, 5).map(async (file, idx) => {
-          const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-          const safeTitle = title.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 40)
-          const path = `${safeTitle}_${Date.now()}_${idx}.${ext}`
-          const { error: uploadError } = await supabase.storage
-            .from(bucket)
-            .upload(path, file, {
-              cacheControl: '3600',
-              upsert: false,
-              contentType: file.type || undefined,
-            })
-          if (uploadError) throw uploadError
-          const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-          if (data?.publicUrl) imageUrls.push(data.publicUrl)
+      // 1) İlanı önce oluştur ve id al
+      const { data: inserted, error: insertError } = await supabase
+        .from('listings')
+        .insert({
+          title,
+          owner_name: ownerName,
+          owner_phone: ownerPhone,
+          neighborhood: neighborhood || null,
+          property_type: propertyType,
+          rooms,
+          area_m2: area ? Number(area) : null,
+          price_tl: price ? Number(price) : null,
+          is_for: isFor,
+          description: description || null,
+          status: 'pending',
         })
+        .select('id')
+        .single()
+      if (insertError) throw insertError
+
+      const listingId = inserted?.id as string
+
+      // 2) Görseller varsa, helper ile yükle ve URL topla
+      let imageUrls: string[] = []
+      if (listingId && files && files.length > 0) {
+        const uploads = Array.from(files)
+          .slice(0, 5)
+          .map(async (file) => {
+            const res = await uploadListingImage(file, listingId)
+            if (res.publicUrl) imageUrls.push(res.publicUrl)
+          })
         await Promise.all(uploads)
+
+        // 3) İlanın images kolonunu güncelle
+        if (imageUrls.length > 0) {
+          const { error: updateError } = await supabase
+            .from('listings')
+            .update({ images: imageUrls })
+            .eq('id', listingId)
+          if (updateError) throw updateError
+        }
       }
 
-      // 2) İlan kaydını oluştur (images alanına public URL listesini ekle)
-      const { error: insertError } = await supabase.from('listings').insert({
-        title,
-        owner_name: ownerName,
-        owner_phone: ownerPhone,
-        neighborhood: neighborhood || null,
-        property_type: propertyType,
-        rooms,
-        area_m2: area ? Number(area) : null,
-        price_tl: price ? Number(price) : null,
-        is_for: isFor,
-        description: description || null,
-        images: imageUrls.length ? imageUrls : null,
-        status: 'pending',
-      })
-      if (insertError) throw insertError
       setMessage('İlanınız alındı. Admin onayından sonra yayına alınacaktır.')
       // formu temizle
       setTitle('')

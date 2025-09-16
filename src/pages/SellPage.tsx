@@ -11,7 +11,7 @@ function SellPage() {
   const [propertyType, setPropertyType] = useState<string>('Daire')
   const [rooms, setRooms] = useState<string>('3+1')
   const [area, setArea] = useState<string>('')
-  const [price, setPrice] = useState<string>('')
+  const [price, setPrice] = useState<string>('') // yalnizca rakamlar (örn: "2000000")
   const [isFor, setIsFor] = useState<'satilik' | 'kiralik'>('satilik')
   const [description, setDescription] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
@@ -22,10 +22,21 @@ function SellPage() {
 
   const canSubmit = useMemo(() => {
     const phoneOk = /^\+?\d{10,15}$/.test(ownerPhone.replace(/\D/g, ''))
-    const priceOk = !price || /^\d{1,12}$/.test(price)
+    const priceOk = !price || /^\d{1,12}$/.test(price) // yalnizca rakam kontrolu
     const areaOk = !area || /^\d{1,5}$/.test(area)
     return Boolean(title.trim() && ownerName.trim() && phoneOk && priceOk && areaOk)
   }, [title, ownerName, ownerPhone, price, area])
+
+  function formatTL(digits: string): string {
+    if (!digits) return ''
+    try {
+      const n = Number(digits)
+      if (!Number.isFinite(n)) return ''
+      return new Intl.NumberFormat('tr-TR').format(n)
+    } catch {
+      return ''
+    }
+  }
 
   async function handleSubmit() {
     setSubmitting(true)
@@ -52,7 +63,7 @@ function SellPage() {
           property_type: propertyType,
           rooms,
           area_m2: area ? Number(area) : null,
-          price_tl: price ? Number(price) : null,
+          price_tl: price ? Number(price) : null, // price yalnizca rakamlar oldugu icin dogrudan Number()
           is_for: isFor,
           description: description || null,
           status: 'pending',
@@ -154,7 +165,16 @@ function SellPage() {
 
         <div>
           <label className="block text-sm mb-1">Fiyat (TL)</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="2750000" value={price} onChange={(e) => setPrice(e.target.value)} inputMode="numeric" />
+          <input
+            className="w-full rounded-lg border px-3 py-2"
+            placeholder="2.000.000"
+            value={formatTL(price)}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, '')
+              setPrice(digits)
+            }}
+            inputMode="numeric"
+          />
         </div>
         <div>
           <label className="block text-sm mb-1">Durum</label>

@@ -160,7 +160,16 @@ function SellPage() {
         </div>
         <div>
           <label className="block text-sm mb-1">Brüt m²</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="125" value={area} onChange={(e) => setArea(e.target.value)} inputMode="numeric" />
+          <input
+            className="w-full rounded-lg border px-3 py-2"
+            placeholder="125"
+            value={formatTL(area)}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, '')
+              setArea(digits)
+            }}
+            inputMode="numeric"
+          />
         </div>
 
         <div>

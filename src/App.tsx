@@ -47,7 +47,14 @@ function App() {
       </main>
       <footer className="border-t text-sm text-gray-500">
         <div className="mx-auto max-w-6xl px-4 py-6">
-          © {new Date().getFullYear()} Kulu İlan · Kulu Emlak Pazarı
+          © {new Date().getFullYear()} Kulu İlan · Kulu Emlak Pazarı -
+          {" "}
+          <span
+            className="text-xs text-gray-500 inline-block transition-all duration-200 [text-shadow:0_1px_1px_rgba(0,0,0,0.15)] hover:[text-shadow:0_2px_4px_rgba(0,0,0,0.28)] hover:text-gray-600"
+            title="Y.A & S.Ç"
+          >
+            Y.A <span className="mx-1">&</span> S.Ç
+          </span>
         </div>
       </footer>
     </div>

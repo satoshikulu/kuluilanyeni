@@ -154,10 +154,10 @@ function SellPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="mb-6">
-        <section className="relative overflow-hidden rounded-2xl shadow-lg bg-[url('https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center">
-          <div className="absolute inset-0 bg-black/45" />
+        <section className="relative overflow-hidden rounded-2xl shadow-lg bg-[url('https://images.unsplash.com/photo-1531971589569-0d9370cbe1e5?q=80&w=1762&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')] bg-cover bg-center">
+          <div className="absolute inset-0 bg-green-700/40" />
           <div className="relative z-10 px-6 py-12 text-white">
             <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Satmak İstiyorum</h1>
             <p className="mt-2 text-white/90">Bilgileri doldurun veya WhatsApp ile hızlı destek alın. İlanınız admin onayı sonrası yayınlanır.</p>
@@ -175,17 +175,17 @@ function SellPage() {
           </div>
         </section>
       </div>
-
-      <form className="grid grid-cols-1 lg:grid-cols-2 gap-6" onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}>
-        <div className="space-y-6">
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2 text-gray-800">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">1</span>
-              <h2 className="font-semibold">İlan Başlığı</h2>
-            </div>
-            <label className="block text-sm mb-1" htmlFor="title">Başlık</label>
-            <input id="title" aria-describedby="title-help" className={inputClass} placeholder="Örn: Merkezi 3+1 Daire" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <div id="title-help" className="mt-1 text-xs text-gray-500">İlanınız listelerde bu başlıkla görünecek.</div>
+      <div className="max-w-2xl mx-auto">
+        <form className="grid grid-cols-1 lg:grid-cols-2 gap-6" onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}>
+          <div className="space-y-6">
+            <div className="rounded-2xl border bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2 text-gray-800">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">1</span>
+                <h2 className="font-semibold">İlan Başlığı</h2>
+              </div>
+              <label className="block text-sm mb-1" htmlFor="title">Başlık</label>
+              <input id="title" aria-describedby="title-help" className={inputClass} placeholder="Örn: Merkezi 3+1 Daire" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <div id="title-help" className="mt-1 text-xs text-gray-500">İlanınız listelerde bu başlıkla görünecek.</div>
           </div>
 
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -194,11 +194,11 @@ function SellPage() {
               <h2 className="font-semibold">Sahip Bilgileri</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+        <div>
                 <label className="block text-sm mb-1" htmlFor="full_name">Ad Soyad</label>
                 <input id="full_name" className={inputClass} placeholder="Adınız Soyadınız" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-              </div>
-              <div>
+        </div>
+        <div>
                 <label className="block text-sm mb-1" htmlFor="phone">Telefon</label>
                 <input id="phone" className={inputClass} placeholder="5xx xxx xx xx" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} inputMode="tel" aria-describedby="phone-help" />
                 <div id="phone-help" className="mt-1 text-xs text-gray-500">Sadece rakam girin, biz formatlarız.</div>
@@ -223,25 +223,25 @@ function SellPage() {
               <h2 className="font-semibold">Emlak Detayları</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1">Mahalle</label>
-                <NeighborhoodSelect value={neighborhood} onChange={setNeighborhood} />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Emlak Türü</label>
+        <div>
+          <label className="block text-sm mb-1">Mahalle</label>
+          <NeighborhoodSelect value={neighborhood} onChange={setNeighborhood} />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Emlak Türü</label>
                 <select className={selectClass} value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
-                  <option value="Daire">Daire</option>
-                  <option value="Müstakil">Müstakil</option>
-                  <option value="Arsa">Arsa</option>
+            <option value="Daire">Daire</option>
+            <option value="Müstakil">Müstakil</option>
+            <option value="Arsa">Arsa</option>
                   <option value="Tarla">Tarla</option>
-                  <option value="Dükkan">Dükkan</option>
-                </select>
-              </div>
-              <div>
+            <option value="Dükkan">Dükkan</option>
+          </select>
+        </div>
+        <div>
                 <label className="block text-sm mb-1" htmlFor="rooms">Oda Sayısı</label>
                 <input id="rooms" className={inputClass} placeholder="3+1" value={rooms} onChange={(e) => setRooms(e.target.value)} />
-              </div>
-              <div>
+        </div>
+        <div>
                 <label className="block text-sm mb-1" htmlFor="area">Brüt m²</label>
                 <div className="relative">
                   <input
@@ -257,8 +257,8 @@ function SellPage() {
                   />
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 border">m²</span>
                 </div>
-              </div>
-              <div>
+        </div>
+        <div>
                 <label className="block text-sm mb-1" htmlFor="price">Fiyat (TL)</label>
                 <div className="relative">
                   <input
@@ -274,23 +274,23 @@ function SellPage() {
                   />
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 border">TL</span>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Durum</label>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Durum</label>
                 <select className={selectClass} value={isFor} onChange={(e) => setIsFor(e.target.value as 'satilik' | 'kiralik')}>
-                  <option value="satilik">Satılık</option>
-                  <option value="kiralik">Kiralık</option>
-                </select>
-              </div>
+            <option value="satilik">Satılık</option>
+            <option value="kiralik">Kiralık</option>
+          </select>
+        </div>
             </div>
-          </div>
+        </div>
 
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2 text-gray-800">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">5</span>
               <h2 className="font-semibold">Görseller</h2>
             </div>
-            <label className="block text-sm mb-1">Görsel(ler)</label>
+          <label className="block text-sm mb-1">Görsel(ler)</label>
             <div
               className="mb-3 rounded-xl border-2 border-dashed p-4 text-center text-sm text-gray-600 hover:bg-gray-50"
               onDragOver={(e) => { e.preventDefault() }}
@@ -306,10 +306,10 @@ function SellPage() {
               <div className="text-gray-700 font-medium">Dosyalarınızı buraya sürükleyip bırakın</div>
               <div className="text-xs text-gray-500">veya aşağıdan dosya seçin (en fazla 5 görsel, max 5MB)</div>
             </div>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
+          <input
+            type="file"
+            multiple
+            accept="image/*"
               onChange={(e) => {
                 const fl = e.target.files
                 setFiles(fl)
@@ -322,9 +322,9 @@ function SellPage() {
                   setPreviews([])
                 }
               }}
-              className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-orange-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">En fazla 5 görsel yükleyin. Yüklenen görseller Supabase Storage'a kaydedilir.</p>
+            className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-orange-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">En fazla 5 görsel yükleyin. Yüklenen görseller Supabase Storage'a kaydedilir.</p>
             {previews.length > 0 && (
               <ul className="mt-3 grid grid-cols-3 gap-2">
                 {previews.map((src, i) => (
@@ -348,7 +348,7 @@ function SellPage() {
                 ))}
               </ul>
             )}
-          </div>
+        </div>
 
           <div className="lg:sticky lg:top-6">
             <div className="mb-4 rounded-2xl border bg-gray-50 p-4">
@@ -367,15 +367,16 @@ function SellPage() {
             {message && <div className="mb-2 text-green-600 text-sm">{message}</div>}
             <div className="flex flex-col gap-3">
               <button type="submit" disabled={submitting || !canSubmit} className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-orange-500 transition-colors disabled:opacity-60">
-                {submitting ? 'Gönderiliyor...' : 'İlanı Gönder (Admin Onayına Gider)'}
-              </button>
+          {submitting ? 'Gönderiliyor...' : 'İlanı Gönder (Admin Onayına Gider)'}
+        </button>
               <a href={waLink} target="_blank" rel="noreferrer" className="w-full rounded-xl bg-green-600 text-white py-3 text-center font-semibold hover:bg-green-700">
                 WhatsApp ile hızlı iletişim
               </a>
             </div>
           </div>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

@@ -103,7 +103,7 @@ function RentPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="py-8">
         <div className="max-w-5xl mx-auto px-4">
-          <section className="relative overflow-hidden rounded-2xl shadow-lg bg-[url('https://images.unsplash.com/photo-1560185127-6ed189bf02f4?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center">
+          <section className="relative overflow-hidden rounded-2xl shadow-lg bg-[url('https://plus.unsplash.com/premium_photo-1661908377130-772731de98f6?q=80&w=1624&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')] bg-cover bg-center">
             <div className="absolute inset-0 bg-black/45" />
             <div className="relative z-10 px-6 py-16 text-center text-white">
               <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Kiralama İlanı Ver</h1>
@@ -120,7 +120,7 @@ function RentPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* İlan Başlığı */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -280,7 +280,7 @@ function RentPage() {
               >
                 <div className="text-gray-700 font-medium">Dosyalarınızı buraya sürükleyip bırakın</div>
                 <div className="text-xs text-gray-500">veya aşağıdan dosya seçin (en fazla 5 görsel, max 5MB)</div>
-              </div>
+                </div>
               <input
                 type="file"
                 multiple

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
@@ -18,14 +18,27 @@ function SellPage() {
   const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [files, setFiles] = useState<FileList | null>(null)
+  const [previews, setPreviews] = useState<string[]>([])
+
+  const canSubmit = useMemo(() => {
+    const phoneOk = /^\+?\d{10,15}$/.test(ownerPhone.replace(/\D/g, ''))
+    const priceOk = !price || /^\d{1,12}$/.test(price)
+    const areaOk = !area || /^\d{1,5}$/.test(area)
+    return Boolean(title.trim() && ownerName.trim() && phoneOk && priceOk && areaOk)
+  }, [title, ownerName, ownerPhone, price, area])
 
   async function handleSubmit() {
     setSubmitting(true)
     setMessage('')
     setError('')
     try {
-      if (!title || !ownerName || !ownerPhone) {
+      const phoneDigits = ownerPhone.replace(/\D/g, '')
+      if (!title || !ownerName || !phoneDigits) {
         setError('Başlık, ad-soyad ve telefon zorunludur.')
+        return
+      }
+      if (phoneDigits.length < 10) {
+        setError('Telefon numarası eksik görünüyor.')
         return
       }
       // 1) İlanı önce oluştur ve id al
@@ -56,6 +69,10 @@ function SellPage() {
         const uploads = Array.from(files)
           .slice(0, 5)
           .map(async (file) => {
+            if (!file.type.startsWith('image/')) return
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+              throw new Error('Görsel boyutu 5MB sınırını aşıyor')
+            }
             const res = await uploadListingImage(file, listingId)
             if (res.publicUrl) imageUrls.push(res.publicUrl)
           })
@@ -84,6 +101,7 @@ function SellPage() {
       setIsFor('satilik')
       setDescription('')
       setFiles(null)
+      setPreviews([])
     } catch (e: any) {
       setError(e.message || 'Bir hata oluştu.')
     } finally {
@@ -108,7 +126,7 @@ function SellPage() {
         </div>
         <div>
           <label className="block text-sm mb-1">Telefon</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="5xx xxx xx xx" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
+          <input className="w-full rounded-lg border px-3 py-2" placeholder="5xx xxx xx xx" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} inputMode="tel" />
         </div>
 
         <div>
@@ -131,12 +149,12 @@ function SellPage() {
         </div>
         <div>
           <label className="block text-sm mb-1">Brüt m²</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="125" value={area} onChange={(e) => setArea(e.target.value)} />
+          <input className="w-full rounded-lg border px-3 py-2" placeholder="125" value={area} onChange={(e) => setArea(e.target.value)} inputMode="numeric" />
         </div>
 
         <div>
           <label className="block text-sm mb-1">Fiyat (TL)</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="2750000" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <input className="w-full rounded-lg border px-3 py-2" placeholder="2750000" value={price} onChange={(e) => setPrice(e.target.value)} inputMode="numeric" />
         </div>
         <div>
           <label className="block text-sm mb-1">Durum</label>
@@ -157,15 +175,31 @@ function SellPage() {
             type="file"
             multiple
             accept="image/*"
-            onChange={(e) => setFiles(e.target.files)}
+            onChange={(e) => {
+              const fl = e.target.files
+              setFiles(fl)
+              if (fl && fl.length > 0) {
+                const urls = Array.from(fl).slice(0, 5).map((f) => URL.createObjectURL(f))
+                setPreviews(urls)
+              } else {
+                setPreviews([])
+              }
+            }}
             className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-orange-500"
           />
           <p className="text-xs text-gray-500 mt-1">En fazla 5 görsel yükleyin. Yüklenen görseller Supabase Storage'a kaydedilir.</p>
+          {previews.length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {previews.map((src, i) => (
+                <img key={i} src={src} className="h-24 w-full object-cover rounded border" alt={`preview-${i}`} />
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <div className="sm:col-span-2 text-red-600 text-sm">{error}</div>}
         {message && <div className="sm:col-span-2 text-green-600 text-sm">{message}</div>}
-        <button type="submit" disabled={submitting} className="sm:col-span-2 rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-orange-500 transition-colors disabled:opacity-60">
+        <button type="submit" disabled={submitting || !canSubmit} className="sm:col-span-2 rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-orange-500 transition-colors disabled:opacity-60">
           {submitting ? 'Gönderiliyor...' : 'İlanı Gönder (Admin Onayına Gider)'}
         </button>
       </form>

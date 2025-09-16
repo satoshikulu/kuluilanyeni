@@ -2,12 +2,24 @@ import { supabase } from './supabaseClient'
 
 const BUCKET = 'listings.images' // Kullanıcının belirttiği bucket adı
 
+function toSafeBaseName(originalName: string): string {
+  const dotIndex = originalName.lastIndexOf('.')
+  const base = (dotIndex > 0 ? originalName.slice(0, dotIndex) : originalName)
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  const ext = dotIndex > 0 ? originalName.slice(dotIndex + 1).toLowerCase() : 'jpg'
+  const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  return `${base || 'image'}_${unique}.${ext}`
+}
+
 export async function uploadListingImage(file: File, listingId: string) {
   try {
     if (!file) throw new Error('Dosya bulunamadı')
     if (!listingId) throw new Error('listingId zorunludur')
 
-    const path = `listings/${listingId}/${file.name}`
+    const safeName = toSafeBaseName(file.name)
+    const path = `listings/${listingId}/${safeName}`
     const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
       cacheControl: '3600',
       upsert: false,

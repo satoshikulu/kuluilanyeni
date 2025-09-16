@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 
 function SellPage() {
+  const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
   const [title, setTitle] = useState<string>('')
   const [ownerName, setOwnerName] = useState<string>('')
   const [ownerPhone, setOwnerPhone] = useState<string>('')
@@ -18,7 +19,29 @@ function SellPage() {
   const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [files, setFiles] = useState<FileList | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+
+  const waMessage = useMemo(() => {
+    const parts = [
+      'Merhaba, ilan vermek istiyorum.',
+      title ? `\nBaşlık: ${title}` : '',
+      ownerName ? `\nAd Soyad: ${ownerName}` : '',
+      ownerPhone ? `\nTelefon: ${ownerPhone}` : '',
+      neighborhood ? `\nMahalle: ${neighborhood}` : '',
+      propertyType ? `\nTür: ${propertyType}` : '',
+      rooms ? `\nOda: ${rooms}` : '',
+      area ? `\nBrüt m²: ${formatTL(area)}` : '',
+      price ? `\nFiyat: ${formatTL(price)} TL` : '',
+      description ? `\nAçıklama: ${description}` : '',
+    ]
+    return parts.filter(Boolean).join('')
+  }, [title, ownerName, ownerPhone, neighborhood, propertyType, rooms, area, price, description])
+
+  const waLink = useMemo(() => {
+    const phoneDigits = whatsappPhone.replace(/\D/g, '')
+    return `https://wa.me/${phoneDigits}?text=${encodeURIComponent(waMessage)}`
+  }, [whatsappPhone, waMessage])
 
   const canSubmit = useMemo(() => {
     const phoneOk = /^\+?\d{10,15}$/.test(ownerPhone.replace(/\D/g, ''))
@@ -37,6 +60,10 @@ function SellPage() {
       return ''
     }
   }
+
+  const inputClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const selectClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white'
+  const textareaClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
   async function handleSubmit() {
     setSubmitting(true)
@@ -75,9 +102,13 @@ function SellPage() {
       const listingId = inserted?.id as string
 
       // 2) Görseller varsa, helper ile yükle ve URL topla
-      let imageUrls: string[] = []
-      if (listingId && files && files.length > 0) {
-        const uploads = Array.from(files)
+      const imageUrls: string[] = []
+      const sourceFiles = selectedFiles.length > 0
+        ? selectedFiles
+        : (files && files.length > 0 ? Array.from(files) : [])
+
+      if (listingId && sourceFiles.length > 0) {
+        const uploads = sourceFiles
           .slice(0, 5)
           .map(async (file) => {
             if (!file.type.startsWith('image/')) return
@@ -112,9 +143,11 @@ function SellPage() {
       setIsFor('satilik')
       setDescription('')
       setFiles(null)
+      setSelectedFiles([])
       setPreviews([])
-    } catch (e: any) {
-      setError(e.message || 'Bir hata oluştu.')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Bir hata oluştu.'
+      setError(message)
     } finally {
       setSubmitting(false)
     }
@@ -122,115 +155,226 @@ function SellPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-2">Satmak istiyorum</h1>
-      <p className="text-gray-600 mb-6">İlanınız admin onayından sonra yayına alınır.</p>
-
-      <form className="grid grid-cols-1 sm:grid-cols-2 gap-4" onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}>
-        <div className="sm:col-span-2">
-          <label className="block text-sm mb-1">Başlık</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="Örn: Merkezi 3+1 Daire" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Ad Soyad</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="Adınız Soyadınız" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Telefon</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="5xx xxx xx xx" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} inputMode="tel" />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Mahalle</label>
-          <NeighborhoodSelect value={neighborhood} onChange={setNeighborhood} />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Emlak Türü</label>
-          <select className="w-full rounded-lg border px-3 py-2" value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
-            <option value="Daire">Daire</option>
-            <option value="Müstakil">Müstakil</option>
-            <option value="Arsa">Arsa</option>
-            <option value="Dükkan">Dükkan</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Oda Sayısı</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="3+1" value={rooms} onChange={(e) => setRooms(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Brüt m²</label>
-          <input
-            className="w-full rounded-lg border px-3 py-2"
-            placeholder="125"
-            value={formatTL(area)}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, '')
-              setArea(digits)
-            }}
-            inputMode="numeric"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Fiyat (TL)</label>
-          <input
-            className="w-full rounded-lg border px-3 py-2"
-            placeholder="2.000.000"
-            value={formatTL(price)}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, '')
-              setPrice(digits)
-            }}
-            inputMode="numeric"
-          />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Durum</label>
-          <select className="w-full rounded-lg border px-3 py-2" value={isFor} onChange={(e) => setIsFor(e.target.value as 'satilik' | 'kiralik')}>
-            <option value="satilik">Satılık</option>
-            <option value="kiralik">Kiralık</option>
-          </select>
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="block text-sm mb-1">Açıklama</label>
-          <textarea className="w-full rounded-lg border px-3 py-2" rows={4} placeholder="Detaylı açıklama" value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="block text-sm mb-1">Görsel(ler)</label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => {
-              const fl = e.target.files
-              setFiles(fl)
-              if (fl && fl.length > 0) {
-                const urls = Array.from(fl).slice(0, 5).map((f) => URL.createObjectURL(f))
-                setPreviews(urls)
-              } else {
-                setPreviews([])
-              }
-            }}
-            className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-orange-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">En fazla 5 görsel yükleyin. Yüklenen görseller Supabase Storage'a kaydedilir.</p>
-          {previews.length > 0 && (
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {previews.map((src, i) => (
-                <img key={i} src={src} className="h-24 w-full object-cover rounded border" alt={`preview-${i}`} />
-              ))}
+      <div className="mb-6">
+        <section className="relative overflow-hidden rounded-2xl shadow-lg bg-[url('https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center">
+          <div className="absolute inset-0 bg-black/45" />
+          <div className="relative z-10 px-6 py-12 text-white">
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Satmak İstiyorum</h1>
+            <p className="mt-2 text-white/90">Bilgileri doldurun veya WhatsApp ile hızlı destek alın. İlanınız admin onayı sonrası yayınlanır.</p>
+            <div className="mt-5 inline-flex flex-wrap items-center gap-3">
+              <a
+                href={waLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-green-700"
+              >
+                WhatsApp ile iletişime geçelim
+              </a>
+              <div className="text-xs text-white/85">Formu doldurmakta zorlananlar için hızlı çözüm</div>
             </div>
-          )}
+          </div>
+        </section>
+      </div>
+
+      <form className="grid grid-cols-1 lg:grid-cols-2 gap-6" onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}>
+        <div className="space-y-6">
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2 text-gray-800">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">1</span>
+              <h2 className="font-semibold">İlan Başlığı</h2>
+            </div>
+            <label className="block text-sm mb-1" htmlFor="title">Başlık</label>
+            <input id="title" aria-describedby="title-help" className={inputClass} placeholder="Örn: Merkezi 3+1 Daire" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <div id="title-help" className="mt-1 text-xs text-gray-500">İlanınız listelerde bu başlıkla görünecek.</div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2 text-gray-800">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">2</span>
+              <h2 className="font-semibold">Sahip Bilgileri</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm mb-1" htmlFor="full_name">Ad Soyad</label>
+                <input id="full_name" className={inputClass} placeholder="Adınız Soyadınız" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1" htmlFor="phone">Telefon</label>
+                <input id="phone" className={inputClass} placeholder="5xx xxx xx xx" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} inputMode="tel" aria-describedby="phone-help" />
+                <div id="phone-help" className="mt-1 text-xs text-gray-500">Sadece rakam girin, biz formatlarız.</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2 text-gray-800">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">3</span>
+              <h2 className="font-semibold">Açıklama</h2>
+            </div>
+            <label className="block text-sm mb-1" htmlFor="desc">Açıklama</label>
+            <textarea id="desc" className={textareaClass} rows={6} placeholder="Detaylı açıklama" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
         </div>
 
-        {error && <div className="sm:col-span-2 text-red-600 text-sm">{error}</div>}
-        {message && <div className="sm:col-span-2 text-green-600 text-sm">{message}</div>}
-        <button type="submit" disabled={submitting || !canSubmit} className="sm:col-span-2 rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-orange-500 transition-colors disabled:opacity-60">
-          {submitting ? 'Gönderiliyor...' : 'İlanı Gönder (Admin Onayına Gider)'}
-        </button>
+        <div className="space-y-6">
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2 text-gray-800">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">4</span>
+              <h2 className="font-semibold">Emlak Detayları</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm mb-1">Mahalle</label>
+                <NeighborhoodSelect value={neighborhood} onChange={setNeighborhood} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Emlak Türü</label>
+                <select className={selectClass} value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
+                  <option value="Daire">Daire</option>
+                  <option value="Müstakil">Müstakil</option>
+                  <option value="Arsa">Arsa</option>
+                  <option value="Tarla">Tarla</option>
+                  <option value="Dükkan">Dükkan</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm mb-1" htmlFor="rooms">Oda Sayısı</label>
+                <input id="rooms" className={inputClass} placeholder="3+1" value={rooms} onChange={(e) => setRooms(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1" htmlFor="area">Brüt m²</label>
+                <div className="relative">
+                  <input
+                    id="area"
+                    className={`${inputClass} pr-12`}
+                    placeholder="125"
+                    value={formatTL(area)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      setArea(digits)
+                    }}
+                    inputMode="numeric"
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 border">m²</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm mb-1" htmlFor="price">Fiyat (TL)</label>
+                <div className="relative">
+                  <input
+                    id="price"
+                    className={`${inputClass} pr-14`}
+                    placeholder="2.000.000"
+                    value={formatTL(price)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      setPrice(digits)
+                    }}
+                    inputMode="numeric"
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 border">TL</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Durum</label>
+                <select className={selectClass} value={isFor} onChange={(e) => setIsFor(e.target.value as 'satilik' | 'kiralik')}>
+                  <option value="satilik">Satılık</option>
+                  <option value="kiralik">Kiralık</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2 text-gray-800">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">5</span>
+              <h2 className="font-semibold">Görseller</h2>
+            </div>
+            <label className="block text-sm mb-1">Görsel(ler)</label>
+            <div
+              className="mb-3 rounded-xl border-2 border-dashed p-4 text-center text-sm text-gray-600 hover:bg-gray-50"
+              onDragOver={(e) => { e.preventDefault() }}
+              onDrop={(e) => {
+                e.preventDefault()
+                const dropped = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
+                if (dropped.length === 0) return
+                const all = [...selectedFiles, ...dropped].slice(0, 5)
+                setSelectedFiles(all)
+                setPreviews(all.map((f) => URL.createObjectURL(f)))
+              }}
+            >
+              <div className="text-gray-700 font-medium">Dosyalarınızı buraya sürükleyip bırakın</div>
+              <div className="text-xs text-gray-500">veya aşağıdan dosya seçin (en fazla 5 görsel, max 5MB)</div>
+            </div>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => {
+                const fl = e.target.files
+                setFiles(fl)
+                if (fl && fl.length > 0) {
+                  const arr = Array.from(fl).slice(0, 5)
+                  setSelectedFiles(arr)
+                  setPreviews(arr.map((f) => URL.createObjectURL(f)))
+                } else {
+                  setSelectedFiles([])
+                  setPreviews([])
+                }
+              }}
+              className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-orange-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">En fazla 5 görsel yükleyin. Yüklenen görseller Supabase Storage'a kaydedilir.</p>
+            {previews.length > 0 && (
+              <ul className="mt-3 grid grid-cols-3 gap-2">
+                {previews.map((src, i) => (
+                  <li key={i} className="relative">
+                    <img src={src} className="h-24 w-full object-cover rounded border" alt={`preview-${i}`} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextFiles = selectedFiles.filter((_, idx) => idx !== i)
+                        setSelectedFiles(nextFiles)
+                        setPreviews(nextFiles.map((f) => URL.createObjectURL(f)))
+                        if (nextFiles.length === 0) {
+                          setFiles(null)
+                        }
+                      }}
+                      className="absolute right-1 top-1 rounded-md bg-white/90 px-2 py-0.5 text-xs text-red-600 shadow hover:bg-white"
+                    >
+                      Kaldır
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="lg:sticky lg:top-6">
+            <div className="mb-4 rounded-2xl border bg-gray-50 p-4">
+              <div className="mb-2 text-sm font-medium text-gray-800">Özet</div>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li><span className="text-gray-500">Başlık:</span> {title || '-'}
+                </li>
+                <li><span className="text-gray-500">Mahalle:</span> {neighborhood || '-'}</li>
+                <li><span className="text-gray-500">Tür:</span> {propertyType}</li>
+                <li><span className="text-gray-500">Oda:</span> {rooms || '-'}</li>
+                <li><span className="text-gray-500">m²:</span> {area ? formatTL(area) : '-'}</li>
+                <li><span className="text-gray-500">Fiyat:</span> {price ? `${formatTL(price)} TL` : '-'}</li>
+              </ul>
+            </div>
+            {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
+            {message && <div className="mb-2 text-green-600 text-sm">{message}</div>}
+            <div className="flex flex-col gap-3">
+              <button type="submit" disabled={submitting || !canSubmit} className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-orange-500 transition-colors disabled:opacity-60">
+                {submitting ? 'Gönderiliyor...' : 'İlanı Gönder (Admin Onayına Gider)'}
+              </button>
+              <a href={waLink} target="_blank" rel="noreferrer" className="w-full rounded-xl bg-green-600 text-white py-3 text-center font-semibold hover:bg-green-700">
+                WhatsApp ile hızlı iletişim
+              </a>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   )

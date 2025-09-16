@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 
@@ -10,13 +10,47 @@ function RentPage() {
     neighborhood: '',
     property_type: 'Daire',
     rooms: '',
-    area_m2: '',
-    price_tl: '',
+    area_m2: '', // only digits as string
+    price_tl: '', // only digits as string
     description: '',
     is_for: 'kiralik' as const
   })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [previews, setPreviews] = useState<string[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+
+  const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
+
+  function formatTL(digits: string): string {
+    if (!digits) return ''
+    try {
+      const n = Number(digits)
+      if (!Number.isFinite(n)) return ''
+      return new Intl.NumberFormat('tr-TR').format(n)
+    } catch { return '' }
+  }
+
+  const waMessage = useMemo(() => {
+    const parts = [
+      'Merhaba, kiralık ilan vermek istiyorum.',
+      formData.title ? `\nBaşlık: ${formData.title}` : '',
+      formData.owner_name ? `\nAd Soyad: ${formData.owner_name}` : '',
+      formData.owner_phone ? `\nTelefon: ${formData.owner_phone}` : '',
+      formData.neighborhood ? `\nMahalle: ${formData.neighborhood}` : '',
+      formData.property_type ? `\nTür: ${formData.property_type}` : '',
+      formData.rooms ? `\nOda: ${formData.rooms}` : '',
+      formData.area_m2 ? `\nBrüt m²: ${formatTL(formData.area_m2)}` : '',
+      formData.price_tl ? `\nKira: ${formatTL(formData.price_tl)} TL` : '',
+      formData.description ? `\nAçıklama: ${formData.description}` : '',
+    ]
+    return parts.filter(Boolean).join('')
+  }, [formData])
+
+  const waLink = useMemo(() => {
+    const phoneDigits = whatsappPhone.replace(/\D/g, '')
+    return `https://wa.me/${phoneDigits}?text=${encodeURIComponent(waMessage)}`
+  }, [whatsappPhone, waMessage])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,8 +82,11 @@ function RentPage() {
         description: '',
         is_for: 'kiralik'
       })
-    } catch (error: any) {
-      setMessage('Hata: ' + (error.message || 'İlan gönderilemedi'))
+      setSelectedFiles([])
+      setPreviews([])
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'İlan gönderilemedi'
+      setMessage('Hata: ' + msg)
     } finally {
       setLoading(false)
     }
@@ -64,22 +101,26 @@ function RentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-green-600 to-green-800 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Kiralama İlanı Ver</h1>
-          <p className="text-xl text-green-100">Emlakınızı kiralama için ilan verin</p>
+      <div className="py-8">
+        <div className="max-w-5xl mx-auto px-4">
+          <section className="relative overflow-hidden rounded-2xl shadow-lg bg-[url('https://images.unsplash.com/photo-1560185127-6ed189bf02f4?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center">
+            <div className="absolute inset-0 bg-black/45" />
+            <div className="relative z-10 px-6 py-16 text-center text-white">
+              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Kiralama İlanı Ver</h1>
+              <p className="mt-2 text-white/90">Bilgileri doldurun veya WhatsApp ile hızlı destek alın.</p>
+              <div className="mt-5 inline-flex flex-wrap items-center justify-center gap-3">
+                <a href={waLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-green-700">
+                  WhatsApp ile iletişime geçelim
+                </a>
+                <div className="text-xs text-white/80">Formu doldurmakta zorlananlar için hızlı çözüm</div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">İlan Bilgileri</h2>
-            <p className="text-gray-600">Lütfen tüm alanları doldurun. İlanınız admin onayından sonra yayınlanacaktır.</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
             {/* İlan Başlığı */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -225,14 +266,58 @@ function RentPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Görseller (İsteğe Bağlı)
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <div className="text-gray-400 mb-2">
-                  <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <p className="text-gray-600">Görsel yükleme özelliği yakında eklenecek</p>
+              <div
+                className="mb-3 rounded-xl border-2 border-dashed p-4 text-center text-sm text-gray-600 hover:bg-gray-50"
+                onDragOver={(e) => { e.preventDefault() }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  const dropped = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
+                  if (dropped.length === 0) return
+                  const all = [...selectedFiles, ...dropped].slice(0, 5)
+                  setSelectedFiles(all)
+                  setPreviews(all.map((f) => URL.createObjectURL(f)))
+                }}
+              >
+                <div className="text-gray-700 font-medium">Dosyalarınızı buraya sürükleyip bırakın</div>
+                <div className="text-xs text-gray-500">veya aşağıdan dosya seçin (en fazla 5 görsel, max 5MB)</div>
               </div>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => {
+                  const fl = e.target.files
+                  if (fl && fl.length > 0) {
+                    const arr = Array.from(fl).slice(0, 5)
+                    setSelectedFiles(arr)
+                    setPreviews(arr.map((f) => URL.createObjectURL(f)))
+                  } else {
+                    setSelectedFiles([])
+                    setPreviews([])
+                  }
+                }}
+                className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-green-600 file:px-3 file:py-2 file:text-white hover:file:bg-green-700"
+              />
+              {previews.length > 0 && (
+                <ul className="mt-3 grid grid-cols-3 gap-2">
+                  {previews.map((src, i) => (
+                    <li key={i} className="relative">
+                      <img src={src} className="h-24 w-full object-cover rounded border" alt={`preview-${i}`} />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextFiles = selectedFiles.filter((_, idx) => idx !== i)
+                          setSelectedFiles(nextFiles)
+                          setPreviews(nextFiles.map((f) => URL.createObjectURL(f)))
+                        }}
+                        className="absolute right-1 top-1 rounded-md bg-white/90 px-2 py-0.5 text-xs text-red-600 shadow hover:bg-white"
+                      >
+                        Kaldır
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Mesaj */}
@@ -246,8 +331,9 @@ function RentPage() {
               </div>
             )}
 
-            {/* Gönder Butonu */}
-            <div className="flex justify-end">
+            {/* Gönder Butonları */}
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
+              <a href={waLink} target="_blank" rel="noreferrer" className="rounded-lg bg-green-700 text-white px-5 py-3 text-center font-medium hover:bg-green-800">WhatsApp ile hızlı iletişim</a>
               <button
                 type="submit"
                 disabled={loading}
@@ -257,9 +343,24 @@ function RentPage() {
               </button>
             </div>
           </form>
+        <div className="space-y-6">
+          <div className="rounded-2xl border bg-white p-5 shadow-sm lg:sticky lg:top-6">
+            <div className="mb-2 text-sm font-medium text-gray-800">Özet</div>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li><span className="text-gray-500">Başlık:</span> {formData.title || '-'}</li>
+              <li><span className="text-gray-500">Mahalle:</span> {formData.neighborhood || '-'}</li>
+              <li><span className="text-gray-500">Tür:</span> {formData.property_type}</li>
+              <li><span className="text-gray-500">Oda:</span> {formData.rooms || '-'}</li>
+              <li><span className="text-gray-500">m²:</span> {formData.area_m2 ? formatTL(formData.area_m2) : '-'}</li>
+              <li><span className="text-gray-500">Kira:</span> {formData.price_tl ? `${formatTL(formData.price_tl)} TL` : '-'}</li>
+            </ul>
+            <div className="mt-3 flex flex-col gap-2">
+              <a href={waLink} target="_blank" rel="noreferrer" className="rounded-lg bg-green-700 text-white px-5 py-2 text-center text-sm font-medium hover:bg-green-800">WhatsApp ile hızlı iletişim</a>
+              <button onClick={(e) => { e.preventDefault(); void (document.querySelector('form') as HTMLFormElement)?.requestSubmit() }} className="rounded-lg bg-green-600 text-white px-5 py-2 text-sm font-semibold hover:bg-green-700">İlanı Gönder</button>
+            </div>
+          </div>
 
-          {/* Bilgi Notu */}
-          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="rounded-2xl border bg-blue-50 p-5">
             <h3 className="font-medium text-blue-800 mb-2">📋 Önemli Bilgiler</h3>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• İlanınız admin onayından sonra yayınlanacaktır</li>

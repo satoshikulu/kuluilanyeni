@@ -170,10 +170,13 @@ function HomePage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {opportunityListings.map((listing, i) => (
-            <div key={i} className="rounded-xl border-2 border-orange-200 overflow-hidden bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="relative">
+            <div
+              key={i}
+              className="group rounded-2xl border-2 border-orange-200 overflow-hidden bg-white shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:scale-105 transition-all duration-300 cursor-pointer"
+            >
+              <div className="relative overflow-hidden">
                 <div
-                  className="h-40 bg-cover bg-center bg-gray-200"
+                  className="h-40 bg-cover bg-center bg-gray-200 group-hover:scale-110 transition-transform duration-500"
                   style={{ 
                     backgroundImage: `url(${listing.image})`,
                     backgroundSize: 'cover',
@@ -185,11 +188,11 @@ function HomePage() {
                   FIRSAT
                 </div>
               </div>
-              <div className="p-4">
-                <div className="font-medium text-gray-900">{listing.title}</div>
+              <div className="p-4 group-hover:bg-gray-50 transition-colors duration-300">
+                <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{listing.title}</div>
                 <div className="text-orange-600 text-sm font-medium">{listing.neighborhood}</div>
                 <div className="mt-2 flex items-center justify-between">
-                  <div className="font-bold text-orange-800 text-lg">{listing.currentPrice} TL</div>
+                  <div className="font-bold text-orange-800 text-lg group-hover:text-green-600 transition-colors duration-300">{listing.currentPrice} TL</div>
                   <div className="text-xs text-gray-500 line-through">{listing.originalPrice} TL</div>
                 </div>
                 <div className="mt-1 text-xs text-green-600 font-medium">{listing.discount} indirim</div>

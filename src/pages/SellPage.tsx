@@ -175,7 +175,7 @@ function SellPage() {
           </div>
         </section>
       </div>
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <form className="grid grid-cols-1 lg:grid-cols-2 gap-6" onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}>
           <div className="space-y-6">
             <div className="rounded-2xl border bg-white p-5 shadow-sm">

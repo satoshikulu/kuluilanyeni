@@ -333,7 +333,6 @@ function RentPage() {
 
             {/* Gönder Butonları */}
             <div className="flex flex-col sm:flex-row justify-end gap-3">
-              <a href={waLink} target="_blank" rel="noreferrer" className="rounded-lg bg-green-700 text-white px-5 py-3 text-center font-medium hover:bg-green-800">WhatsApp ile hızlı iletişim</a>
               <button
                 type="submit"
                 disabled={loading}

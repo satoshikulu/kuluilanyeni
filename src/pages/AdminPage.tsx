@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import AdminGate from '../components/AdminGate'
+import NeighborhoodSelect from '../components/NeighborhoodSelect'
 
 type Listing = {
   id: string
@@ -27,25 +28,39 @@ type UserMin = {
 }
 
 function AdminPage() {
-  const [pending, setPending] = useState<Listing[]>([])
+  // Data state
+  const [listings, setListings] = useState<Listing[]>([])
+  const [totalCount, setTotalCount] = useState<number>(0)
   const [pendingUsers, setPendingUsers] = useState<UserMin[]>([])
   const [approvedUsers, setApprovedUsers] = useState<UserMin[]>([])
   const [rejectedUsers, setRejectedUsers] = useState<UserMin[]>([])
+
+  // UI state
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
+  const [querying, setQuerying] = useState<boolean>(false)
+
+  // Filters & sorting
+  const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
+  const [isFor, setIsFor] = useState<'satilik' | 'kiralik' | 'all'>('all')
+  const [neighborhood, setNeighborhood] = useState<string>('')
+  const [propertyType, setPropertyType] = useState<string>('')
+  const [priceMin, setPriceMin] = useState<string>('')
+  const [priceMax, setPriceMax] = useState<string>('')
+  const [search, setSearch] = useState<string>('')
+
+  const [orderBy, setOrderBy] = useState<'created_at' | 'price_tl' | 'area_m2'>('created_at')
+  const [orderAsc, setOrderAsc] = useState<boolean>(false)
+
+  // Pagination
+  const PAGE_SIZE = 10
+  const [page, setPage] = useState<number>(1)
 
   async function load() {
     setLoading(true)
     setError('')
     try {
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      setPending(data as Listing[])
-
+      // Initial load for users (static on mount)
       const { data: usersData, error: usersError } = await supabase
         .from('users_min')
         .select('*')
@@ -55,10 +70,55 @@ function AdminPage() {
       setPendingUsers(all.filter((u) => u.status === 'pending'))
       setApprovedUsers(all.filter((u) => u.status === 'approved'))
       setRejectedUsers(all.filter((u) => u.status === 'rejected'))
+
+      // Then query listings with current filters
+      await queryListings(true)
     } catch (e: any) {
-      setError(e.message || 'Bekleyen ilanlar yüklenemedi')
+      setError(e.message || 'Veriler yüklenemedi')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function queryListings(resetPage = false) {
+    setQuerying(true)
+    setError('')
+    try {
+      const currentPage = resetPage ? 1 : page
+      const from = (currentPage - 1) * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+
+      let q = supabase
+        .from('listings')
+        .select('*', { count: 'exact' })
+
+      if (status !== 'all') q = q.eq('status', status)
+      if (isFor !== 'all') q = q.eq('is_for', isFor)
+      if (neighborhood) q = q.ilike('neighborhood', `%${neighborhood}%`)
+      if (propertyType) q = q.eq('property_type', propertyType)
+      if (priceMin) q = q.gte('price_tl', Number(priceMin))
+      if (priceMax) q = q.lte('price_tl', Number(priceMax))
+
+      if (search.trim()) {
+        const s = search.trim()
+        q = q.or(
+          `title.ilike.%${s}%,owner_name.ilike.%${s}%,owner_phone.ilike.%${s}%`
+        )
+      }
+
+      q = q.order(orderBy, { ascending: orderAsc, nullsFirst: false })
+      q = q.range(from, to)
+
+      const { data, error, count } = await q
+      if (error) throw error
+
+      setTotalCount(count ?? 0)
+      setPage(currentPage)
+      setListings(resetPage ? (data as Listing[]) : [...listings, ...(data as Listing[])])
+    } catch (e: any) {
+      setError(e.message || 'İlanlar getirilemedi')
+    } finally {
+      setQuerying(false)
     }
   }
 
@@ -71,9 +131,10 @@ function AdminPage() {
         .update({ status: decision })
         .eq('id', id)
       if (error) throw error
-      setPending((prev) => prev.filter((l) => l.id !== id))
+      setListings((prev) => prev.filter((l) => l.id !== id))
     } catch (e: any) {
-      alert(e.message || 'Güncellenemedi')
+      // basit toast
+      setError(e.message || 'Güncellenemedi')
     }
   }
 
@@ -94,16 +155,82 @@ function AdminPage() {
     <AdminGate>
     <div>
       <h1 className="text-2xl font-semibold mb-2">Admin Onay</h1>
-      <p className="text-gray-600 mb-6">Bekleyen ilanları inceleyip onaylayın veya reddedin.</p>
+      <p className="text-gray-600 mb-4">İlanları filtreleyin, sıralayın ve onaylayın.</p>
 
-      {error && <div className="text-red-600 mb-4 text-sm">{error}</div>}
+      {/* Filters */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Durum</label>
+          <select className="w-full rounded-lg border px-3 py-2" value={status} onChange={(e) => { setStatus(e.target.value as any); void queryListings(true) }}>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">Tümü</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Tür</label>
+          <select className="w-full rounded-lg border px-3 py-2" value={isFor} onChange={(e) => { setIsFor(e.target.value as any); void queryListings(true) }}>
+            <option value="all">Tümü</option>
+            <option value="satilik">Satılık</option>
+            <option value="kiralik">Kiralık</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Mahalle</label>
+          <NeighborhoodSelect value={neighborhood} onChange={(v) => { setNeighborhood(v); void queryListings(true) }} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Emlak Türü</label>
+          <select className="w-full rounded-lg border px-3 py-2" value={propertyType} onChange={(e) => { setPropertyType(e.target.value); void queryListings(true) }}>
+            <option value="">Tümü</option>
+            <option value="Daire">Daire</option>
+            <option value="Müstakil">Müstakil</option>
+            <option value="Dükkan">Dükkan</option>
+            <option value="Ofis">Ofis</option>
+            <option value="Depo">Depo</option>
+            <option value="Arsa">Arsa</option>
+            <option value="Tarla">Tarla</option>
+          </select>
+        </div>
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Fiyat Min (TL)</label>
+            <input value={priceMin} onChange={(e) => setPriceMin(e.target.value.replace(/\D/g, ''))} className="w-full rounded-lg border px-3 py-2" inputMode="numeric" />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Fiyat Max (TL)</label>
+            <input value={priceMax} onChange={(e) => setPriceMax(e.target.value.replace(/\D/g, ''))} className="w-full rounded-lg border px-3 py-2" inputMode="numeric" />
+          </div>
+          <button className="h-10 px-3 rounded-lg bg-blue-600 text-white text-sm" onClick={() => void queryListings(true)}>Uygula</button>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Ara (başlık / ad soyad / telefon)</label>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void queryListings(true) } }} className="w-full rounded-lg border px-3 py-2" placeholder="Örn: 3+1, Ali Veli, 0555" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Sırala</label>
+          <div className="flex gap-2">
+            <select className="flex-1 rounded-lg border px-3 py-2" value={orderBy} onChange={(e) => { setOrderBy(e.target.value as any); void queryListings(true) }}>
+              <option value="created_at">Tarih</option>
+              <option value="price_tl">Fiyat</option>
+              <option value="area_m2">m²</option>
+            </select>
+            <button className="rounded-lg border px-3 py-2" onClick={(e) => { e.preventDefault(); setOrderAsc((v) => !v); void queryListings(true) }}>{orderAsc ? 'Artan' : 'Azalan'}</button>
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 text-red-700 border border-red-200 px-3 py-2 text-sm">{error}</div>
+      )}
       {loading ? (
-        <div>Yükleniyor...</div>
-      ) : pending.length === 0 ? (
-        <div className="text-gray-600">Bekleyen ilan yok.</div>
+        <div className="flex items-center gap-3 text-gray-600"><svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Yükleniyor...</div>
+      ) : listings.length === 0 ? (
+        <div className="text-gray-600">Kriterlere uygun ilan bulunamadı.</div>
       ) : (
         <div className="space-y-4">
-          {pending.map((l) => (
+          {listings.map((l) => (
             <div key={l.id} className="rounded-xl border p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -124,6 +251,15 @@ function AdminPage() {
               </div>
             </div>
           ))}
+          {/* Pagination */}
+          <div className="flex items-center justify-between pt-2">
+            <div className="text-xs text-gray-600">Toplam: {totalCount}</div>
+            {listings.length < totalCount && (
+              <button disabled={querying} onClick={() => void queryListings(false)} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-60">
+                {querying ? 'Yükleniyor...' : 'Daha Fazla Yükle'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 

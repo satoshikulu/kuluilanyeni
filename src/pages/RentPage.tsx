@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { uploadListingImage } from '../lib/storage'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 
 function RentPage() {
@@ -58,7 +59,8 @@ function RentPage() {
     setMessage('')
 
     try {
-      const { error } = await supabase
+      // 1) İlanı önce oluştur ve id al
+      const { data: inserted, error: insertError } = await supabase
         .from('listings')
         .insert([{
           ...formData,
@@ -66,8 +68,37 @@ function RentPage() {
           area_m2: formData.area_m2 ? parseInt(formData.area_m2) : null,
           status: 'pending'
         }])
+        .select('id')
+        .single()
 
-      if (error) throw error
+      if (insertError) throw insertError
+
+      const listingId = inserted?.id as string
+
+      // 2) Görseller varsa, helper ile yükle ve URL topla
+      const imageUrls: string[] = []
+      if (listingId && selectedFiles.length > 0) {
+        const uploads = selectedFiles
+          .slice(0, 5)
+          .map(async (file) => {
+            if (!file.type.startsWith('image/')) return
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+              throw new Error('Görsel boyutu 5MB sınırını aşıyor')
+            }
+            const res = await uploadListingImage(file, listingId)
+            if (res.publicUrl) imageUrls.push(res.publicUrl)
+          })
+        await Promise.all(uploads)
+
+        // 3) İlanın images kolonunu güncelle
+        if (imageUrls.length > 0) {
+          const { error: updateError } = await supabase
+            .from('listings')
+            .update({ images: imageUrls })
+            .eq('id', listingId)
+          if (updateError) throw updateError
+        }
+      }
 
       setMessage('Kiralama ilanınız başarıyla gönderildi! Admin onayından sonra yayınlanacak.')
       setFormData({
@@ -236,13 +267,17 @@ function RentPage() {
                 Aylık Kira Fiyatı (TL) *
               </label>
               <input
-                type="number"
+                type="text"
                 name="price_tl"
-                value={formData.price_tl}
-                onChange={handleChange}
+                value={formatTL(formData.price_tl)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '')
+                  setFormData(prev => ({ ...prev, price_tl: digits }))
+                }}
                 required
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="5000"
+                placeholder="5.000"
+                inputMode="numeric"
               />
             </div>
 

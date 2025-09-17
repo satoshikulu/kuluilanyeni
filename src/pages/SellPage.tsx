@@ -186,7 +186,7 @@ function SellPage() {
               <label className="block text-sm mb-1" htmlFor="title">Başlık</label>
               <input id="title" aria-describedby="title-help" className={inputClass} placeholder="Örn: Merkezi 3+1 Daire" value={title} onChange={(e) => setTitle(e.target.value)} />
               <div id="title-help" className="mt-1 text-xs text-gray-500">İlanınız listelerde bu başlıkla görünecek.</div>
-          </div>
+        </div>
 
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2 text-gray-800">
@@ -375,7 +375,7 @@ function SellPage() {
             </div>
           </div>
         </div>
-        </form>
+      </form>
       </div>
     </div>
   )

@@ -88,7 +88,7 @@ export default function OpportunitiesPage() {
     } else if (sortBy === 'price') {
       arr.sort((a, b) => (a.price_tl ?? Infinity) - (b.price_tl ?? Infinity))
     } else {
-      arr.sort((a, b) => 0) // zaten created_at desc ile geldi
+      arr.sort(() => 0) // zaten created_at desc ile geldi
     }
     return arr
   }, [filtered, sortBy])

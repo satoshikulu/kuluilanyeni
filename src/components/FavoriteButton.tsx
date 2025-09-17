@@ -1,22 +1,35 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { getDeviceId } from '../lib/device'
 
 export default function FavoriteButton({ listingId, className = '' }: { listingId: string, className?: string }) {
   const [loading, setLoading] = useState(true)
   const [fav, setFav] = useState(false)
-  const deviceId = getDeviceId()
+  const [userId, setUserId] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     let mounted = true
     async function load() {
       setLoading(true)
       try {
+        // Kullanıcıyı al
+        const { data: auth } = await supabase.auth.getUser()
+        const uid = auth?.user?.id ?? null
+        if (!uid) {
+          if (mounted) {
+            setUserId(null)
+            setFav(false)
+          }
+          return
+        }
+        if (mounted) setUserId(uid)
+
         const { data, error } = await supabase
           .from('favorites')
           .select('id')
           .eq('listing_id', listingId)
-          .eq('device_id', deviceId)
+          .eq('user_id', uid)
           .limit(1)
         if (error) throw error
         if (!mounted) return
@@ -29,16 +42,22 @@ export default function FavoriteButton({ listingId, className = '' }: { listingI
     }
     void load()
     return () => { mounted = false }
-  }, [listingId, deviceId])
+  }, [listingId])
 
   async function toggle() {
     if (loading) return
     setLoading(true)
     try {
+      // login kontrolü
+      if (!userId) {
+        // giriş sayfasına yönlendir
+        navigate('/giris')
+        return
+      }
       if (!fav) {
         const { error } = await supabase
           .from('favorites')
-          .insert({ listing_id: listingId, device_id: deviceId })
+          .insert({ listing_id: listingId, user_id: userId })
         if (error) throw error
         setFav(true)
       } else {
@@ -46,7 +65,7 @@ export default function FavoriteButton({ listingId, className = '' }: { listingI
           .from('favorites')
           .delete()
           .eq('listing_id', listingId)
-          .eq('device_id', deviceId)
+          .eq('user_id', userId)
         if (error) throw error
         setFav(false)
       }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
+import FavoriteButton from '../components/FavoriteButton'
 
 type Listing = {
   id: string
@@ -186,9 +188,12 @@ function ListingsPage() {
                       <div className="text-2xl font-bold text-green-600">
                         {item.price_tl ? item.price_tl.toLocaleString('tr-TR') : '-'} TL
                       </div>
-                      <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium">
-                        Detay
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <FavoriteButton listingId={item.id} />
+                        <Link to={`/ilan/${item.id}`} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium">
+                          Detay
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -14,6 +14,8 @@ import AdminPage from './pages/AdminPage.tsx'
 import DebugSupabasePage from './pages/DebugSupabasePage.tsx'
 import DebugStoragePage from './pages/DebugStoragePage.tsx'
 import AdminDashboard from './pages/admin-dashboard.tsx'
+import OpportunitiesPage from './pages/OpportunitiesPage.tsx'
+import ListingDetailPage from './pages/ListingDetailPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -27,6 +29,8 @@ const router = createBrowserRouter([
       { path: 'satmak', element: <SellPage /> },
       { path: 'kiralamak', element: <RentPage /> },
       { path: 'ilan-ver', element: <SubmitListingPage /> },
+      { path: 'firsatlar', element: <OpportunitiesPage /> },
+      { path: 'ilan/:id', element: <ListingDetailPage /> },
       { path: 'admin', element: <AdminPage /> },
       { path: 'debug/supabase', element: <DebugSupabasePage /> },
       { path: 'debug/storage', element: <DebugStoragePage /> },

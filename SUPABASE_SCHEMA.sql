@@ -42,6 +42,50 @@ do $$ begin
   end if;
 end $$;
 
+-- favorites table (device-based favorites; can later be extended to user_id based)
+create table if not exists public.favorites (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamp with time zone default now(),
+  listing_id uuid not null references public.listings(id) on delete cascade,
+  device_id text not null,
+  -- optional user binding for future auth integration
+  user_id uuid,
+  unique (listing_id, device_id)
+);
+
+alter table public.favorites enable row level security;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname = 'public' and tablename = 'favorites' and policyname = 'favorites_insert_any'
+  ) then
+    create policy favorites_insert_any on public.favorites
+      for insert to anon, authenticated with check (true);
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname = 'public' and tablename = 'favorites' and policyname = 'favorites_select_any'
+  ) then
+    create policy favorites_select_any on public.favorites
+      for select to anon, authenticated using (true);
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname = 'public' and tablename = 'favorites' and policyname = 'favorites_delete_any'
+  ) then
+    create policy favorites_delete_any on public.favorites
+      for delete to anon, authenticated using (true);
+  end if;
+end $$;
+
+-- helpful indexes
+create index if not exists favorites_listing_id_idx on public.favorites (listing_id);
+create index if not exists favorites_device_id_idx on public.favorites (device_id);
+
 -- (Opsiyonel ama faydalı) SELECT ve UPDATE politikaları
 do $$ begin
   if not exists (

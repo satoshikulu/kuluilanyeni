@@ -6,6 +6,7 @@ import NeighborhoodSelect from '../components/NeighborhoodSelect'
 type Listing = {
   id: string
   created_at: string
+  approved_at?: string | null
   title: string
   owner_name: string
   owner_phone: string
@@ -140,9 +141,15 @@ function AdminPage() {
 
   async function decide(id: string, decision: 'approved' | 'rejected') {
     try {
+      const update: any = { status: decision }
+      if (decision === 'approved') {
+        update.approved_at = new Date().toISOString()
+      } else if (decision === 'rejected') {
+        update.approved_at = null
+      }
       const { error } = await supabase
         .from('listings')
-        .update({ status: decision })
+        .update(update)
         .eq('id', id)
       if (error) throw error
       setListings((prev) => prev.filter((l) => l.id !== id))
@@ -258,7 +265,7 @@ function AdminPage() {
                   <div className="text-sm text-gray-600">{l.owner_name} · {l.owner_phone}</div>
                   <div className="mt-1 text-xs text-gray-500">
                     Başvuru: {formatDate(l.created_at)} · Geçen süre: {daysSince(l.created_at)} {l.status === 'approved' && (
-                      <span className="ml-2 inline-block rounded bg-green-50 px-2 py-0.5 text-green-700 border border-green-200">Yayında: {daysSince(l.created_at)}</span>
+                      <span className="ml-2 inline-block rounded bg-green-50 px-2 py-0.5 text-green-700 border border-green-200">Yayında: {daysSince(l.approved_at || l.created_at)}</span>
                     )}
                   </div>
                   {l.description && <div className="text-sm mt-2">{l.description}</div>}

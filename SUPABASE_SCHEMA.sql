@@ -19,6 +19,10 @@ create table if not exists public.listings (
   images jsonb default '[]'::jsonb
 );
 
+-- publication timestamp for approved listings
+alter table public.listings
+  add column if not exists approved_at timestamp with time zone;
+
 -- simple admin approvals table (optional for tracking)
 create table if not exists public.admin_approvals (
   id uuid primary key default gen_random_uuid(),

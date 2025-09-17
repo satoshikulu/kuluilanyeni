@@ -36,6 +36,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [items, setItems] = useState<Listing[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -50,6 +51,7 @@ export default function FavoritesPage() {
           setItems([])
           return
         }
+        setUserId(uid)
         // Önce favorilerden listing_id'leri al
         const { data: favs, error: favErr } = await supabase
           .from('favorites')
@@ -76,6 +78,21 @@ export default function FavoritesPage() {
     }
     void load()
   }, [])
+
+  async function removeFavorite(listingId: string) {
+    try {
+      if (!userId) return
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('listing_id', listingId)
+        .eq('user_id', userId)
+      if (error) throw error
+      setItems((prev) => prev.filter((x) => x.id !== listingId))
+    } catch (e: any) {
+      setError(e.message || 'Favoriden çıkarılamadı')
+    }
+  }
 
   const sorted = useMemo(() => {
     return [...items].sort((a, b) => (b.price_tl ?? 0) - (a.price_tl ?? 0))
@@ -108,7 +125,10 @@ export default function FavoritesPage() {
                 <div className="text-sm text-gray-600 mt-1">{item.neighborhood || 'Mahalle belirtilmemiş'}</div>
                 <div className="mt-3 flex items-center justify-between">
                   <div className="text-xl font-bold text-green-700">{item.price_tl ? item.price_tl.toLocaleString('tr-TR') : '-'} TL</div>
-                  <Link to={`/ilan/${item.id}`} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700">Detay</Link>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { void removeFavorite(item.id) }} className="rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">Favoriden çıkar</button>
+                    <Link to={`/ilan/${item.id}`} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700">Detay</Link>
+                  </div>
                 </div>
               </div>
             </div>

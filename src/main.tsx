@@ -16,6 +16,7 @@ import DebugStoragePage from './pages/DebugStoragePage.tsx'
 import AdminDashboard from './pages/admin-dashboard.tsx'
 import OpportunitiesPage from './pages/OpportunitiesPage.tsx'
 import ListingDetailPage from './pages/ListingDetailPage.tsx'
+import FavoritesPage from './pages/FavoritesPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
       { path: 'ilan-ver', element: <SubmitListingPage /> },
       { path: 'firsatlar', element: <OpportunitiesPage /> },
       { path: 'ilan/:id', element: <ListingDetailPage /> },
+      { path: 'favoriler', element: <FavoritesPage /> },
       { path: 'admin', element: <AdminPage /> },
       { path: 'debug/supabase', element: <DebugSupabasePage /> },
       { path: 'debug/storage', element: <DebugStoragePage /> },

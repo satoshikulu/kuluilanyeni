@@ -56,6 +56,20 @@ function AdminPage() {
   const PAGE_SIZE = 10
   const [page, setPage] = useState<number>(1)
 
+  // Helpers
+  function formatDate(ts?: string) {
+    if (!ts) return '-'
+    try { return new Date(ts).toLocaleString('tr-TR') } catch { return ts }
+  }
+  function daysSince(ts?: string) {
+    if (!ts) return '-'
+    const d = new Date(ts).getTime()
+    if (!Number.isFinite(d)) return '-'
+    const diff = Date.now() - d
+    const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
+    return `${days} gün`
+  }
+
   async function load() {
     setLoading(true)
     setError('')
@@ -242,6 +256,11 @@ function AdminPage() {
                     {l.neighborhood || 'Mahalle yok'} · {l.price_tl ? `${l.price_tl.toLocaleString('tr-TR')} TL` : 'Fiyat yok'}
                   </div>
                   <div className="text-sm text-gray-600">{l.owner_name} · {l.owner_phone}</div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Başvuru: {formatDate(l.created_at)} · Geçen süre: {daysSince(l.created_at)} {l.status === 'approved' && (
+                      <span className="ml-2 inline-block rounded bg-green-50 px-2 py-0.5 text-green-700 border border-green-200">Yayında: {daysSince(l.created_at)}</span>
+                    )}
+                  </div>
                   {l.description && <div className="text-sm mt-2">{l.description}</div>}
                 </div>
                 <div className="flex flex-col gap-2">
@@ -275,6 +294,7 @@ function AdminPage() {
               <div>
                 <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
                 <div className="text-sm text-gray-600">{u.phone}</div>
+                <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => void decideUser(u.id, 'approved')} className="rounded-lg bg-green-600 text-white px-3 py-2 text-sm hover:bg-green-700">Onayla</button>
@@ -295,6 +315,7 @@ function AdminPage() {
               <div>
                 <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
                 <div className="text-sm text-gray-600">{u.phone}</div>
+                <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
               </div>
               <span className="text-xs rounded bg-green-600/10 px-2 py-1 text-green-700">approved</span>
             </div>
@@ -312,6 +333,7 @@ function AdminPage() {
               <div>
                 <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
                 <div className="text-sm text-gray-600">{u.phone}</div>
+                <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
               </div>
               <span className="text-xs rounded bg-red-600/10 px-2 py-1 text-red-700">rejected</span>
             </div>

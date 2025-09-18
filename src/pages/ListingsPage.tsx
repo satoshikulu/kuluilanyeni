@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import FavoriteButton from '../components/FavoriteButton'
+import { getListingImageUrl } from '../lib/storage'
 
 type Listing = {
   id: string
@@ -66,7 +67,11 @@ function ListingsPage() {
       : typeof l.images === 'string'
         ? (() => { try { return JSON.parse(l.images) } catch { return [] } })()
         : []
-    return urls[0] || FALLBACK_IMAGES[Math.floor(Math.random() * FALLBACK_IMAGES.length)]
+    const first = urls[0]
+    if (typeof first === 'string' && first) {
+      return first.startsWith('http') ? first : getListingImageUrl(first)
+    }
+    return FALLBACK_IMAGES[Math.floor(Math.random() * FALLBACK_IMAGES.length)]
   }
 
   return (

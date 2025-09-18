@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import FavoriteButton from '../components/FavoriteButton'
+import { getListingImageUrl } from '../lib/storage'
 
 type Listing = {
   id: string
@@ -22,11 +23,14 @@ const FALLBACK_IMAGES = [
 ]
 
 function parseImages(images: any): string[] {
-  if (Array.isArray(images)) return images as string[]
-  if (typeof images === 'string') {
-    try { const arr = JSON.parse(images); return Array.isArray(arr) ? arr : [] } catch { return [] }
+  let arr: string[] = []
+  if (Array.isArray(images)) arr = images as string[]
+  else if (typeof images === 'string') {
+    try { const parsed = JSON.parse(images); if (Array.isArray(parsed)) arr = parsed }
+    catch { arr = [] }
   }
-  return []
+  // Storage path gelirse public URL'e çevir
+  return arr.map((s) => (typeof s === 'string' && s.startsWith('http')) ? s : (s ? getListingImageUrl(s) : s)).filter(Boolean) as string[]
 }
 
 export default function ListingDetailPage() {

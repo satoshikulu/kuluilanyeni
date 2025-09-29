@@ -152,9 +152,10 @@ function RentPage() {
 
       <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* İlan Başlığı */}
+            {/* 1) İlan Başlığı */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">1</span>
                 İlan Başlığı *
               </label>
               <input
@@ -168,7 +169,11 @@ function RentPage() {
               />
             </div>
 
-            {/* Sahip Bilgileri */}
+            {/* 2) Sahip Bilgileri */}
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">2</span>
+              İletişim Bilgileri
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -200,7 +205,11 @@ function RentPage() {
               </div>
             </div>
 
-            {/* Mahalle ve Emlak Türü */}
+            {/* 3) Mahalle ve Emlak Türü */}
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">3</span>
+              Mahalle ve Emlak Türü
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -231,7 +240,11 @@ function RentPage() {
               </div>
             </div>
 
-            {/* Oda Sayısı ve Alan */}
+            {/* 4) Oda Sayısı ve Alan */}
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">4</span>
+              Oda Sayısı ve Alan
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -261,9 +274,10 @@ function RentPage() {
               </div>
             </div>
 
-            {/* Kira Fiyatı */}
+            {/* 5) Kira Fiyatı */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">5</span>
                 Aylık Kira Fiyatı (TL) *
               </label>
               <input
@@ -281,9 +295,10 @@ function RentPage() {
               />
             </div>
 
-            {/* Açıklama */}
+            {/* 6) Açıklama */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">6</span>
                 Açıklama
               </label>
               <textarea
@@ -296,9 +311,10 @@ function RentPage() {
               />
             </div>
 
-            {/* Görsel Yükleme */}
+            {/* 7) Görsel Yükleme */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">7</span>
                 Görseller (İsteğe Bağlı)
               </label>
               <div
@@ -331,7 +347,7 @@ function RentPage() {
                     setPreviews([])
                   }
                 }}
-                className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-green-600 file:px-3 file:py-2 file:text-white hover:file:bg-green-700"
+                className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700"
               />
               {previews.length > 0 && (
                 <ul className="mt-3 grid grid-cols-3 gap-2">
@@ -366,12 +382,16 @@ function RentPage() {
               </div>
             )}
 
-            {/* Gönder Butonları */}
+            {/* 8) Gönder */}
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">8</span>
+              Gönder
+            </div>
             <div className="flex flex-col sm:flex-row justify-end gap-3">
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-green-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Gönderiliyor...' : 'İlanı Gönder'}
               </button>
@@ -388,9 +408,9 @@ function RentPage() {
               <li><span className="text-gray-500">m²:</span> {formData.area_m2 ? formatTL(formData.area_m2) : '-'}</li>
               <li><span className="text-gray-500">Kira:</span> {formData.price_tl ? `${formatTL(formData.price_tl)} TL` : '-'}</li>
             </ul>
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="mt-3 flex flex-col gap-4">
+              <button onClick={(e) => { e.preventDefault(); void (document.querySelector('form') as HTMLFormElement)?.requestSubmit() }} className="rounded-lg bg-blue-600 text-white px-6 py-3 text-base font-semibold hover:bg-blue-700">İlanı Gönder</button>
               <a href={waLink} target="_blank" rel="noreferrer" className="rounded-lg bg-green-700 text-white px-5 py-2 text-center text-sm font-medium hover:bg-green-800">WhatsApp ile hızlı iletişim</a>
-              <button onClick={(e) => { e.preventDefault(); void (document.querySelector('form') as HTMLFormElement)?.requestSubmit() }} className="rounded-lg bg-green-600 text-white px-5 py-2 text-sm font-semibold hover:bg-green-700">İlanı Gönder</button>
             </div>
           </div>
 

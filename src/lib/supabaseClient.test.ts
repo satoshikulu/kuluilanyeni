@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from 'vitest'
 import { supabase, SUPABASE_READY } from './supabaseClient'
 
 describe('supabaseClient', () => {

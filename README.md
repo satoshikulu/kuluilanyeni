@@ -32,7 +32,7 @@ npm install
 3. **Ortam değişkenlerini ayarlayın**
 `.env` dosyası oluşturun:
 ```bash
-VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_URL=https://tjoivjohhjoedtwzuopr.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_ADMIN_PASS=your_admin_password
 ```

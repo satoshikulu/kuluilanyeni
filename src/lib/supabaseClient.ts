@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Supabase connection details
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
@@ -8,11 +9,9 @@ export const SUPABASE_READY = Boolean(
 )
 
 if (!SUPABASE_READY) {
-  // Yardımcı konsol çıktısı: .env okunmadığında veya URL hatalıysa
-  // VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY değerlerini kontrol edin
-  console.error('[Supabase] Ortam değişkenleri eksik veya hatalı. .env dosyanızı kontrol edin.')
+  // Helper console output: Check .env file if variables are missing or URL is incorrect
+  // Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values in your .env file
+  console.error('[Supabase] Environment variables are missing or incorrect. Please check your .env file.')
 }
 
 export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '')
-
-

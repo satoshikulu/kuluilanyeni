@@ -1,5 +1,5 @@
 -- ==========================================
--- KULU İLAN PROJESİ - SUPABASE VERİTABANI ŞEMASI
+-- KULU İLAN PROJESİ - BASİT SUPABASE VERİTABANI ŞEMASI
 -- ==========================================
 
 -- UUID üreteci için gerekli eklenti
@@ -231,23 +231,3 @@ create policy "Admin kullanıcılar tüm görselleri silebilir" on storage.objec
       and status = 'approved'
     )
   );
-
--- ==========================================
--- TRİGGER'LAR
--- ==========================================
-
--- Yeni bir ilan eklendiğinde admin onayı için otomatik olarak pending durumu
-create or replace function set_default_status()
-returns trigger as $$
-begin
-  if new.status is null then
-    new.status := 'pending';
-  end if;
-  return new;
-end;
-$$ language plpgsql;
-
-create trigger trigger_set_default_status
-  before insert on public.listings
-  for each row
-  execute function set_default_status();

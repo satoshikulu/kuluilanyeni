@@ -1,253 +1,267 @@
--- ==========================================
--- KULU İLAN PROJESİ - SUPABASE VERİTABANI ŞEMASI
--- ==========================================
+-- ============================================
+-- KULU İLAN - SUPABASE ŞEMASI
+-- ============================================
+-- Bu şema mevcut projenin ihtiyaçlarına göre hazırlanmıştır
+-- Üye ol, ilan yayınla ve admin onay akışını destekler
+-- ============================================
 
--- UUID üreteci için gerekli eklenti
-create extension if not exists pgcrypto;
-
--- ==========================================
--- TABLOLAR
--- ==========================================
-
--- listings table (ilanlar)
--- Herkes ilan ekleyebilir, admin onayı gerekir
-create table if not exists public.listings (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamp with time zone default now(),
-  approved_at timestamp with time zone,
-  status text not null default 'pending', -- pending | approved | rejected
-  title text not null,
-  owner_name text not null,
-  owner_phone text not null,
-  neighborhood text,
-  property_type text,
-  rooms text,
-  area_m2 integer,
-  price_tl bigint,
-  is_for text default 'satilik', -- satilik | kiralik
-  description text,
-  images jsonb default '[]'::jsonb
+-- 1. USERS_MIN TABLOSU
+-- Basit kullanıcı kayıt sistemi (ad-soyad + telefon)
+-- Admin onayı sonrası aktif olur
+CREATE TABLE IF NOT EXISTS public.users_min (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    full_name TEXT NOT NULL,
+    phone TEXT NOT NULL UNIQUE,
+    status TEXT DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected'))
 );
 
--- users_min table (kullanıcı başvuruları)
--- Üyeler kaydolabilir, admin onayı gerekir
-create table if not exists public.users_min (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamp with time zone default now(),
-  full_name text not null,
-  phone text not null unique,
-  status text not null default 'pending' -- pending | approved | rejected
+-- İndeksler
+CREATE INDEX IF NOT EXISTS idx_users_min_phone ON public.users_min(phone);
+CREATE INDEX IF NOT EXISTS idx_users_min_status ON public.users_min(status);
+CREATE INDEX IF NOT EXISTS idx_users_min_created_at ON public.users_min(created_at DESC);
+
+-- RLS Politikaları
+ALTER TABLE public.users_min ENABLE ROW LEVEL SECURITY;
+
+-- Herkes kayıt olabilir (INSERT)
+CREATE POLICY "users_min_insert_policy" ON public.users_min
+    FOR INSERT WITH CHECK (true);
+
+-- Herkes kendi kaydını okuyabilir (phone ile kontrol)
+CREATE POLICY "users_min_select_policy" ON public.users_min
+    FOR SELECT USING (true);
+
+-- Kullanıcılar kendi bilgilerini güncelleyebilir
+CREATE POLICY "users_min_update_policy" ON public.users_min
+    FOR UPDATE USING (true);
+
+-- ============================================
+
+-- 2. LISTINGS TABLOSU
+-- İlan yönetimi (satılık/kiralık emlak)
+-- Admin onayı sonrası yayına alınır
+CREATE TABLE IF NOT EXISTS public.listings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    approved_at TIMESTAMPTZ,
+    
+    -- İlan Bilgileri
+    title TEXT NOT NULL,
+    description TEXT,
+    
+    -- Sahip Bilgileri
+    owner_name TEXT NOT NULL,
+    owner_phone TEXT NOT NULL,
+    
+    -- Emlak Detayları
+    neighborhood TEXT,
+    property_type TEXT,
+    rooms TEXT,
+    area_m2 INTEGER,
+    price_tl BIGINT,
+    
+    -- Durum
+    is_for TEXT DEFAULT 'satilik' NOT NULL CHECK (is_for IN ('satilik', 'kiralik')),
+    status TEXT DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+    
+    -- Görseller (Supabase Storage'dan URL'ler)
+    images JSONB DEFAULT '[]'::jsonb
 );
 
--- favorites table (favoriler)
--- Kullanıcı favori ilanları
-create table if not exists public.favorites (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamp with time zone default now(),
-  listing_id uuid not null references public.listings(id) on delete cascade,
-  user_id uuid references auth.users(id) on delete cascade,
-  device_id text, -- cihaz bazlı favoriler için
-  unique (listing_id, user_id),
-  unique (listing_id, device_id)
+-- İndeksler
+CREATE INDEX IF NOT EXISTS idx_listings_status ON public.listings(status);
+CREATE INDEX IF NOT EXISTS idx_listings_is_for ON public.listings(is_for);
+CREATE INDEX IF NOT EXISTS idx_listings_neighborhood ON public.listings(neighborhood);
+CREATE INDEX IF NOT EXISTS idx_listings_property_type ON public.listings(property_type);
+CREATE INDEX IF NOT EXISTS idx_listings_price_tl ON public.listings(price_tl);
+CREATE INDEX IF NOT EXISTS idx_listings_area_m2 ON public.listings(area_m2);
+CREATE INDEX IF NOT EXISTS idx_listings_created_at ON public.listings(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_listings_approved_at ON public.listings(approved_at DESC);
+CREATE INDEX IF NOT EXISTS idx_listings_owner_phone ON public.listings(owner_phone);
+
+-- Text search için GIN index (başlık, açıklama, mahalle için)
+CREATE INDEX IF NOT EXISTS idx_listings_search ON public.listings 
+    USING gin(to_tsvector('turkish', coalesce(title, '') || ' ' || coalesce(description, '') || ' ' || coalesce(neighborhood, '')));
+
+-- RLS Politikaları
+ALTER TABLE public.listings ENABLE ROW LEVEL SECURITY;
+
+-- Herkes ilan ekleyebilir (INSERT)
+CREATE POLICY "listings_insert_policy" ON public.listings
+    FOR INSERT WITH CHECK (true);
+
+-- Herkes ilanları okuyabilir (SELECT)
+CREATE POLICY "listings_select_policy" ON public.listings
+    FOR SELECT USING (true);
+
+-- Herkes ilanları güncelleyebilir (Admin için)
+CREATE POLICY "listings_update_policy" ON public.listings
+    FOR UPDATE USING (true);
+
+-- ============================================
+
+-- 3. FAVORITES TABLOSU
+-- Kullanıcıların favori ilanları
+CREATE TABLE IF NOT EXISTS public.favorites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    listing_id UUID NOT NULL REFERENCES public.listings(id) ON DELETE CASCADE,
+    
+    -- Bir kullanıcı aynı ilanı bir kez favoriye ekleyebilir
+    UNIQUE(user_id, listing_id)
 );
 
--- ==========================================
--- RLS (ROW LEVEL SECURITY) - SATIR SEVİYESİ GÜVENLİK
--- ==========================================
+-- İndeksler
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON public.favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_listing_id ON public.favorites(listing_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON public.favorites(created_at DESC);
 
--- Tüm tablolarda RLS'yi etkinleştir
-alter table public.listings enable row level security;
-alter table public.users_min enable row level security;
-alter table public.favorites enable row level security;
+-- RLS Politikaları
+ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 
--- ==========================================
--- LİSTİNGS TABLOSU POLİTİKALARI
--- ==========================================
+-- Kullanıcılar kendi favorilerini ekleyebilir
+CREATE POLICY "favorites_insert_policy" ON public.favorites
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Herkes onaylanmış ilanları görebilir
-create policy "Herkes onaylanmış ilanları görebilir" on public.listings
-  for select using (status = 'approved');
+-- Kullanıcılar kendi favorilerini görebilir
+CREATE POLICY "favorites_select_policy" ON public.favorites
+    FOR SELECT USING (auth.uid() = user_id);
 
--- Herkes ilan ekleyebilir (kayıt olmadan ilan verebilmek için)
-create policy "Herkes ilan ekleyebilir" on public.listings
-  for insert with check (true);
+-- Kullanıcılar kendi favorilerini silebilir
+CREATE POLICY "favorites_delete_policy" ON public.favorites
+    FOR DELETE USING (auth.uid() = user_id);
 
--- Sadece admin kullanıcılar ilan durumunu güncelleyebilir (onay/reddetme)
-create policy "Sadece admin ilan durumunu güncelleyebilir" on public.listings
-  for update using (
-    exists (
-      select 1 from public.users_min
-      where phone = current_setting('request.jwt.claim.phone', true)
-      and status = 'approved'
+-- ============================================
+
+-- 4. STORAGE BUCKET
+-- İlan görsellerini depolamak için bucket oluştur
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('listings.images', 'listings.images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage RLS Politikaları
+-- Herkes görselleri görebilir (public bucket)
+CREATE POLICY "listings_images_select_policy" ON storage.objects
+    FOR SELECT USING (bucket_id = 'listings.images');
+
+-- Herkes görsel yükleyebilir
+CREATE POLICY "listings_images_insert_policy" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'listings.images');
+
+-- Herkes görsel silebilir (admin için)
+CREATE POLICY "listings_images_delete_policy" ON storage.objects
+    FOR DELETE USING (bucket_id = 'listings.images');
+
+-- ============================================
+
+-- 5. YARDIMCI FONKSİYONLAR
+
+-- İlan arama fonksiyonu (Türkçe full-text search)
+CREATE OR REPLACE FUNCTION search_listings(search_query TEXT)
+RETURNS SETOF public.listings AS $$
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM public.listings
+    WHERE 
+        to_tsvector('turkish', coalesce(title, '') || ' ' || coalesce(description, '') || ' ' || coalesce(neighborhood, ''))
+        @@ plainto_tsquery('turkish', search_query)
+    ORDER BY created_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- İstatistik fonksiyonu (admin için)
+CREATE OR REPLACE FUNCTION get_listings_stats()
+RETURNS JSON AS $$
+DECLARE
+    result JSON;
+BEGIN
+    SELECT json_build_object(
+        'total_listings', COUNT(*),
+        'pending_listings', COUNT(*) FILTER (WHERE status = 'pending'),
+        'approved_listings', COUNT(*) FILTER (WHERE status = 'approved'),
+        'rejected_listings', COUNT(*) FILTER (WHERE status = 'rejected'),
+        'satilik_count', COUNT(*) FILTER (WHERE is_for = 'satilik'),
+        'kiralik_count', COUNT(*) FILTER (WHERE is_for = 'kiralik'),
+        'avg_price_tl', ROUND(AVG(price_tl), 2) FILTER (WHERE price_tl IS NOT NULL),
+        'total_users', (SELECT COUNT(*) FROM public.users_min),
+        'pending_users', (SELECT COUNT(*) FROM public.users_min WHERE status = 'pending'),
+        'approved_users', (SELECT COUNT(*) FROM public.users_min WHERE status = 'approved')
     )
-  )
-  with check (
-    exists (
-      select 1 from public.users_min
-      where phone = current_setting('request.jwt.claim.phone', true)
-      and status = 'approved'
+    INTO result
+    FROM public.listings;
+    
+    RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+
+-- 6. ÖRNEK VERİLER (İsteğe Bağlı - Test için)
+
+-- Örnek kullanıcı (onaylı)
+INSERT INTO public.users_min (full_name, phone, status)
+VALUES 
+    ('Ahmet Yılmaz', '5551234567', 'approved'),
+    ('Ayşe Demir', '5559876543', 'pending')
+ON CONFLICT (phone) DO NOTHING;
+
+-- Örnek ilanlar
+INSERT INTO public.listings (
+    title, 
+    owner_name, 
+    owner_phone, 
+    neighborhood, 
+    property_type, 
+    rooms, 
+    area_m2, 
+    price_tl, 
+    is_for, 
+    status, 
+    description
+)
+VALUES 
+    (
+        'Merkez Konumda 3+1 Satılık Daire',
+        'Ahmet Yılmaz',
+        '5551234567',
+        'Cumhuriyet Mahallesi',
+        'Daire',
+        '3+1',
+        120,
+        2500000,
+        'satilik',
+        'approved',
+        'Merkezi konumda, asansörlü binada, güneş alan, temiz daire. Krediye uygun.'
+    ),
+    (
+        'Kiralık Müstakil Ev',
+        'Ayşe Demir',
+        '5559876543',
+        'Atatürk Mahallesi',
+        'Müstakil',
+        '4+1',
+        180,
+        15000,
+        'kiralik',
+        'pending',
+        'Geniş bahçeli müstakil ev, ailelere uygun.'
     )
-  );
+ON CONFLICT DO NOTHING;
 
--- İlan sahibi kendi ilanını düzenleyebilir
-create policy "İlan sahibi kendi ilanını düzenleyebilir" on public.listings
-  for update using (
-    owner_phone = current_setting('request.jwt.claim.phone', true)
-  )
-  with check (
-    owner_phone = current_setting('request.jwt.claim.phone', true)
-  );
+-- ============================================
 
--- İlan sahibi kendi ilanını silebilir
-create policy "İlan sahibi kendi ilanını silebilir" on public.listings
-  for delete using (
-    owner_phone = current_setting('request.jwt.claim.phone', true)
-  );
+-- NOTLAR:
+-- 1. Bu şemayı Supabase SQL Editor'da çalıştırın
+-- 2. RLS politikaları projenin güvenliğini sağlar
+-- 3. Storage bucket'ı otomatik oluşturulur
+-- 4. İndeksler sorgu performansını artırır
+-- 5. Türkçe karakter desteği için 'turkish' text search kullanılır
+-- 6. Admin kontrolü için frontend'de VITE_ADMIN_PASS kullanılır
+-- 7. Favoriler tablosu Supabase Auth ile entegre çalışır
 
--- ==========================================
--- USERS_MIN TABLOSU POLİTİKALARI
--- ==========================================
-
--- Herkes kullanıcı başvurusu yapabilir
-create policy "Herkes kullanıcı başvurusu yapabilir" on public.users_min
-  for insert with check (true);
-
--- Herkes kullanıcı listesini görebilir (giriş için gerekli)
-create policy "Herkes kullanıcı listesini görebilir" on public.users_min
-  for select using (true);
-
--- Sadece admin kullanıcı durumunu güncelleyebilir
-create policy "Sadece admin kullanıcı durumunu güncelleyebilir" on public.users_min
-  for update using (
-    exists (
-      select 1 from public.users_min
-      where phone = current_setting('request.jwt.claim.phone', true)
-      and status = 'approved'
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.users_min
-      where phone = current_setting('request.jwt.claim.phone', true)
-      and status = 'approved'
-    )
-  );
-
--- ==========================================
--- FAVORITES TABLOSU POLİTİKALARI
--- ==========================================
-
--- Kullanıcı kendi favorilerini görebilir
-create policy "Kullanıcı kendi favorilerini görebilir" on public.favorites
-  for select using (
-    user_id = auth.uid()
-  );
-
--- Cihaz bazlı favorileri herkes görebilir (kayıtsız kullanıcılar için)
-create policy "Cihaz bazlı favorileri herkes görebilir" on public.favorites
-  for select using (
-    device_id is not null and user_id is null
-  );
-
--- Kullanıcı favori ekleyebilir
-create policy "Kullanıcı favori ekleyebilir" on public.favorites
-  for insert with check (
-    user_id = auth.uid()
-  );
-
--- Cihaz bazlı favori ekleyebilir (kayıtsız kullanıcılar için)
-create policy "Cihaz bazlı favori ekleyebilir" on public.favorites
-  for insert with check (
-    device_id is not null and user_id is null
-  );
-
--- Kullanıcı kendi favorisini silebilir
-create policy "Kullanıcı kendi favorisini silebilir" on public.favorites
-  for delete using (
-    user_id = auth.uid()
-  );
-
--- Cihaz bazlı favori silinebilir (kayıtsız kullanıcılar için)
-create policy "Cihaz bazlı favori silinebilir" on public.favorites
-  for delete using (
-    device_id is not null and user_id is null
-  );
-
--- ==========================================
--- İNDEKSLER
--- ==========================================
-
--- Performans için indeksler
-create index if not exists listings_status_idx on public.listings (status);
-create index if not exists listings_neighborhood_idx on public.listings (neighborhood);
-create index if not exists listings_property_type_idx on public.listings (property_type);
-create index if not exists listings_is_for_idx on public.listings (is_for);
-create index if not exists listings_price_tl_idx on public.listings (price_tl);
-create index if not exists listings_owner_phone_idx on public.listings (owner_phone);
-create index if not exists favorites_listing_id_idx on public.favorites (listing_id);
-create index if not exists favorites_user_id_idx on public.favorites (user_id);
-create index if not exists favorites_device_id_idx on public.favorites (device_id);
-create index if not exists users_min_phone_idx on public.users_min (phone);
-create index if not exists users_min_status_idx on public.users_min (status);
-
--- ==========================================
--- STORAGE YAPILANDIRMASI
--- ==========================================
-
--- Storage şemasını oluştur (zaten varsa hata vermez)
-create schema if not exists storage;
-
--- listings.images bucket'ını oluştur
-insert into storage.buckets (id, name, public)
-values ('listings.images', 'listings.images', true)
-on conflict (id) do nothing;
-
--- Storage objeleri için RLS'yi etkinleştir
-alter table storage.objects enable row level security;
-
--- Storage politikaları
-create policy "Herkes ilan görseli yükleyebilir" on storage.objects
-  for insert to anon, authenticated
-  with check (bucket_id = 'listings.images');
-
-create policy "Herkes ilan görsellerini görebilir" on storage.objects
-  for select to anon, authenticated
-  using (bucket_id = 'listings.images');
-
-create policy "İlan sahibi kendi görsellerini silebilir" on storage.objects
-  for delete to anon, authenticated
-  using (
-    bucket_id = 'listings.images' 
-    and owner = auth.uid()
-  );
-
-create policy "Admin kullanıcılar tüm görselleri silebilir" on storage.objects
-  for delete to authenticated
-  using (
-    bucket_id = 'listings.images' 
-    and exists (
-      select 1 from public.users_min
-      where phone = current_setting('request.jwt.claim.phone', true)
-      and status = 'approved'
-    )
-  );
-
--- ==========================================
--- TRİGGER'LAR
--- ==========================================
-
--- Yeni bir ilan eklendiğinde admin onayı için otomatik olarak pending durumu
-create or replace function set_default_status()
-returns trigger as $$
-begin
-  if new.status is null then
-    new.status := 'pending';
-  end if;
-  return new;
-end;
-$$ language plpgsql;
-
-create trigger trigger_set_default_status
-  before insert on public.listings
-  for each row
-  execute function set_default_status();
+-- ============================================
+-- KURULUM TAMAMLANDI
+-- ============================================

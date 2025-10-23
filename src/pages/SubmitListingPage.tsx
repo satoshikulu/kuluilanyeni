@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
-import LocationPicker from '../components/LocationPicker'
+import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { MapPin, Upload, Send } from 'lucide-react'
 
 function SubmitListingPage() {
@@ -284,7 +284,8 @@ function SubmitListingPage() {
               </ul>
             </div>
             
-            <LocationPicker
+            {/* Harita Bölümü */}
+            <LocationPickerWrapper
               address={formData.address}
               latitude={formData.latitude}
               longitude={formData.longitude}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { MapPin, Zap, ArrowRight, TrendingDown } from 'lucide-react'
 
 function HomePage() {
   const [typewriterText, setTypewriterText] = useState('')
@@ -141,9 +142,14 @@ function HomePage() {
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
               </div>
               <div className="p-4 group-hover:bg-gray-50 transition-colors duration-300">
-                <div className="font-medium group-hover:text-blue-600 transition-colors duration-300">{property.type} · {property.area}</div>
-                <div className="text-gray-500 text-sm">{property.location}</div>
-                <div className="mt-2 font-semibold text-lg group-hover:text-green-600 transition-colors duration-300">{property.price}</div>
+                <div className="font-medium group-hover:text-blue-600 transition-colors duration-300 mb-2">{property.type} · {property.area}</div>
+                <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {property.location}
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <div className="font-semibold text-lg group-hover:text-green-600 transition-colors duration-300">{property.price}</div>
+                </div>
               </div>
             </div>
           ))}
@@ -152,10 +158,8 @@ function HomePage() {
 
       <section className="mt-16 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 rounded-3xl p-10 shadow-xl border border-orange-100">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl mb-4 shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl mb-4 shadow-lg animate-pulse">
+            <Zap className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-4">
             Fırsat İlanlar
@@ -184,18 +188,30 @@ function HomePage() {
                     backgroundRepeat: 'no-repeat'
                   }}
                 />
-                <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                <div className="absolute top-3 right-3 flex items-center gap-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                  <Zap className="w-3 h-3" />
                   FIRSAT
                 </div>
-              </div>
-              <div className="p-4 group-hover:bg-gray-50 transition-colors duration-300">
-                <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{listing.title}</div>
-                <div className="text-orange-600 text-sm font-medium">{listing.neighborhood}</div>
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="font-bold text-orange-800 text-lg group-hover:text-green-600 transition-colors duration-300">{listing.currentPrice} TL</div>
-                  <div className="text-xs text-gray-500 line-through">{listing.originalPrice} TL</div>
+                <div className="absolute top-3 left-3 flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+                  <TrendingDown className="w-3 h-3" />
+                  {listing.discount}
                 </div>
-                <div className="mt-1 text-xs text-green-600 font-medium">{listing.discount} indirim</div>
+              </div>
+              <div className="p-5 group-hover:bg-gray-50 transition-colors duration-300">
+                <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 mb-2">{listing.title}</div>
+                <div className="flex items-center gap-1 text-orange-600 text-sm font-medium mb-3">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {listing.neighborhood}
+                </div>
+                <div className="flex items-end justify-between pt-3 border-t border-gray-200">
+                  <div>
+                    <div className="text-xs text-gray-500 line-through mb-1">{listing.originalPrice} TL</div>
+                    <div className="font-bold text-green-600 text-xl group-hover:text-green-700 transition-colors duration-300">
+                      {listing.currentPrice}
+                      <span className="text-sm font-normal text-gray-600 ml-1">TL</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -203,9 +219,7 @@ function HomePage() {
         <div className="text-center mt-8">
           <Link to="/firsatlar" className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
             <span className="relative z-10">Tüm Fırsat İlanlarını Gör</span>
-            <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
             <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </Link>
         </div>

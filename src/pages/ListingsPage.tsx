@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import FavoriteButton from '../components/FavoriteButton'
 import { getListingImageUrl } from '../lib/storage'
+import { getPlaceholderImage, isNewListing } from '../constants/placeholders'
+import { MapPin, Home, Maximize2 } from 'lucide-react'
 
 type Listing = {
   id: string
@@ -15,16 +17,8 @@ type Listing = {
   is_for?: 'satilik' | 'kiralik'
   rooms?: string | null
   area_m2?: number | null
+  created_at?: string
 }
-
-const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop', // modern house exterior
-  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200&auto=format&fit=crop', // luxury apartment
-  'https://images.unsplash.com/photo-1600607687644-c7171b42498b?q=80&w=1200&auto=format&fit=crop', // modern villa
-  'https://images.unsplash.com/photo-1502672023488-70e25813eb80?q=80&w=1200&auto=format&fit=crop', // apartment building
-  'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?q=80&w=1200&auto=format&fit=crop', // luxury villa
-  'https://images.unsplash.com/photo-1448630360428-65456885c650?q=80&w=1200&auto=format&fit=crop', // suburban house
-]
 
 function ListingsPage() {
   const [items, setItems] = useState<Listing[]>([])
@@ -71,7 +65,7 @@ function ListingsPage() {
     if (typeof first === 'string' && first) {
       return first.startsWith('http') ? first : getListingImageUrl(first)
     }
-    return FALLBACK_IMAGES[Math.floor(Math.random() * FALLBACK_IMAGES.length)]
+    return getPlaceholderImage(l.property_type)
   }
 
   return (
@@ -157,41 +151,57 @@ function ListingsPage() {
                       style={{ backgroundImage: `url(${getCardImage(item)})` }}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
-                    <div className="absolute top-4 left-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
                         item.is_for === 'satilik' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-blue-500 text-white'
                       }`}>
                         {item.is_for === 'satilik' ? 'Satılık' : 'Kiralık'}
                       </span>
+                      {item.created_at && isNewListing(item.created_at) && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-lg animate-pulse">
+                          YENİ
+                        </span>
+                      )}
                     </div>
                   </div>
                   
                   <div className="p-6 group-hover:bg-gray-50 transition-colors duration-300">
-                    <h4 className="font-semibold text-lg text-gray-800 group-hover:text-blue-600 transition-colors duration-300 mb-2">
+                    <h4 className="font-semibold text-lg text-gray-800 group-hover:text-blue-600 transition-colors duration-300 mb-3">
                       {item.title}
                     </h4>
                     
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-gray-600">
-                        <span className="text-sm">📍 {item.neighborhood || 'Mahalle belirtilmemiş'}</span>
+                      <div className="flex items-center text-gray-600 gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{item.neighborhood || 'Mahalle belirtilmemiş'}</span>
                       </div>
                       {item.rooms && (
-                        <div className="flex items-center text-gray-600">
-                          <span className="text-sm">🏠 {item.rooms}</span>
+                        <div className="flex items-center text-gray-600 gap-2">
+                          <Home className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">{item.rooms}</span>
                         </div>
                       )}
                       {item.area_m2 && (
-                        <div className="flex items-center text-gray-600">
-                          <span className="text-sm">📐 {item.area_m2} m²</span>
+                        <div className="flex items-center text-gray-600 gap-2">
+                          <Maximize2 className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">{item.area_m2} m²</span>
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex justify-between items-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {item.price_tl ? item.price_tl.toLocaleString('tr-TR') : '-'} TL
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Fiyat</div>
+                        <div className="text-2xl font-bold text-green-600">
+                          {item.price_tl ? (
+                            <>
+                              {item.price_tl.toLocaleString('tr-TR')}
+                              <span className="text-sm font-normal text-gray-500 ml-1">TL</span>
+                            </>
+                          ) : '-'}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <FavoriteButton listingId={item.id} />

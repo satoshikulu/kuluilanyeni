@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
-import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { MapPin, Upload, Send } from 'lucide-react'
 
 function SubmitListingPage() {
@@ -28,20 +27,7 @@ function SubmitListingPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
-  const handleLocationChange = (data: {
-    address: string
-    latitude: number
-    longitude: number
-    locationType: 'address' | 'coordinates'
-  }) => {
-    setFormData((prev) => ({
-      ...prev,
-      address: data.address,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      locationType: data.locationType,
-    }))
-  }
+
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -66,6 +52,11 @@ function SubmitListingPage() {
         throw new Error('Lütfen zorunlu alanları doldurun')
       }
 
+      // Konum verisi - Eğer girilmemişse Kulu merkez koordinatları
+      const finalAddress = formData.address || `${formData.neighborhood || 'Kulu'}, Konya`
+      const finalLatitude = formData.latitude || 39.0919
+      const finalLongitude = formData.longitude || 33.0794
+      
       // İlan oluştur
       const { data: listing, error: listingError } = await supabase
         .from('listings')
@@ -80,10 +71,10 @@ function SubmitListingPage() {
           area_m2: formData.areaM2 ? parseInt(formData.areaM2) : null,
           price_tl: formData.priceTl ? parseInt(formData.priceTl) : null,
           is_for: formData.isFor,
-          address: formData.address,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          location_type: formData.locationType,
+          address: finalAddress,
+          latitude: finalLatitude,
+          longitude: finalLongitude,
+          location_type: 'address',
           status: 'pending',
         })
         .select()
@@ -265,45 +256,37 @@ function SubmitListingPage() {
             </div>
           </div>
 
-          {/* Konum Bilgileri */}
-          <div className="space-y-4 pt-6 border-t bg-yellow-50 p-6 rounded-lg">
+          {/* Konum Bilgileri - BASİT VERSİYON */}
+          <div className="space-y-4 pt-6 border-t">
             <div className="flex items-center gap-2 mb-4">
               <MapPin className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-semibold text-gray-900">📍 Konum Bilgileri</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Konum Bilgileri</h2>
             </div>
             
-            {/* BÜYÜK UYARI KUTUSU - EĞER BUNU GÖRÜYORsan BÖLÜM RENDER EDİLİYOR */}
-            <div className="bg-red-100 border-4 border-red-500 p-6 rounded-lg mb-4">
-              <p className="text-red-900 font-bold text-lg mb-2">
-                ⚠️ EĞER BU KUTUYU GÖRÜYORsan:
+            <div className="bg-yellow-100 border-2 border-yellow-500 p-4 rounded-lg">
+              <p className="text-yellow-900 font-semibold mb-2">
+                ⚠️ Harita özelliği geçici olarak devre dışı
               </p>
-              <p className="text-red-800 text-base">
-                ✅ "Konum Bilgileri" bölümü render ediliyor!
-              </p>
-              <p className="text-red-700 text-sm mt-2">
-                Aşağıda harita görünmeli. Eğer görünmüyorsa tarayıcı konsolunu (F12) kontrol et.
+              <p className="text-yellow-800 text-sm">
+                Şimdilik sadece adres girebilirsiniz. Harita özelliği yakında eklenecek.
               </p>
             </div>
             
-            {/* Debug: Kontrol mesajı */}
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
-              <p className="text-blue-800 text-sm">
-                ℹ️ Harita bölümü yükleniyor... Eğer harita görünmüyorsa:
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Adres (Opsiyonel)
+              </label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Örn: Cumhuriyet Mahallesi, Atatürk Caddesi No:15, Kulu"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                İlanınızın adresini girin. Bu bilgi opsiyoneldir.
               </p>
-              <ul className="text-xs text-blue-700 mt-2 space-y-1">
-                <li>• Dev server'ı yeniden başlatın (Ctrl+C, sonra npm run dev)</li>
-                <li>• Tarayıcıyı hard refresh yapın (Ctrl+Shift+R)</li>
-                <li>• Tarayıcı konsolunu kontrol edin (F12)</li>
-              </ul>
             </div>
-            
-            {/* Harita Bölümü */}
-            <LocationPickerWrapper
-              address={formData.address}
-              latitude={formData.latitude}
-              longitude={formData.longitude}
-              onLocationChange={handleLocationChange}
-            />
           </div>
 
           {/* İletişim Bilgileri */}

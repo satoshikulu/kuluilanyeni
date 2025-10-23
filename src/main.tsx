@@ -10,7 +10,6 @@ import LoginPage from './pages/LoginPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
 import SellPage from './pages/SellPage.tsx'
 import RentPage from './pages/RentPage.tsx'
-import SubmitListingPage from './pages/SubmitListingPage.tsx'
 import AdminPage from './pages/AdminPage.tsx'
 import DebugSupabasePage from './pages/DebugSupabasePage.tsx'
 import DebugStoragePage from './pages/DebugStoragePage.tsx'
@@ -30,7 +29,6 @@ const router = createBrowserRouter([
       { path: 'uye-ol', element: <RegisterPage /> },
       { path: 'satmak', element: <SellPage /> },
       { path: 'kiralamak', element: <RentPage /> },
-      { path: 'ilan-ver', element: <SubmitListingPage /> },
       { path: 'firsatlar', element: <OpportunitiesPage /> },
       { path: 'ilan/:id', element: <ListingDetailPage /> },
       { path: 'favoriler', element: <FavoritesPage /> },

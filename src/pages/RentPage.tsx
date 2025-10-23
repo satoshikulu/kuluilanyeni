@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
+import LocationPickerWrapper from '../components/LocationPickerWrapper'
 
 function RentPage() {
   const [formData, setFormData] = useState({
@@ -20,6 +21,10 @@ function RentPage() {
   const [message, setMessage] = useState('')
   const [previews, setPreviews] = useState<string[]>([])
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [address, setAddress] = useState<string>('')
+  const [latitude, setLatitude] = useState<number>(39.0919)
+  const [longitude, setLongitude] = useState<number>(33.0794)
+  const [locationType, setLocationType] = useState<'address' | 'coordinates'>('address')
 
   const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
 
@@ -60,12 +65,18 @@ function RentPage() {
 
     try {
       // 1) İlanı önce oluştur ve id al
+      const finalAddress = address || `${formData.neighborhood || 'Kulu'}, Konya`
+      
       const { data: inserted, error: insertError } = await supabase
         .from('listings')
         .insert([{
           ...formData,
           price_tl: formData.price_tl ? parseInt(formData.price_tl) : null,
           area_m2: formData.area_m2 ? parseInt(formData.area_m2) : null,
+          address: finalAddress,
+          latitude: latitude,
+          longitude: longitude,
+          location_type: locationType,
           status: 'pending'
         }])
         .select('id')
@@ -115,6 +126,10 @@ function RentPage() {
       })
       setSelectedFiles([])
       setPreviews([])
+      setAddress('')
+      setLatitude(39.0919)
+      setLongitude(33.0794)
+      setLocationType('address')
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'İlan gönderilemedi'
       setMessage('Hata: ' + msg)
@@ -311,10 +326,29 @@ function RentPage() {
               />
             </div>
 
-            {/* 7) Görsel Yükleme */}
+            {/* 7) Konum Bilgileri */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">7</span>
+                Konum Bilgileri
+              </label>
+              <LocationPickerWrapper
+                address={address}
+                latitude={latitude}
+                longitude={longitude}
+                onLocationChange={(data) => {
+                  setAddress(data.address)
+                  setLatitude(data.latitude)
+                  setLongitude(data.longitude)
+                  setLocationType(data.locationType)
+                }}
+              />
+            </div>
+
+            {/* 8) Görsel Yükleme */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">8</span>
                 Görseller (İsteğe Bağlı)
               </label>
               <div
@@ -382,9 +416,9 @@ function RentPage() {
               </div>
             )}
 
-            {/* 8) Gönder */}
+            {/* 9) Gönder */}
             <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">8</span>
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">9</span>
               Gönder
             </div>
             <div className="flex flex-col sm:flex-row justify-end gap-3">

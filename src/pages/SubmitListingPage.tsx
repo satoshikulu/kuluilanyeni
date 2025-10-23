@@ -266,10 +266,23 @@ function SubmitListingPage() {
           </div>
 
           {/* Konum Bilgileri */}
-          <div className="space-y-4 pt-6 border-t">
+          <div className="space-y-4 pt-6 border-t bg-yellow-50 p-6 rounded-lg">
             <div className="flex items-center gap-2 mb-4">
               <MapPin className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Konum Bilgileri</h2>
+              <h2 className="text-xl font-semibold text-gray-900">📍 Konum Bilgileri</h2>
+            </div>
+            
+            {/* BÜYÜK UYARI KUTUSU - EĞER BUNU GÖRÜYORsan BÖLÜM RENDER EDİLİYOR */}
+            <div className="bg-red-100 border-4 border-red-500 p-6 rounded-lg mb-4">
+              <p className="text-red-900 font-bold text-lg mb-2">
+                ⚠️ EĞER BU KUTUYU GÖRÜYORsan:
+              </p>
+              <p className="text-red-800 text-base">
+                ✅ "Konum Bilgileri" bölümü render ediliyor!
+              </p>
+              <p className="text-red-700 text-sm mt-2">
+                Aşağıda harita görünmeli. Eğer görünmüyorsa tarayıcı konsolunu (F12) kontrol et.
+              </p>
             </div>
             
             {/* Debug: Kontrol mesajı */}

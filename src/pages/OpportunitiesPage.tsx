@@ -55,11 +55,13 @@ export default function OpportunitiesPage() {
       setLoading(true)
       setError('')
       try {
-        // Sadece onaylı ilanlar
+        // Sadece onaylı ve fırsat olarak işaretlenmiş ilanlar
         const { data, error } = await supabase
           .from('listings')
           .select('*')
           .eq('status', 'approved')
+          .eq('is_opportunity', true)
+          .order('opportunity_order', { ascending: true })
           .order('created_at', { ascending: false })
         if (error) throw error
         setItems((data ?? []) as Listing[])

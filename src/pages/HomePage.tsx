@@ -8,7 +8,9 @@ function HomePage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
   const [featuredListings, setFeaturedListings] = useState<any[]>([])
+  const [opportunityListings, setOpportunityListings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [opportunityLoading, setOpportunityLoading] = useState(true)
   
   const texts = [
     'Kulu Emlak Pazarı',
@@ -43,6 +45,7 @@ function HomePage() {
 
   useEffect(() => {
     fetchFeaturedListings()
+    fetchOpportunityListings()
   }, [])
 
   const fetchFeaturedListings = async () => {
@@ -66,6 +69,27 @@ function HomePage() {
     }
   }
 
+  const fetchOpportunityListings = async () => {
+    try {
+      setOpportunityLoading(true)
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'approved')
+        .eq('is_opportunity', true)
+        .order('opportunity_order', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      if (error) throw error
+      setOpportunityListings(data || [])
+    } catch (error) {
+      console.error('Fırsat ilanları yüklenirken hata:', error)
+    } finally {
+      setOpportunityLoading(false)
+    }
+  }
+
   const featuredImages = [
     'https://images.unsplash.com/photo-1502672023488-70e25813eb80?q=80&w=1200&auto=format&fit=crop', // apartment building (3+1 Daire)
     'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200&auto=format&fit=crop', // luxury apartment (2+1 Daire)
@@ -79,33 +103,6 @@ function HomePage() {
     'https://images.unsplash.com/photo-1502672023488-70e25813eb80?q=80&w=1200&auto=format&fit=crop', // modern house exterior
     'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?q=80&w=1200&auto=format&fit=crop', // luxury villa
     'https://images.unsplash.com/photo-1501183638710-841dd1904471?q=80&w=1200&auto=format&fit=crop', // modern house exterior (reliable)
-  ]
-
-  const opportunityListings = [
-    {
-      title: '2+1 Daire · 95 m²',
-      neighborhood: 'Yeni Mahallesi',
-      currentPrice: '1.650.000',
-      originalPrice: '1.850.000',
-      discount: '%11',
-      image: opportunityImages[0]
-    },
-    {
-      title: '3+1 Daire · 125 m²',
-      neighborhood: 'Cumhuriyet Mahallesi',
-      currentPrice: '2.200.000',
-      originalPrice: '2.500.000',
-      discount: '%12',
-      image: opportunityImages[1]
-    },
-    {
-      title: '4+1 Villa · 180 m²',
-      neighborhood: 'Zincirlikuyu Mahallesi',
-      currentPrice: '4.200.000',
-      originalPrice: '5.800.000',
-      discount: '%16',
-      image: opportunityImages[2]
-    }
   ]
   return (
     <div className="relative">
@@ -212,50 +209,73 @@ function HomePage() {
             <span className="text-orange-600 font-semibold"> özel seçilmiş ilanlar</span>.
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {opportunityListings.map((listing, i) => (
-            <div
-              key={i}
-              className="group rounded-2xl border-2 border-orange-200 overflow-hidden bg-white shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:scale-105 transition-all duration-300 cursor-pointer"
-            >
-              <div className="relative overflow-hidden">
-                <div
-                  className="h-40 bg-cover bg-center bg-gray-200 group-hover:scale-110 transition-transform duration-500"
-                  style={{ 
-                    backgroundImage: `url(${listing.image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat'
-                  }}
-                />
-                <div className="absolute top-3 right-3 flex items-center gap-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg animate-pulse">
-                  <Zap className="w-3 h-3" />
-                  FIRSAT
-                </div>
-                <div className="absolute top-3 left-3 flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
-                  <TrendingDown className="w-3 h-3" />
-                  {listing.discount}
-                </div>
-              </div>
-              <div className="p-5 group-hover:bg-gray-50 transition-colors duration-300">
-                <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 mb-2">{listing.title}</div>
-                <div className="flex items-center gap-1 text-orange-600 text-sm font-medium mb-3">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {listing.neighborhood}
-                </div>
-                <div className="flex items-end justify-between pt-3 border-t border-gray-200">
-                  <div>
-                    <div className="text-xs text-gray-500 line-through mb-1">{listing.originalPrice} TL</div>
-                    <div className="font-bold text-green-600 text-xl group-hover:text-green-700 transition-colors duration-300">
-                      {listing.currentPrice}
-                      <span className="text-sm font-normal text-gray-600 ml-1">TL</span>
+        {opportunityLoading ? (
+          <div className="text-center py-12 text-gray-500">Yükleniyor...</div>
+        ) : opportunityListings.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">Henüz fırsat ilan bulunmuyor</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {opportunityListings.map((listing, i) => {
+              const images = Array.isArray(listing.images) ? listing.images : []
+              const firstImage = images.length > 0 ? images[0] : opportunityImages[i % opportunityImages.length]
+              const discount = listing.discount_percentage || (listing.original_price_tl && listing.price_tl 
+                ? Math.round(((listing.original_price_tl - listing.price_tl) / listing.original_price_tl) * 100)
+                : 0)
+              
+              return (
+                <Link
+                  key={listing.id}
+                  to={`/ilan/${listing.id}`}
+                  className="group rounded-2xl border-2 border-orange-200 overflow-hidden bg-white shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:scale-105 transition-all duration-300 cursor-pointer"
+                >
+                  <div className="relative overflow-hidden">
+                    <div
+                      className="h-40 bg-cover bg-center bg-gray-200 group-hover:scale-110 transition-transform duration-500"
+                      style={{ 
+                        backgroundImage: `url(${firstImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                      <Zap className="w-3 h-3" />
+                      FIRSAT
+                    </div>
+                    {discount > 0 && (
+                      <div className="absolute top-3 left-3 flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+                        <TrendingDown className="w-3 h-3" />
+                        %{discount}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 group-hover:bg-gray-50 transition-colors duration-300">
+                    <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 mb-2">
+                      {listing.rooms} {listing.property_type} · {listing.area_m2} m²
+                    </div>
+                    <div className="flex items-center gap-1 text-orange-600 text-sm font-medium mb-3">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {listing.neighborhood}
+                    </div>
+                    <div className="flex items-end justify-between pt-3 border-t border-gray-200">
+                      <div>
+                        {listing.original_price_tl && (
+                          <div className="text-xs text-gray-500 line-through mb-1">
+                            {listing.original_price_tl.toLocaleString('tr-TR')} TL
+                          </div>
+                        )}
+                        <div className="font-bold text-green-600 text-xl group-hover:text-green-700 transition-colors duration-300">
+                          {listing.price_tl?.toLocaleString('tr-TR')}
+                          <span className="text-sm font-normal text-gray-600 ml-1">TL</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
         <div className="text-center mt-8">
           <Link to="/firsatlar" className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
             <span className="relative z-10">Tüm Fırsat İlanlarını Gör</span>

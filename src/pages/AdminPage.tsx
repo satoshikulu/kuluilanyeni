@@ -21,6 +21,10 @@ type Listing = {
   is_featured: boolean
   featured_order: number
   featured_until?: string | null
+  is_opportunity: boolean
+  opportunity_order: number
+  original_price_tl?: number | null
+  discount_percentage?: number | null
 }
 
 type UserMin = {
@@ -201,6 +205,52 @@ function AdminPage() {
     }
   }
 
+  async function toggleOpportunity(id: string, currentOpportunity: boolean) {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ is_opportunity: !currentOpportunity })
+        .eq('id', id)
+      if (error) throw error
+      setListings((prev) => prev.map((l) => l.id === id ? { ...l, is_opportunity: !currentOpportunity } : l))
+    } catch (e: any) {
+      alert(e.message || 'Fırsat ilan durumu güncellenemedi')
+    }
+  }
+
+  async function updateOpportunityOrder(id: string, order: number) {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ opportunity_order: order })
+        .eq('id', id)
+      if (error) throw error
+      setListings((prev) => prev.map((l) => l.id === id ? { ...l, opportunity_order: order } : l))
+    } catch (e: any) {
+      alert(e.message || 'Fırsat sıralaması güncellenemedi')
+    }
+  }
+
+  async function updateOpportunityPricing(id: string, originalPrice: number, discount: number) {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ 
+          original_price_tl: originalPrice,
+          discount_percentage: discount
+        })
+        .eq('id', id)
+      if (error) throw error
+      setListings((prev) => prev.map((l) => l.id === id ? { 
+        ...l, 
+        original_price_tl: originalPrice,
+        discount_percentage: discount
+      } : l))
+    } catch (e: any) {
+      alert(e.message || 'Fiyat bilgileri güncellenemedi')
+    }
+  }
+
   return (
     <AdminGate>
     <div>
@@ -319,6 +369,42 @@ function AdminPage() {
                           placeholder="Sıra"
                           min="0"
                         />
+                      )}
+                      <button 
+                        onClick={() => void toggleOpportunity(l.id, l.is_opportunity)} 
+                        className={`rounded-lg px-3 py-2 text-sm ${l.is_opportunity ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-600 hover:bg-gray-700'} text-white`}
+                      >
+                        {l.is_opportunity ? '🔥 Fırsat İlan' : 'Fırsat Yap'}
+                      </button>
+                      {l.is_opportunity && (
+                        <div className="space-y-1">
+                          <input 
+                            type="number" 
+                            value={l.opportunity_order} 
+                            onChange={(e) => void updateOpportunityOrder(l.id, Number(e.target.value))}
+                            className="rounded-lg border px-2 py-1 text-sm w-full"
+                            placeholder="Sıra"
+                            min="0"
+                          />
+                          <input 
+                            type="number" 
+                            value={l.original_price_tl || ''} 
+                            onChange={(e) => {
+                              const original = Number(e.target.value)
+                              const current = l.price_tl || 0
+                              const discount = original > 0 ? Math.round(((original - current) / original) * 100) : 0
+                              void updateOpportunityPricing(l.id, original, discount)
+                            }}
+                            className="rounded-lg border px-2 py-1 text-sm w-full"
+                            placeholder="Eski Fiyat"
+                            min="0"
+                          />
+                          {l.original_price_tl && l.price_tl && (
+                            <div className="text-xs text-green-600 font-semibold">
+                              %{Math.round(((l.original_price_tl - l.price_tl) / l.original_price_tl) * 100)} İndirim
+                            </div>
+                          )}
+                        </div>
                       )}
                     </>
                   )}

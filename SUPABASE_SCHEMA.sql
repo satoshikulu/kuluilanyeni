@@ -76,6 +76,12 @@ CREATE TABLE IF NOT EXISTS public.listings (
     featured_order INTEGER DEFAULT 0,
     featured_until TIMESTAMPTZ,
     
+    -- Fırsat İlan
+    is_opportunity BOOLEAN DEFAULT false NOT NULL,
+    opportunity_order INTEGER DEFAULT 0,
+    original_price_tl BIGINT,
+    discount_percentage INTEGER,
+    
     -- Görseller (Supabase Storage'dan URL'ler)
     images JSONB DEFAULT '[]'::jsonb
 );
@@ -94,6 +100,8 @@ CREATE INDEX IF NOT EXISTS idx_listings_latitude ON public.listings(latitude);
 CREATE INDEX IF NOT EXISTS idx_listings_longitude ON public.listings(longitude);
 CREATE INDEX IF NOT EXISTS idx_listings_is_featured ON public.listings(is_featured) WHERE is_featured = true;
 CREATE INDEX IF NOT EXISTS idx_listings_featured_order ON public.listings(featured_order) WHERE is_featured = true;
+CREATE INDEX IF NOT EXISTS idx_listings_is_opportunity ON public.listings(is_opportunity) WHERE is_opportunity = true;
+CREATE INDEX IF NOT EXISTS idx_listings_opportunity_order ON public.listings(opportunity_order) WHERE is_opportunity = true;
 
 -- Text search için GIN index (başlık, açıklama, mahalle için)
 CREATE INDEX IF NOT EXISTS idx_listings_search ON public.listings 

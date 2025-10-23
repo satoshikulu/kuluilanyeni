@@ -38,20 +38,8 @@ function RentPage() {
   }
 
   const waMessage = useMemo(() => {
-    const parts = [
-      'Merhaba, kiralık ilan vermek istiyorum.',
-      formData.title ? `\nBaşlık: ${formData.title}` : '',
-      formData.owner_name ? `\nAd Soyad: ${formData.owner_name}` : '',
-      formData.owner_phone ? `\nTelefon: ${formData.owner_phone}` : '',
-      formData.neighborhood ? `\nMahalle: ${formData.neighborhood}` : '',
-      formData.property_type ? `\nTür: ${formData.property_type}` : '',
-      formData.rooms ? `\nOda: ${formData.rooms}` : '',
-      formData.area_m2 ? `\nBrüt m²: ${formatTL(formData.area_m2)}` : '',
-      formData.price_tl ? `\nKira: ${formatTL(formData.price_tl)} TL` : '',
-      formData.description ? `\nAçıklama: ${formData.description}` : '',
-    ]
-    return parts.filter(Boolean).join('')
-  }, [formData])
+    return 'Merhaba ilan vermek istiyorum, Adınız Soyadınızı (isminizi Soyadınızı, Telefon Numaranızı girin) Mahalle ismini, oda sayısını, Resimlerini, fiyatını ve açıklama girin..'
+  }, [])
 
   const waLink = useMemo(() => {
     const phoneDigits = whatsappPhone.replace(/\D/g, '')

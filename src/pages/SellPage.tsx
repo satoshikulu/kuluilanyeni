@@ -28,20 +28,8 @@ function SellPage() {
   const [locationType, setLocationType] = useState<'address' | 'coordinates'>('address')
 
   const waMessage = useMemo(() => {
-    const parts = [
-      'Merhaba, ilan vermek istiyorum.',
-      title ? `\nBaşlık: ${title}` : '',
-      ownerName ? `\nAd Soyad: ${ownerName}` : '',
-      ownerPhone ? `\nTelefon: ${ownerPhone}` : '',
-      neighborhood ? `\nMahalle: ${neighborhood}` : '',
-      propertyType ? `\nTür: ${propertyType}` : '',
-      rooms ? `\nOda: ${rooms}` : '',
-      area ? `\nBrüt m²: ${formatTL(area)}` : '',
-      price ? `\nFiyat: ${formatTL(price)} TL` : '',
-      description ? `\nAçıklama: ${description}` : '',
-    ]
-    return parts.filter(Boolean).join('')
-  }, [title, ownerName, ownerPhone, neighborhood, propertyType, rooms, area, price, description])
+    return 'Merhaba ilan vermek istiyorum, Adınız Soyadınızı (isminizi Soyadınızı, Telefon Numaranızı girin) Mahalle ismini, oda sayısını, Resimlerini, fiyatını ve açıklama girin..'
+  }, [])
 
   const waLink = useMemo(() => {
     const phoneDigits = whatsappPhone.replace(/\D/g, '')

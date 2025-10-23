@@ -271,6 +271,19 @@ function SubmitListingPage() {
               <MapPin className="w-6 h-6 text-blue-600" />
               <h2 className="text-xl font-semibold text-gray-900">Konum Bilgileri</h2>
             </div>
+            
+            {/* Debug: Kontrol mesajı */}
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+              <p className="text-blue-800 text-sm">
+                ℹ️ Harita bölümü yükleniyor... Eğer harita görünmüyorsa:
+              </p>
+              <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                <li>• Dev server'ı yeniden başlatın (Ctrl+C, sonra npm run dev)</li>
+                <li>• Tarayıcıyı hard refresh yapın (Ctrl+Shift+R)</li>
+                <li>• Tarayıcı konsolunu kontrol edin (F12)</li>
+              </ul>
+            </div>
+            
             <LocationPicker
               address={formData.address}
               latitude={formData.latitude}

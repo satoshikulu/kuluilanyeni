@@ -61,9 +61,20 @@ CREATE TABLE IF NOT EXISTS public.listings (
     area_m2 INTEGER,
     price_tl BIGINT,
     
+    -- Konum Bilgileri
+    address TEXT,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    location_type TEXT DEFAULT 'address' CHECK (location_type IN ('address', 'coordinates')),
+    
     -- Durum
     is_for TEXT DEFAULT 'satilik' NOT NULL CHECK (is_for IN ('satilik', 'kiralik')),
     status TEXT DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+    
+    -- Öne Çıkan İlan
+    is_featured BOOLEAN DEFAULT false NOT NULL,
+    featured_order INTEGER DEFAULT 0,
+    featured_until TIMESTAMPTZ,
     
     -- Görseller (Supabase Storage'dan URL'ler)
     images JSONB DEFAULT '[]'::jsonb
@@ -79,6 +90,10 @@ CREATE INDEX IF NOT EXISTS idx_listings_area_m2 ON public.listings(area_m2);
 CREATE INDEX IF NOT EXISTS idx_listings_created_at ON public.listings(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_listings_approved_at ON public.listings(approved_at DESC);
 CREATE INDEX IF NOT EXISTS idx_listings_owner_phone ON public.listings(owner_phone);
+CREATE INDEX IF NOT EXISTS idx_listings_latitude ON public.listings(latitude);
+CREATE INDEX IF NOT EXISTS idx_listings_longitude ON public.listings(longitude);
+CREATE INDEX IF NOT EXISTS idx_listings_is_featured ON public.listings(is_featured) WHERE is_featured = true;
+CREATE INDEX IF NOT EXISTS idx_listings_featured_order ON public.listings(featured_order) WHERE is_featured = true;
 
 -- Text search için GIN index (başlık, açıklama, mahalle için)
 CREATE INDEX IF NOT EXISTS idx_listings_search ON public.listings 

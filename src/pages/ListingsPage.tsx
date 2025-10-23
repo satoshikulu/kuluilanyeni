@@ -71,10 +71,11 @@ function ListingsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold mb-4">Emlak İlanları</h1>
-          <p className="text-xl text-blue-100">Kulu'da hayalinizdeki evi bulun</p>
+      <div className="relative overflow-hidden rounded-2xl bg-[url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center">
+        <div className="absolute inset-0 bg-gradient-to-r from-green-900/50 to-emerald-800/40" />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <h1 className="text-5xl font-bold mb-4 text-white drop-shadow-lg">Emlak İlanları</h1>
+          <p className="text-xl text-white/95 drop-shadow-md">Kulu'da hayalinizdeki evi bulun</p>
         </div>
       </div>
 

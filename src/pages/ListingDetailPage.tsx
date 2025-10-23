@@ -7,6 +7,7 @@ import { getPlaceholderImage } from '../constants/placeholders'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
 import { MapPin, Home, Maximize2, Share2, ArrowLeft } from 'lucide-react'
+import LocationMap from '../components/LocationMap'
 
 type Listing = {
   id: string
@@ -19,6 +20,9 @@ type Listing = {
   rooms?: string | null
   area_m2?: number | null
   description?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
 }
 
 function parseImages(images: any, propertyType?: string | null): string[] {
@@ -220,6 +224,20 @@ export default function ListingDetailPage() {
             <div className="rounded-2xl border bg-white p-6 shadow-lg">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Açıklama</h2>
               <div className="text-gray-700 whitespace-pre-line leading-relaxed">{item.description}</div>
+            </div>
+          )}
+
+          {/* Konum Haritası */}
+          {item.latitude && item.longitude && (
+            <div className="rounded-2xl border bg-white p-6 shadow-lg">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Konum</h2>
+              <LocationMap
+                latitude={item.latitude}
+                longitude={item.longitude}
+                address={item.address || undefined}
+                title={item.title}
+                height="400px"
+              />
             </div>
           )}
         </div>

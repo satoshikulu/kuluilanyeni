@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { MapPin, Zap, ArrowRight, TrendingDown } from 'lucide-react'
+import { supabase } from '../lib/supabaseClient'
 
 function HomePage() {
   const [typewriterText, setTypewriterText] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [featuredListings, setFeaturedListings] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   
   const texts = [
     'Kulu Emlak Pazarı',
@@ -37,6 +40,31 @@ function HomePage() {
 
     return () => clearTimeout(timeout)
   }, [typewriterText, currentIndex, isDeleting, texts])
+
+  useEffect(() => {
+    fetchFeaturedListings()
+  }, [])
+
+  const fetchFeaturedListings = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'approved')
+        .eq('is_featured', true)
+        .order('featured_order', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(6)
+
+      if (error) throw error
+      setFeaturedListings(data || [])
+    } catch (error) {
+      console.error('Öne çıkan ilanlar yüklenirken hata:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const featuredImages = [
     'https://images.unsplash.com/photo-1502672023488-70e25813eb80?q=80&w=1200&auto=format&fit=crop', // apartment building (3+1 Daire)
@@ -124,36 +152,48 @@ function HomePage() {
 
       <section className="mt-10">
         <h2 className="text-xl font-semibold mb-4">Öne çıkan ilanlar</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            { type: "3+1 Daire", area: "125 m²", location: "Cumhuriyet Mahallesi", price: "2.750.000 TL" },
-            { type: "2+1 Daire", area: "95 m²", location: "Yeni Mahallesi", price: "1.850.000 TL" },
-            { type: "5+1 Villa", area: "220 m²", location: "Karşıyaka Mahallesi", price: "5.500.000 TL" },
-            { type: "3+1 Daire", area: "110 m²", location: "Cumhuriyet Mahallesi", price: "2.200.000 TL" },
-            { type: "4+1 Villa", area: "160 m²", location: "Güzel Yayla Mahallesi", price: "3.800.000 TL" },
-            { type: "3+1 Daire", area: "130 m²", location: "Fatih Sultan Mehmet Mahallesi", price: "2.950.000 TL" }
-          ].map((property, i) => (
-            <div key={i} className="group rounded-xl border overflow-hidden bg-white shadow-md hover:shadow-2xl hover:-translate-y-2 hover:scale-105 transition-all duration-300 cursor-pointer">
-              <div className="relative overflow-hidden">
-                <div
-                  className="h-40 bg-cover bg-center group-hover:scale-110 transition-transform duration-500"
-                  style={{ backgroundImage: `url(${featuredImages[i]})` }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
-              </div>
-              <div className="p-4 group-hover:bg-gray-50 transition-colors duration-300">
-                <div className="font-medium group-hover:text-blue-600 transition-colors duration-300 mb-2">{property.type} · {property.area}</div>
-                <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {property.location}
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <div className="font-semibold text-lg group-hover:text-green-600 transition-colors duration-300">{property.price}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">Yükleniyor...</div>
+        ) : featuredListings.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">Henüz öne çıkan ilan bulunmuyor</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredListings.map((listing, i) => {
+              const images = Array.isArray(listing.images) ? listing.images : []
+              const firstImage = images.length > 0 ? images[0] : featuredImages[i % featuredImages.length]
+              
+              return (
+                <Link 
+                  key={listing.id} 
+                  to={`/ilan/${listing.id}`}
+                  className="group rounded-xl border overflow-hidden bg-white shadow-md hover:shadow-2xl hover:-translate-y-2 hover:scale-105 transition-all duration-300 cursor-pointer"
+                >
+                  <div className="relative overflow-hidden">
+                    <div
+                      className="h-40 bg-cover bg-center group-hover:scale-110 transition-transform duration-500"
+                      style={{ backgroundImage: `url(${firstImage})` }}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                  </div>
+                  <div className="p-4 group-hover:bg-gray-50 transition-colors duration-300">
+                    <div className="font-medium group-hover:text-blue-600 transition-colors duration-300 mb-2">
+                      {listing.rooms} {listing.property_type} · {listing.area_m2} m²
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-500 text-sm mb-3">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {listing.neighborhood}
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <div className="font-semibold text-lg group-hover:text-green-600 transition-colors duration-300">
+                        {listing.price_tl?.toLocaleString('tr-TR')} TL
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       <section className="mt-16 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 rounded-3xl p-10 shadow-xl border border-orange-100">

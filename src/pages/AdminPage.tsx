@@ -18,6 +18,9 @@ type Listing = {
   is_for: 'satilik' | 'kiralik'
   description: string | null
   status: 'pending' | 'approved' | 'rejected'
+  is_featured: boolean
+  featured_order: number
+  featured_until?: string | null
 }
 
 type UserMin = {
@@ -172,6 +175,32 @@ function AdminPage() {
     }
   }
 
+  async function toggleFeatured(id: string, currentFeatured: boolean) {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ is_featured: !currentFeatured })
+        .eq('id', id)
+      if (error) throw error
+      setListings((prev) => prev.map((l) => l.id === id ? { ...l, is_featured: !currentFeatured } : l))
+    } catch (e: any) {
+      alert(e.message || 'Öne çıkarma durumu güncellenemedi')
+    }
+  }
+
+  async function updateFeaturedOrder(id: string, order: number) {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ featured_order: order })
+        .eq('id', id)
+      if (error) throw error
+      setListings((prev) => prev.map((l) => l.id === id ? { ...l, featured_order: order } : l))
+    } catch (e: any) {
+      alert(e.message || 'Sıralama güncellenemedi')
+    }
+  }
+
   return (
     <AdminGate>
     <div>
@@ -273,6 +302,26 @@ function AdminPage() {
                 <div className="flex flex-col gap-2">
                   <button onClick={() => void decide(l.id, 'approved')} className="rounded-lg bg-green-600 text-white px-3 py-2 text-sm hover:bg-green-700">Onayla</button>
                   <button onClick={() => void decide(l.id, 'rejected')} className="rounded-lg bg-red-600 text-white px-3 py-2 text-sm hover:bg-red-700">Reddet</button>
+                  {l.status === 'approved' && (
+                    <>
+                      <button 
+                        onClick={() => void toggleFeatured(l.id, l.is_featured)} 
+                        className={`rounded-lg px-3 py-2 text-sm ${l.is_featured ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-600 hover:bg-gray-700'} text-white`}
+                      >
+                        {l.is_featured ? '⭐ Öne Çıkan' : 'Öne Çıkar'}
+                      </button>
+                      {l.is_featured && (
+                        <input 
+                          type="number" 
+                          value={l.featured_order} 
+                          onChange={(e) => void updateFeaturedOrder(l.id, Number(e.target.value))}
+                          className="rounded-lg border px-2 py-1 text-sm w-20"
+                          placeholder="Sıra"
+                          min="0"
+                        />
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>

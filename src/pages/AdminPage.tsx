@@ -84,7 +84,7 @@ function AdminPage() {
     try {
       // Initial load for users (static on mount)
       const { data: usersData, error: usersError } = await supabase
-        .from('users_min')
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false })
       if (usersError) throw usersError
@@ -168,12 +168,34 @@ function AdminPage() {
 
   async function decideUser(id: string, decision: 'approved' | 'rejected') {
     try {
+      const update: any = { status: decision }
+      if (decision === 'approved') {
+        update.approved_at = new Date().toISOString()
+        // Admin ID'yi eklemek isterseniz:
+        // update.approved_by = currentAdminId
+      }
+      
       const { error } = await supabase
-        .from('users_min')
-        .update({ status: decision })
+        .from('users')
+        .update(update)
         .eq('id', id)
       if (error) throw error
+      
+      // Listeyi güncelle
       setPendingUsers((prev) => prev.filter((u) => u.id !== id))
+      
+      // Onaylanan/reddedilen listeye ekle
+      if (decision === 'approved') {
+        const user = pendingUsers.find(u => u.id === id)
+        if (user) {
+          setApprovedUsers((prev) => [{ ...user, status: 'approved' }, ...prev])
+        }
+      } else {
+        const user = pendingUsers.find(u => u.id === id)
+        if (user) {
+          setRejectedUsers((prev) => [{ ...user, status: 'rejected' }, ...prev])
+        }
+      }
     } catch (e: any) {
       alert(e.message || 'Kullanıcı durumu güncellenemedi')
     }

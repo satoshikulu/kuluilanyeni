@@ -3,6 +3,7 @@ import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
+import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
 
 function SellPage() {
   const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
@@ -26,6 +27,8 @@ function SellPage() {
   const [latitude, setLatitude] = useState<number>(39.0919)
   const [longitude, setLongitude] = useState<number>(33.0794)
   const [locationType, setLocationType] = useState<'address' | 'coordinates'>('address')
+  const [phoneWarning, setPhoneWarning] = useState<string>('')
+  const [phoneChecking, setPhoneChecking] = useState(false)
 
   const waMessage = useMemo(() => {
     return 'Merhaba ilan vermek istiyorum, Adınız Soyadınızı (isminizi Soyadınızı, Telefon Numaranızı girin) Mahalle ismini, oda sayısını, Resimlerini, fiyatını ve açıklama girin..'
@@ -68,8 +71,15 @@ function SellPage() {
         setError('Başlık, ad-soyad ve telefon zorunludur.')
         return
       }
-      if (phoneDigits.length < 10) {
-        setError('Telefon numarası eksik görünüyor.')
+      if (!isValidPhoneFormat(ownerPhone)) {
+        setError('Geçerli bir telefon numarası girin (10 veya 11 haneli).')
+        return
+      }
+      
+      // Telefon numarası kontrolü
+      const phoneCheck = await checkPhoneExists(ownerPhone)
+      if (phoneCheck.pendingCount > 0) {
+        setError(`Bu telefon numarasıyla zaten ${phoneCheck.pendingCount} adet bekleyen ilan var. Lütfen önceki ilanınızın onaylanmasını bekleyin.`)
         return
       }
       // 1) İlanı önce oluştur ve id al
@@ -204,8 +214,36 @@ function SellPage() {
                 </div>
                 <div>
                   <label className="block text-sm mb-1" htmlFor="phone">Telefon</label>
-                  <input id="phone" className={inputClass} placeholder="5xx xxx xx xx" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} inputMode="tel" aria-describedby="phone-help" />
-                  <div id="phone-help" className="mt-1 text-xs text-gray-500">Sadece rakam girin, biz formatlarız.</div>
+                  <input 
+                    id="phone" 
+                    className={inputClass} 
+                    placeholder="5xx xxx xx xx" 
+                    value={ownerPhone} 
+                    onChange={(e) => setOwnerPhone(e.target.value)}
+                    onBlur={async () => {
+                      if (ownerPhone && isValidPhoneFormat(ownerPhone)) {
+                        setPhoneChecking(true)
+                        const check = await checkPhoneExists(ownerPhone)
+                        setPhoneChecking(false)
+                        if (check.message) {
+                          setPhoneWarning(check.message)
+                        } else {
+                          setPhoneWarning('')
+                        }
+                      }
+                    }}
+                    inputMode="tel" 
+                    aria-describedby="phone-help" 
+                  />
+                  <div id="phone-help" className="mt-1 text-xs text-gray-500">
+                    {phoneChecking ? (
+                      <span className="text-blue-600">Kontrol ediliyor...</span>
+                    ) : phoneWarning ? (
+                      <span className="text-orange-600 font-medium">⚠️ {phoneWarning}</span>
+                    ) : (
+                      'Sadece rakam girin, biz formatlarız.'
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

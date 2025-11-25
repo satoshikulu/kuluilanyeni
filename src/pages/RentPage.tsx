@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import LocationPickerWrapper from '../components/LocationPickerWrapper'
+import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
 
 function RentPage() {
   const [formData, setFormData] = useState({
@@ -25,6 +26,8 @@ function RentPage() {
   const [latitude, setLatitude] = useState<number>(39.0919)
   const [longitude, setLongitude] = useState<number>(33.0794)
   const [locationType, setLocationType] = useState<'address' | 'coordinates'>('address')
+  const [phoneWarning, setPhoneWarning] = useState<string>('')
+  const [phoneChecking, setPhoneChecking] = useState(false)
 
   const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
 
@@ -52,6 +55,19 @@ function RentPage() {
     setMessage('')
 
     try {
+      // Telefon numarası kontrolü
+      if (!isValidPhoneFormat(formData.owner_phone)) {
+        setMessage('Hata: Geçerli bir telefon numarası girin (10 veya 11 haneli).')
+        setLoading(false)
+        return
+      }
+      
+      const phoneCheck = await checkPhoneExists(formData.owner_phone)
+      if (phoneCheck.pendingCount > 0) {
+        setMessage(`Hata: Bu telefon numarasıyla zaten ${phoneCheck.pendingCount} adet bekleyen ilan var. Lütfen önceki ilanınızın onaylanmasını bekleyin.`)
+        setLoading(false)
+        return
+      }
       // 1) İlanı önce oluştur ve id al
       const finalAddress = address || `${formData.neighborhood || 'Kulu'}, Konya`
       
@@ -201,10 +217,31 @@ function RentPage() {
                   name="owner_phone"
                   value={formData.owner_phone}
                   onChange={handleChange}
+                  onBlur={async () => {
+                    if (formData.owner_phone && isValidPhoneFormat(formData.owner_phone)) {
+                      setPhoneChecking(true)
+                      const check = await checkPhoneExists(formData.owner_phone)
+                      setPhoneChecking(false)
+                      if (check.message) {
+                        setPhoneWarning(check.message)
+                      } else {
+                        setPhoneWarning('')
+                      }
+                    }
+                  }}
                   required
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   placeholder="0555 123 45 67"
                 />
+                <div className="mt-1 text-xs text-gray-500">
+                  {phoneChecking ? (
+                    <span className="text-blue-600">Kontrol ediliyor...</span>
+                  ) : phoneWarning ? (
+                    <span className="text-orange-600 font-medium">⚠️ {phoneWarning}</span>
+                  ) : (
+                    'Telefon numaranızı girin'
+                  )}
+                </div>
               </div>
             </div>
 

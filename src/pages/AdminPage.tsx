@@ -170,18 +170,27 @@ function AdminPage() {
 
   async function decideUser(id: string, decision: 'approved' | 'rejected') {
     try {
-      const update: any = { status: decision }
-      if (decision === 'approved') {
-        update.approved_at = new Date().toISOString()
-        // Admin ID'yi eklemek isterseniz:
-        // update.approved_by = currentAdminId
+      // RPC fonksiyonunu kullan (RLS bypass için)
+      const rpcFunction = decision === 'approved' ? 'approve_user' : 'reject_user'
+      
+      // Admin ID'yi al (şimdilik dummy, sonra gerçek admin ID kullanılacak)
+      const adminId = '00000000-0000-0000-0000-000000000000' // Dummy admin ID
+      
+      const { data, error } = await supabase
+        .rpc(rpcFunction, {
+          p_user_id: id,
+          p_admin_id: adminId
+        })
+      
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
       }
       
-      const { error } = await supabase
-        .from('users')
-        .update(update)
-        .eq('id', id)
-      if (error) throw error
+      const result = data as any
+      if (!result.success) {
+        throw new Error(result.error || 'İşlem başarısız')
+      }
       
       // Listeyi güncelle
       setPendingUsers((prev) => prev.filter((u) => u.id !== id))
@@ -198,8 +207,11 @@ function AdminPage() {
           setRejectedUsers((prev) => [{ ...user, status: 'rejected' }, ...prev])
         }
       }
+      
+      alert(`✅ Kullanıcı ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}!`)
     } catch (e: any) {
-      alert(e.message || 'Kullanıcı durumu güncellenemedi')
+      console.error('decideUser error:', e)
+      alert('Hata: ' + (e.message || 'Kullanıcı durumu güncellenemedi'))
     }
   }
 

@@ -1,70 +1,45 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { registerUser } from '../lib/simpleAuth'
+import { Eye, EyeOff } from 'lucide-react'
 
 function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-
-  function normalizeName(name: string) {
-    return name.replace(/\s+/g, ' ').trim()
-  }
-
-  function normalizePhone(raw: string) {
-    // Sadece rakamları tut (ör: "555 687 48 03" -> "5556874803")
-    const digits = (raw || '').replace(/\D/g, '')
-    return digits
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
     setMessage('')
     setError('')
+    
     try {
-      if (!fullName || !phone) {
-        setError('Ad Soyad ve Telefon zorunludur.')
-        return
-      }
-      const nameN = normalizeName(fullName)
-      const phoneN = normalizePhone(phone)
-
-      if (phoneN.length < 10) {
-        setError('Telefon numarasını eksiksiz girin (en az 10 hane).')
+      if (!fullName || !phone || !password) {
+        setError('Tüm alanları doldurun.')
         return
       }
 
-      // Var mı kontrol et (telefon uniq kabulümüz)
-      const { data: exists, error: selErr } = await supabase
-        .from('users_min')
-        .select('id, full_name, phone, status')
-        .eq('phone', phoneN)
-        .maybeSingle()
-      if (selErr) throw selErr
-      if (exists) {
-        setError('Bu telefon numarası ile bir başvuru zaten mevcut. Lütfen giriş yapmayı deneyin veya admin onayını bekleyin.')
+      if (password.length < 4) {
+        setError('Şifre en az 4 karakter olmalıdır.')
         return
       }
 
-      const { error: insErr } = await supabase.from('users_min').insert({
-        full_name: nameN,
-        phone: phoneN,
-        status: 'pending',
-      })
-      if (insErr) throw insErr
-      setMessage('Başvurunuz alındı. Admin onayından sonra giriş yapabilirsiniz.')
-      setFullName('')
-      setPhone('')
-    } catch (e: any) {
-      const msg: string = e?.message || ''
-      const code: string | undefined = e?.code
-      if (code === '23505' || /duplicate key value/i.test(msg) || /unique constraint/i.test(msg)) {
-        setError('Bu telefon numarası ile daha önce başvuru yapılmış. Lütfen giriş yapmayı deneyin veya mevcut başvurunuzun admin onayını bekleyin.')
+      const result = await registerUser(fullName, phone, password)
+      
+      if (result.success) {
+        setMessage(result.message || 'Kayıt başarılı! Admin onayından sonra giriş yapabilirsiniz.')
+        setFullName('')
+        setPhone('')
+        setPassword('')
       } else {
-        setError(msg || 'Kayıt yapılamadı.')
+        setError(result.error || 'Kayıt başarısız')
       }
+    } catch (e: any) {
+      setError(e?.message || 'Kayıt yapılamadı.')
     } finally {
       setSubmitting(false)
     }
@@ -72,23 +47,89 @@ function RegisterPage() {
 
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-semibold mb-2">Üye Ol</h1>
-      <p className="text-gray-600 mb-6">Sadece ad-soyad ve telefon ile hızlı kayıt.</p>
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <h1 className="text-3xl font-bold mb-2 text-gray-900">Üye Ol</h1>
+        <p className="text-gray-600 mb-6">Ad-soyad, telefon ve şifre ile hızlı kayıt.</p>
 
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <div>
-          <label className="block text-sm mb-1">Ad Soyad</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="Adınız Soyadınız" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Telefon Numarası</label>
-          <input className="w-full rounded-lg border px-3 py-2" placeholder="5xx xxx xx xx" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <div className="text-xs text-gray-500 mt-1">Telefon yalnızca rakam olarak kaydedilir (örn: 5556874803)</div>
-        </div>
-        {error && <div className="text-sm text-red-600">{error}</div>}
-        {message && <div className="text-sm text-green-600">{message}</div>}
-        <button disabled={submitting} className="w-full rounded-lg bg-blue-600 text-white py-2 font-medium hover:bg-blue-700 disabled:opacity-60">Kaydol</button>
-      </form>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ad Soyad *</label>
+            <input 
+              type="text"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+              placeholder="Adınız Soyadınız" 
+              value={fullName} 
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Telefon Numarası *</label>
+            <input 
+              type="tel"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+              placeholder="5xx xxx xx xx" 
+              value={phone} 
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
+            <div className="text-xs text-gray-500 mt-1">Giriş yaparken bu telefon numarasını kullanacaksınız</div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Şifre *</label>
+            <div className="relative">
+              <input 
+                type={showPassword ? 'text' : 'password'}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                placeholder="En az 4 karakter" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={4}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            <div className="text-xs text-orange-600 mt-1 font-medium">
+              ⚠️ Şifrenizi unutmayın! Giriş yaparken kullanacaksınız.
+            </div>
+          </div>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          
+          {message && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              {message}
+            </div>
+          )}
+          
+          <button 
+            type="submit"
+            disabled={submitting} 
+            className="w-full rounded-lg bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
+            {submitting ? 'Kaydediliyor...' : 'Kaydol'}
+          </button>
+          
+          <div className="text-center text-sm text-gray-600 mt-4">
+            Zaten üye misiniz?{' '}
+            <a href="/giris" className="text-blue-600 hover:text-blue-700 font-medium">
+              Giriş Yap
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

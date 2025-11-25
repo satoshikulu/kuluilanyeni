@@ -1,6 +1,11 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
+import { getCurrentUser, logoutUser, isAdmin } from './lib/simpleAuth'
+import { LogOut, User } from 'lucide-react'
 
 function App() {
+  const currentUser = getCurrentUser()
+  const userIsAdmin = isAdmin()
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b">
@@ -19,26 +24,57 @@ function App() {
             >
               İlanlara Bak
             </NavLink>
-            <NavLink
-              to="/giris"
-              className={({ isActive }) => [
-                'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-colors',
-                'bg-white text-gray-900 shadow-sm hover:bg-orange-50 hover:text-orange-700',
-                isActive ? 'ring-2 ring-orange-300' : 'ring-1 ring-black/10'
-              ].join(' ')}
-            >
-              Giriş Yap
-            </NavLink>
-            <NavLink
-              to="/uye-ol"
-              className={({ isActive }) => [
-                'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-colors',
-                'border-2 border-gray-300 text-gray-800 hover:border-orange-400 hover:bg-orange-500/10 hover:text-orange-700',
-                isActive ? 'ring-2 ring-orange-300' : 'ring-0'
-              ].join(' ')}
-            >
-              Üye Ol
-            </NavLink>
+            
+            {currentUser ? (
+              <>
+                {userIsAdmin && (
+                  <NavLink
+                    to="/admin"
+                    className={({ isActive }) => [
+                      'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-colors',
+                      'bg-purple-600 text-white hover:bg-purple-700',
+                      isActive ? 'ring-2 ring-purple-300' : 'ring-1 ring-black/10'
+                    ].join(' ')}
+                  >
+                    Admin
+                  </NavLink>
+                )}
+                <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl">
+                  <User className="w-4 h-4 text-gray-600" />
+                  <span className="text-gray-700 font-medium">{currentUser.full_name}</span>
+                </div>
+                <button
+                  onClick={logoutUser}
+                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-colors bg-red-50 text-red-600 hover:bg-red-100"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Çıkış
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink
+                  to="/giris"
+                  className={({ isActive }) => [
+                    'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-colors',
+                    'bg-white text-gray-900 shadow-sm hover:bg-orange-50 hover:text-orange-700',
+                    isActive ? 'ring-2 ring-orange-300' : 'ring-1 ring-black/10'
+                  ].join(' ')}
+                >
+                  Giriş Yap
+                </NavLink>
+                <NavLink
+                  to="/uye-ol"
+                  className={({ isActive }) => [
+                    'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-colors',
+                    'border-2 border-gray-300 text-gray-800 hover:border-orange-400 hover:bg-orange-500/10 hover:text-orange-700',
+                    isActive ? 'ring-2 ring-orange-300' : 'ring-0'
+                  ].join(' ')}
+                >
+                  Üye Ol
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
       </header>

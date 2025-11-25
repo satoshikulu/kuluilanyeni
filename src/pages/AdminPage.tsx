@@ -32,7 +32,9 @@ type UserMin = {
   created_at: string
   full_name: string
   phone: string
+  password_hash: string
   status: 'pending' | 'approved' | 'rejected'
+  role?: string
 }
 
 function AdminPage() {
@@ -198,6 +200,32 @@ function AdminPage() {
       }
     } catch (e: any) {
       alert(e.message || 'Kullanıcı durumu güncellenemedi')
+    }
+  }
+
+  async function resetPassword(userId: string, phone: string) {
+    const newPassword = prompt(`${phone} için yeni şifre girin:`)
+    if (!newPassword) return
+    
+    if (newPassword.length < 4) {
+      alert('Şifre en az 4 karakter olmalıdır')
+      return
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ password_hash: newPassword })
+        .eq('id', userId)
+      
+      if (error) throw error
+      
+      alert(`✅ Şifre başarıyla değiştirildi!\n\nTelefon: ${phone}\nYeni Şifre: ${newPassword}\n\nBu bilgileri kullanıcıya iletin.`)
+      
+      // Listeyi yenile
+      await load()
+    } catch (e: any) {
+      alert('Hata: ' + (e.message || 'Şifre değiştirilemedi'))
     }
   }
 
@@ -454,34 +482,49 @@ function AdminPage() {
       ) : (
         <div className="space-y-3">
           {pendingUsers.map((u) => (
-            <div key={u.id} className="rounded-xl border p-4 flex items-center justify-between">
-              <div>
-                <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
-                <div className="text-sm text-gray-600">{u.phone}</div>
-                <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => void decideUser(u.id, 'approved')} className="rounded-lg bg-green-600 text-white px-3 py-2 text-sm hover:bg-green-700">Onayla</button>
-                <button onClick={() => void decideUser(u.id, 'rejected')} className="rounded-lg bg-red-600 text-white px-3 py-2 text-sm hover:bg-red-700">Reddet</button>
+            <div key={u.id} className="rounded-xl border p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
+                  <div className="text-sm text-gray-600">📞 {u.phone}</div>
+                  <div className="text-sm text-gray-600">🔑 Şifre: <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{u.password_hash}</span></div>
+                  <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => void decideUser(u.id, 'approved')} className="rounded-lg bg-green-600 text-white px-3 py-2 text-sm hover:bg-green-700">Onayla</button>
+                  <button onClick={() => void decideUser(u.id, 'rejected')} className="rounded-lg bg-red-600 text-white px-3 py-2 text-sm hover:bg-red-700">Reddet</button>
+                  <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-blue-600 text-white px-3 py-2 text-sm hover:bg-blue-700">Şifre Değiştir</button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <h2 className="text-xl font-semibold mt-10 mb-3">Onaylanmış Üyeler</h2>
+      <h2 className="text-xl font-semibold mt-10 mb-3">Onaylanmış Üyeler ({approvedUsers.length})</h2>
       {approvedUsers.length === 0 ? (
         <div className="text-gray-600">Onaylanmış kullanıcı yok.</div>
       ) : (
         <div className="space-y-2">
           {approvedUsers.map((u) => (
-            <div key={u.id} className="rounded-xl border p-3 flex items-center justify-between">
-              <div>
-                <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
-                <div className="text-sm text-gray-600">{u.phone}</div>
-                <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
+            <div key={u.id} className="rounded-xl border p-3">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
+                    {u.role === 'admin' && (
+                      <span className="text-xs rounded bg-purple-100 px-2 py-0.5 text-purple-700 font-semibold">ADMIN</span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600">📞 {u.phone}</div>
+                  <div className="text-sm text-gray-600">🔑 Şifre: <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{u.password_hash}</span></div>
+                  <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
+                </div>
+                <div className="flex flex-col gap-2 items-end">
+                  <span className="text-xs rounded bg-green-600/10 px-2 py-1 text-green-700">approved</span>
+                  <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-blue-600 text-white px-3 py-1 text-xs hover:bg-blue-700">Şifre Değiştir</button>
+                </div>
               </div>
-              <span className="text-xs rounded bg-green-600/10 px-2 py-1 text-green-700">approved</span>
             </div>
           ))}
         </div>

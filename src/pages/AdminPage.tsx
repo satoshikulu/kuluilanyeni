@@ -66,6 +66,9 @@ function AdminPage() {
   const PAGE_SIZE = 10
   const [page, setPage] = useState<number>(1)
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'listings' | 'users'>('listings')
+
   // Helpers
   function formatDate(ts?: string) {
     if (!ts) return '-'
@@ -331,11 +334,56 @@ function AdminPage() {
 
   return (
     <AdminGate>
-    <div>
-      <h1 className="text-2xl font-semibold mb-2">Admin Onay</h1>
-      <p className="text-gray-600 mb-4">İlanları filtreleyin, sıralayın ve onaylayın.</p>
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <h1 className="text-3xl font-bold mb-2">Admin Paneli</h1>
+      <p className="text-gray-600 mb-6">İlanları ve üyeleri yönetin</p>
 
-      {/* Filters */}
+      {/* Modern Tab Navigation */}
+      <div className="mb-8">
+        <div className="flex gap-3 bg-gray-100 p-1.5 rounded-xl">
+          <button
+            onClick={() => setActiveTab('listings')}
+            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
+              activeTab === 'listings'
+                ? 'bg-white text-blue-600 shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              📋 İlanlar
+              {status === 'pending' && listings.length > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse">
+                  {totalCount}
+                </span>
+              )}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
+              activeTab === 'users'
+                ? 'bg-white text-blue-600 shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              👥 Üyeler
+              {pendingUsers.length > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse">
+                  {pendingUsers.length}
+                </span>
+              )}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* İlanlar Tab */}
+      {activeTab === 'listings' && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">İlan Yönetimi</h2>
+          
+          {/* Filters */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         <div>
           <label className="block text-xs text-gray-600 mb-1">Durum</label>
@@ -399,61 +447,135 @@ function AdminPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 text-red-700 border border-red-200 px-3 py-2 text-sm">{error}</div>
-      )}
-      {loading ? (
-        <div className="flex items-center gap-3 text-gray-600"><svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Yükleniyor...</div>
-      ) : listings.length === 0 ? (
-        <div className="text-gray-600">Kriterlere uygun ilan bulunamadı.</div>
-      ) : (
-        <div className="space-y-4">
-          {listings.map((l) => (
-            <div key={l.id} className="rounded-xl border p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold">{l.title}</div>
-                  <div className="text-sm text-gray-600">
-                    {l.is_for === 'satilik' ? 'Satılık' : 'Kiralık'} · {l.property_type || 'Tür yok'} · {l.rooms || 'Oda yok'} · {l.area_m2 ? `${l.area_m2} m²` : 'm² yok'}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {l.neighborhood || 'Mahalle yok'} · {l.price_tl ? `${l.price_tl.toLocaleString('tr-TR')} TL` : 'Fiyat yok'}
-                  </div>
-                  <div className="text-sm text-gray-600">{l.owner_name} · {l.owner_phone}</div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    Başvuru: {formatDate(l.created_at)} · Geçen süre: {daysSince(l.created_at)} {l.status === 'approved' && (
-                      <span className="ml-2 inline-block rounded bg-green-50 px-2 py-0.5 text-green-700 border border-green-200">Yayında: {daysSince(l.approved_at || l.created_at)}</span>
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 text-red-700 border border-red-200 px-3 py-2 text-sm">{error}</div>
+          )}
+          {loading ? (
+            <div className="flex items-center gap-3 text-gray-600"><svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Yükleniyor...</div>
+          ) : listings.length === 0 ? (
+            <div className="text-gray-600">Kriterlere uygun ilan bulunamadı.</div>
+          ) : (
+            <div className="space-y-4">
+              {listings.map((l) => (
+                <div key={l.id} className="group relative rounded-2xl border border-gray-200 p-6 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300">
+                  {/* Status Badge */}
+                  <div className="absolute top-4 right-4">
+                    {l.status === 'pending' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                        ⏳ Bekliyor
+                      </span>
+                    )}
+                    {l.status === 'approved' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                        ✓ Onaylı
+                      </span>
+                    )}
+                    {l.status === 'rejected' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                        ✕ Reddedildi
+                      </span>
                     )}
                   </div>
-                  {l.description && <div className="text-sm mt-2">{l.description}</div>}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button onClick={() => void decide(l.id, 'approved')} className="rounded-lg bg-green-600 text-white px-3 py-2 text-sm hover:bg-green-700">Onayla</button>
-                  <button onClick={() => void decide(l.id, 'rejected')} className="rounded-lg bg-red-600 text-white px-3 py-2 text-sm hover:bg-red-700">Reddet</button>
-                  {l.status === 'approved' && (
-                    <>
-                      <button 
-                        onClick={() => void toggleFeatured(l.id, l.is_featured)} 
-                        className={`rounded-lg px-3 py-2 text-sm ${l.is_featured ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-600 hover:bg-gray-700'} text-white`}
-                      >
-                        {l.is_featured ? '⭐ Öne Çıkan' : 'Öne Çıkar'}
-                      </button>
-                      {l.is_featured && (
-                        <input 
-                          type="number" 
-                          value={l.featured_order} 
-                          onChange={(e) => void updateFeaturedOrder(l.id, Number(e.target.value))}
-                          className="rounded-lg border px-2 py-1 text-sm w-20"
-                          placeholder="Sıra"
-                          min="0"
-                        />
+                  
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex-1 pr-24">
+                      <div className="font-bold text-xl text-gray-900 mb-3">{l.title}</div>
+                      {/* Property Details */}
+                      <div className="flex flex-wrap gap-3 mb-3">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          {l.is_for === 'satilik' ? '🏷️ Satılık' : '🔑 Kiralık'}
+                        </span>
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                          🏠 {l.property_type || 'Tür yok'}
+                        </span>
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          🚪 {l.rooms || 'Oda yok'}
+                        </span>
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-teal-50 text-teal-700 border border-teal-100">
+                          📐 {l.area_m2 ? `${l.area_m2} m²` : 'm² yok'}
+                        </span>
+                      </div>
+
+                      {/* Location & Price */}
+                      <div className="flex items-center gap-4 mb-3">
+                        <span className="text-sm text-gray-600">
+                          📍 {l.neighborhood || 'Mahalle yok'}
+                        </span>
+                        <span className="text-lg font-bold text-green-600">
+                          💰 {l.price_tl ? `${l.price_tl.toLocaleString('tr-TR')} TL` : 'Fiyat yok'}
+                        </span>
+                      </div>
+
+                      {/* Owner Info */}
+                      <div className="flex items-center gap-4 mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <span className="text-sm font-medium text-gray-700">
+                          👤 {l.owner_name}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          📞 {l.owner_phone}
+                        </span>
+                      </div>
+
+                      {/* Time Info */}
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span>🕐 Başvuru: {formatDate(l.created_at)}</span>
+                        <span>⏱️ Geçen: {daysSince(l.created_at)}</span>
+                        {l.status === 'approved' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 text-green-700 border border-green-200 font-medium">
+                            ✓ Yayında: {daysSince(l.approved_at || l.created_at)}
+                          </span>
+                        )}
+                      </div>
+
+                      {l.description && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <p className="text-sm text-gray-700 leading-relaxed">{l.description}</p>
+                        </div>
                       )}
-                      <button 
-                        onClick={() => void toggleOpportunity(l.id, l.is_opportunity)} 
-                        className={`rounded-lg px-3 py-2 text-sm ${l.is_opportunity ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-600 hover:bg-gray-700'} text-white`}
-                      >
-                        {l.is_opportunity ? '🔥 Fırsat İlan' : 'Fırsat Yap'}
+                    </div>
+                    <div className="flex flex-col gap-2.5 min-w-[140px]">
+                      <button onClick={() => void decide(l.id, 'approved')} className="group/btn rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                        <span className="flex items-center justify-center gap-2">
+                          ✓ Onayla
+                        </span>
                       </button>
+                      <button onClick={() => void decide(l.id, 'rejected')} className="group/btn rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                        <span className="flex items-center justify-center gap-2">
+                          ✕ Reddet
+                        </span>
+                      </button>
+                      {l.status === 'approved' && (
+                        <>
+                          <button 
+                            onClick={() => void toggleFeatured(l.id, l.is_featured)} 
+                            className={`rounded-xl px-4 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${
+                              l.is_featured 
+                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-gray-900 hover:from-yellow-500 hover:to-amber-600' 
+                                : 'bg-gradient-to-r from-gray-500 to-gray-600 text-white hover:from-gray-600 hover:to-gray-700'
+                            }`}
+                          >
+                            {l.is_featured ? '⭐ Öne Çıkan' : '⭐ Öne Çıkar'}
+                          </button>
+                          {l.is_featured && (
+                            <input 
+                              type="number" 
+                              value={l.featured_order} 
+                              onChange={(e) => void updateFeaturedOrder(l.id, Number(e.target.value))}
+                              className="rounded-lg border-2 border-yellow-300 px-3 py-2 text-sm font-semibold text-center focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+                              placeholder="Sıra"
+                              min="0"
+                            />
+                          )}
+                          <button 
+                            onClick={() => void toggleOpportunity(l.id, l.is_opportunity)} 
+                            className={`rounded-xl px-4 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${
+                              l.is_opportunity 
+                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600' 
+                                : 'bg-gradient-to-r from-gray-500 to-gray-600 text-white hover:from-gray-600 hover:to-gray-700'
+                            }`}
+                          >
+                            {l.is_opportunity ? '🔥 Fırsat İlan' : '🔥 Fırsat Yap'}
+                          </button>
                       {l.is_opportunity && (
                         <div className="space-y-1">
                           <input 
@@ -483,96 +605,144 @@ function AdminPage() {
                             </div>
                           )}
                         </div>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-          {/* Pagination */}
-          <div className="flex items-center justify-between pt-2">
-            <div className="text-xs text-gray-600">Toplam: {totalCount}</div>
-            {listings.length < totalCount && (
-              <button disabled={querying} onClick={() => void queryListings(false)} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-60">
-                {querying ? 'Yükleniyor...' : 'Daha Fazla Yükle'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      <h2 className="text-xl font-semibold mt-10 mb-3">Bekleyen Üyelik Başvuruları</h2>
-      {loading ? (
-        <div>Yükleniyor...</div>
-      ) : pendingUsers.length === 0 ? (
-        <div className="text-gray-600">Bekleyen kullanıcı başvurusu yok.</div>
-      ) : (
-        <div className="space-y-3">
-          {pendingUsers.map((u) => (
-            <div key={u.id} className="rounded-xl border p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
-                  <div className="text-sm text-gray-600">📞 {u.phone}</div>
-                  <div className="text-sm text-gray-600">🔑 Şifre: <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{u.password_hash}</span></div>
-                  <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button onClick={() => void decideUser(u.id, 'approved')} className="rounded-lg bg-green-600 text-white px-3 py-2 text-sm hover:bg-green-700">Onayla</button>
-                  <button onClick={() => void decideUser(u.id, 'rejected')} className="rounded-lg bg-red-600 text-white px-3 py-2 text-sm hover:bg-red-700">Reddet</button>
-                  <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-blue-600 text-white px-3 py-2 text-sm hover:bg-blue-700">Şifre Değiştir</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <h2 className="text-xl font-semibold mt-10 mb-3">Onaylanmış Üyeler ({approvedUsers.length})</h2>
-      {approvedUsers.length === 0 ? (
-        <div className="text-gray-600">Onaylanmış kullanıcı yok.</div>
-      ) : (
-        <div className="space-y-2">
-          {approvedUsers.map((u) => (
-            <div key={u.id} className="rounded-xl border p-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
-                    {u.role === 'admin' && (
-                      <span className="text-xs rounded bg-purple-100 px-2 py-0.5 text-purple-700 font-semibold">ADMIN</span>
-                    )}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">📞 {u.phone}</div>
-                  <div className="text-sm text-gray-600">🔑 Şifre: <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{u.password_hash}</span></div>
-                  <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
                 </div>
-                <div className="flex flex-col gap-2 items-end">
-                  <span className="text-xs rounded bg-green-600/10 px-2 py-1 text-green-700">approved</span>
-                  <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-blue-600 text-white px-3 py-1 text-xs hover:bg-blue-700">Şifre Değiştir</button>
-                </div>
+              ))}
+              {/* Pagination */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="text-sm text-gray-600 font-medium">Toplam: {totalCount} ilan</div>
+                {listings.length < totalCount && (
+                  <button disabled={querying} onClick={() => void queryListings(false)} className="rounded-lg border border-blue-600 text-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-50 disabled:opacity-60 transition-colors">
+                    {querying ? 'Yükleniyor...' : 'Daha Fazla Yükle'}
+                  </button>
+                )}
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      <h2 className="text-xl font-semibold mt-10 mb-3">Reddedilen Üyeler</h2>
-      {rejectedUsers.length === 0 ? (
-        <div className="text-gray-600">Reddedilen kullanıcı yok.</div>
-      ) : (
-        <div className="space-y-2">
-          {rejectedUsers.map((u) => (
-            <div key={u.id} className="rounded-xl border p-3 flex items-center justify-between">
-              <div>
-                <div className="font-medium">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
-                <div className="text-sm text-gray-600">{u.phone}</div>
-                <div className="mt-1 text-xs text-gray-500">Başvuru: {formatDate(u.created_at)} · Geçen süre: {daysSince(u.created_at)}</div>
-              </div>
-              <span className="text-xs rounded bg-red-600/10 px-2 py-1 text-red-700">rejected</span>
+      {/* Üyeler Tab */}
+      {activeTab === 'users' && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Bekleyen Üyelik Başvuruları</h2>
+          {loading ? (
+            <div className="flex items-center gap-3 text-gray-600"><svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Yükleniyor...</div>
+          ) : pendingUsers.length === 0 ? (
+            <div className="text-gray-600 bg-gray-50 rounded-lg p-4 text-center">Bekleyen kullanıcı başvurusu yok.</div>
+          ) : (
+            <div className="space-y-4">
+              {pendingUsers.map((u) => (
+                <div key={u.id} className="group relative rounded-2xl border border-gray-200 p-6 bg-gradient-to-br from-white to-blue-50 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300">
+                  {/* Pending Badge */}
+                  <div className="absolute top-4 right-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200 animate-pulse">
+                      ⏳ Bekliyor
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex-1 pr-24">
+                      <div className="font-bold text-xl text-gray-900 mb-3">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
+                      
+                      {/* Contact Info */}
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
+                          <span className="text-sm font-medium text-gray-700">📞 Telefon:</span>
+                          <span className="text-sm text-gray-900 font-semibold">{u.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
+                          <span className="text-sm font-medium text-gray-700">🔑 Şifre:</span>
+                          <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-md text-gray-900 font-semibold">{u.password_hash}</span>
+                        </div>
+                      </div>
+
+                      {/* Time Info */}
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span>🕐 Başvuru: {formatDate(u.created_at)}</span>
+                        <span>⏱️ Geçen: {daysSince(u.created_at)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5 min-w-[140px]">
+                      <button onClick={() => void decideUser(u.id, 'approved')} className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                        ✓ Onayla
+                      </button>
+                      <button onClick={() => void decideUser(u.id, 'rejected')} className="rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                        ✕ Reddet
+                      </button>
+                      <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                        🔑 Şifre
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          <h2 className="text-xl font-semibold mt-8 mb-4">Onaylanmış Üyeler ({approvedUsers.length})</h2>
+          {approvedUsers.length === 0 ? (
+            <div className="text-gray-600 bg-gray-50 rounded-lg p-4 text-center">Onaylanmış kullanıcı yok.</div>
+          ) : (
+            <div className="space-y-3">
+              {approvedUsers.map((u) => (
+                <div key={u.id} className="rounded-xl border border-green-200 p-4 bg-gradient-to-br from-white to-green-50 shadow-sm hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="font-semibold text-lg text-gray-900">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
+                        {u.role === 'admin' && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm">
+                            👑 ADMIN
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="text-sm text-gray-600">📞 {u.phone}</div>
+                        <div className="text-sm text-gray-600">🔑 Şifre: <span className="font-mono bg-white px-2 py-0.5 rounded border border-gray-200">{u.password_hash}</span></div>
+                        <div className="text-xs text-gray-500">🕐 Başvuru: {formatDate(u.created_at)} · ⏱️ Geçen: {daysSince(u.created_at)}</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 items-end">
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                        ✓ Onaylı
+                      </span>
+                      <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-1.5 text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-200">
+                        🔑 Şifre Değiştir
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <h2 className="text-xl font-semibold mt-8 mb-4">Reddedilen Üyeler ({rejectedUsers.length})</h2>
+          {rejectedUsers.length === 0 ? (
+            <div className="text-gray-600 bg-gray-50 rounded-lg p-4 text-center">Reddedilen kullanıcı yok.</div>
+          ) : (
+            <div className="space-y-3">
+              {rejectedUsers.map((u) => (
+                <div key={u.id} className="rounded-xl border border-red-200 p-4 bg-gradient-to-br from-white to-red-50 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-lg text-gray-900 mb-2">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
+                    <div className="flex flex-col gap-1">
+                      <div className="text-sm text-gray-600">📞 {u.phone}</div>
+                      <div className="text-xs text-gray-500">🕐 Başvuru: {formatDate(u.created_at)} · ⏱️ Geçen: {daysSince(u.created_at)}</div>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                    ✕ Reddedildi
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

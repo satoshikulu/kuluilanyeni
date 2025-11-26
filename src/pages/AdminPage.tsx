@@ -150,21 +150,37 @@ function AdminPage() {
 
   async function decide(id: string, decision: 'approved' | 'rejected') {
     try {
-      const update: any = { status: decision }
-      if (decision === 'approved') {
-        update.approved_at = new Date().toISOString()
-      } else if (decision === 'rejected') {
-        update.approved_at = null
+      // RPC fonksiyonunu kullan (RLS bypass için)
+      const rpcFunction = decision === 'approved' ? 'approve_listing' : 'reject_listing'
+      
+      // Admin ID'yi al (şimdilik dummy, sonra gerçek admin ID kullanılacak)
+      const adminId = '00000000-0000-0000-0000-000000000000' // Dummy admin ID
+      
+      const { data, error } = await supabase
+        .rpc(rpcFunction, {
+          p_listing_id: id,
+          p_admin_id: adminId
+        })
+      
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
       }
-      const { error } = await supabase
-        .from('listings')
-        .update(update)
-        .eq('id', id)
-      if (error) throw error
+      
+      const result = data as any
+      if (!result.success) {
+        throw new Error(result.error || 'İşlem başarısız')
+      }
+      
+      // UI'dan ilanı kaldır
       setListings((prev) => prev.filter((l) => l.id !== id))
+      
+      // Başarı mesajı göster
+      alert(`✅ İlan ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}!`)
     } catch (e: any) {
-      // basit toast
-      setError(e.message || 'Güncellenemedi')
+      console.error('decide error:', e)
+      // Hata mesajını göster
+      alert('Hata: ' + (e.message || 'İlan durumu güncellenemedi'))
     }
   }
 

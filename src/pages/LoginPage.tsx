@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -10,6 +10,15 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [isAdminSession, setIsAdminSession] = useState(false)
+
+  useEffect(() => {
+    // Admin session kontrolü
+    const adminFlag = sessionStorage.getItem('isAdmin') === 'true'
+    if (adminFlag) {
+      setIsAdminSession(true)
+    }
+  }, [])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,6 +45,50 @@ function LoginPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function handleAdminLogout() {
+    sessionStorage.removeItem('isAdmin')
+    setIsAdminSession(false)
+  }
+
+  if (isAdminSession) {
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-lg p-8 border-2 border-yellow-200">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Admin Oturumu Aktif</h2>
+            <p className="text-gray-700">
+              Şu anda admin olarak giriş yapmış durumdasınız. Normal kullanıcı girişi yapmak için önce admin oturumunuzu kapatmanız gerekiyor.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleAdminLogout}
+              className="w-full rounded-lg bg-gradient-to-r from-red-500 to-rose-600 text-white py-3 font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all"
+            >
+              🚪 Admin Oturumunu Kapat
+            </button>
+            <button
+              onClick={() => navigate('/admin')}
+              className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
+            >
+              👑 Admin Paneline Dön
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-semibold hover:bg-gray-200 transition-all"
+            >
+              🏠 Ana Sayfaya Git
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

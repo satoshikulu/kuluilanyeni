@@ -4,6 +4,7 @@ import { uploadListingImage } from '../lib/storage'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
+import { toTitleCase } from '../lib/textUtils'
 
 function RentPage() {
   const [formData, setFormData] = useState({
@@ -143,9 +144,15 @@ function RentPage() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    
+    // Otomatik büyük harf yapılacak alanlar
+    const titleCaseFields = ['title', 'owner_name']
+    const newValue = titleCaseFields.includes(name) ? toTitleCase(value) : value
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: newValue
     }))
   }
 
@@ -186,6 +193,7 @@ function RentPage() {
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 placeholder="Örn: 3+1 Daire Kiralık"
               />
+              <p className="mt-1 text-xs text-gray-500">Her kelimenin ilk harfi otomatik büyük yapılır</p>
             </div>
 
             {/* 2) Sahip Bilgileri */}
@@ -207,6 +215,7 @@ function RentPage() {
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   placeholder="Adınız ve soyadınız"
                 />
+                <p className="mt-1 text-xs text-gray-500">Her kelimenin ilk harfi otomatik büyük yapılır</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

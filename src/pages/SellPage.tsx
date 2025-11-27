@@ -4,6 +4,7 @@ import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
+import { toTitleCase } from '../lib/textUtils'
 
 function SellPage() {
   const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
@@ -198,8 +199,8 @@ function SellPage() {
                 <h2 className="font-semibold">İlan Başlığı</h2>
               </div>
               <label className="block text-sm mb-1" htmlFor="title">Başlık</label>
-              <input id="title" aria-describedby="title-help" className={inputClass} placeholder="Örn: Merkezi 3+1 Daire" value={title} onChange={(e) => setTitle(e.target.value)} />
-              <div id="title-help" className="mt-1 text-xs text-gray-500">İlanınız listelerde bu başlıkla görünecek.</div>
+              <input id="title" aria-describedby="title-help" className={inputClass} placeholder="Örn: Merkezi 3+1 Daire" value={title} onChange={(e) => setTitle(toTitleCase(e.target.value))} />
+              <div id="title-help" className="mt-1 text-xs text-gray-500">İlanınız listelerde bu başlıkla görünecek. (Her kelimenin ilk harfi otomatik büyük yapılır)</div>
             </div>
 
             <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -210,7 +211,8 @@ function SellPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm mb-1" htmlFor="full_name">Ad Soyad</label>
-                  <input id="full_name" className={inputClass} placeholder="Adınız Soyadınız" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+                  <input id="full_name" className={inputClass} placeholder="Adınız Soyadınız" value={ownerName} onChange={(e) => setOwnerName(toTitleCase(e.target.value))} />
+                  <div className="mt-1 text-xs text-gray-500">Her kelimenin ilk harfi otomatik büyük yapılır</div>
                 </div>
                 <div>
                   <label className="block text-sm mb-1" htmlFor="phone">Telefon</label>

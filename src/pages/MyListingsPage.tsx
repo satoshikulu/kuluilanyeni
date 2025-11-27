@@ -33,7 +33,8 @@ function MyListingsPage() {
       return
     }
     loadMyListings()
-  }, [currentUser, navigate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function loadMyListings() {
     setLoading(true)

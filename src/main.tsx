@@ -18,6 +18,7 @@ import OpportunitiesPage from './pages/OpportunitiesPage.tsx'
 import ListingDetailPage from './pages/ListingDetailPage.tsx'
 import FavoritesPage from './pages/FavoritesPage.tsx'
 import DebugAuthPage from './pages/DebugAuthPage.tsx'
+import MyListingsPage from './pages/MyListingsPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'ilanlar', element: <ListingsPage /> },
+      { path: 'ilanlarim', element: <MyListingsPage /> },
       { path: 'giris', element: <LoginPage /> },
       { path: 'uye-ol', element: <RegisterPage /> },
       { path: 'satmak', element: <SellPage /> },

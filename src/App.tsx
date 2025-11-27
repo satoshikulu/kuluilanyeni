@@ -26,6 +26,19 @@ function App() {
               İlanlara Bak
             </NavLink>
             
+            {currentUser && !isAdminSession && (
+              <NavLink
+                to="/ilanlarim"
+                className={({ isActive }) => [
+                  'inline-flex items-center rounded-xl px-4 py-2 font-medium shadow-sm transition-colors',
+                  'bg-green-600 text-white hover:bg-green-700',
+                  isActive ? 'ring-2 ring-green-300' : 'ring-1 ring-black/10'
+                ].join(' ')}
+              >
+                📋 İlanlarım
+              </NavLink>
+            )}
+            
             {isAdminSession ? (
               <>
                 <NavLink

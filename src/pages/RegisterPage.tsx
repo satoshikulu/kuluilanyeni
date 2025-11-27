@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { registerUser } from '../lib/simpleAuth'
 import { Eye, EyeOff } from 'lucide-react'
+import { toTitleCase } from '../lib/textUtils'
 
 function RegisterPage() {
   const navigate = useNavigate()
@@ -114,9 +115,10 @@ function RegisterPage() {
               className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
               placeholder="Adınız Soyadınız" 
               value={fullName} 
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => setFullName(toTitleCase(e.target.value))}
               required
             />
+            <p className="mt-1 text-xs text-gray-500">Her kelimenin ilk harfi otomatik büyük yapılır</p>
           </div>
           
           <div>

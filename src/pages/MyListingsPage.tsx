@@ -1,0 +1,221 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabaseClient'
+import { getCurrentUser } from '../lib/simpleAuth'
+
+type Listing = {
+  id: string
+  created_at: string
+  approved_at?: string | null
+  title: string
+  owner_name: string
+  owner_phone: string
+  neighborhood: string | null
+  property_type: string | null
+  rooms: string | null
+  area_m2: number | null
+  price_tl: number | null
+  is_for: 'satilik' | 'kiralik'
+  description: string | null
+  status: 'pending' | 'approved' | 'rejected'
+}
+
+function MyListingsPage() {
+  const navigate = useNavigate()
+  const currentUser = getCurrentUser()
+  const [listings, setListings] = useState<Listing[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/giris')
+      return
+    }
+    loadMyListings()
+  }, [currentUser, navigate])
+
+  async function loadMyListings() {
+    setLoading(true)
+    setError('')
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('owner_phone', currentUser?.phone)
+        .order('created_at', { ascending: false })
+
+      if (fetchError) throw fetchError
+
+      setListings(data as Listing[])
+    } catch (e: any) {
+      setError(e.message || 'İlanlar yüklenemedi')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function getStatusBadge(status: string) {
+    switch (status) {
+      case 'pending':
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+            ⏳ Onay Bekliyor
+          </span>
+        )
+      case 'approved':
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+            ✓ Yayında
+          </span>
+        )
+      case 'rejected':
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+            ✕ Reddedildi
+          </span>
+        )
+      default:
+        return null
+    }
+  }
+
+  function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
+  if (!currentUser) {
+    return null
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">İlanlarım</h1>
+        <p className="text-gray-600">Yayınladığınız tüm ilanları buradan görüntüleyebilirsiniz</p>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center gap-3 text-gray-600">
+            <svg className="animate-spin h-8 w-8 text-blue-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            <span className="text-lg">Yükleniyor...</span>
+          </div>
+        </div>
+      ) : listings.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-5xl">📋</span>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Henüz ilan yok</h3>
+          <p className="text-gray-600 mb-6">Henüz hiç ilan yayınlamadınız</p>
+          <button
+            onClick={() => navigate('/satilik')}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+          >
+            <span>➕</span>
+            <span>İlk İlanınızı Verin</span>
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {listings.map((listing) => (
+            <div
+              key={listing.id}
+              className="group bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-300 transition-all duration-300 cursor-pointer"
+              onClick={() => navigate(`/ilan/${listing.id}`)}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-start gap-3 mb-3">
+                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {listing.title}
+                    </h3>
+                    {getStatusBadge(listing.status)}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                      {listing.is_for === 'satilik' ? '🏷️ Satılık' : '🔑 Kiralık'}
+                    </span>
+                    {listing.property_type && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                        🏠 {listing.property_type}
+                      </span>
+                    )}
+                    {listing.rooms && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        🚪 {listing.rooms}
+                      </span>
+                    )}
+                    {listing.area_m2 && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-teal-50 text-teal-700 border border-teal-100">
+                        📐 {listing.area_m2} m²
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-4 mb-2">
+                    {listing.neighborhood && (
+                      <span className="text-sm text-gray-600">
+                        📍 {listing.neighborhood}
+                      </span>
+                    )}
+                    {listing.price_tl && (
+                      <span className="text-lg font-bold text-green-600">
+                        💰 {listing.price_tl.toLocaleString('tr-TR')} TL
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-gray-500">
+                    📅 Yayın Tarihi: {formatDate(listing.created_at)}
+                    {listing.approved_at && listing.status === 'approved' && (
+                      <span className="ml-3">
+                        ✓ Onaylandı: {formatDate(listing.approved_at)}
+                      </span>
+                    )}
+                  </div>
+
+                  {listing.description && (
+                    <p className="mt-3 text-sm text-gray-700 line-clamp-2">
+                      {listing.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="text-right">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/ilan/${listing.id}`)
+                    }}
+                    className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors"
+                  >
+                    Detay →
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default MyListingsPage

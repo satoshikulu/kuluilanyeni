@@ -1,11 +1,15 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
 import { getCurrentUser, logoutUser, isAdmin } from './lib/simpleAuth'
 import { LogOut, User } from 'lucide-react'
+import { toTitleCase } from './lib/textUtils'
 
 function App() {
   const currentUser = getCurrentUser()
   const userIsAdmin = isAdmin()
   const isAdminSession = sessionStorage.getItem('isAdmin') === 'true'
+  
+  // Kullanıcı adını title case yap
+  const displayName = currentUser?.full_name ? toTitleCase(currentUser.full_name) : ''
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -82,7 +86,7 @@ function App() {
                 )}
                 <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl">
                   <User className="w-4 h-4 text-gray-600" />
-                  <span className="text-gray-700 font-medium">{currentUser.full_name}</span>
+                  <span className="text-gray-700 font-medium">{displayName}</span>
                 </div>
                 <button
                   onClick={logoutUser}

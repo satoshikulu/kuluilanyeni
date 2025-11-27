@@ -256,7 +256,8 @@ function SellPage() {
                 <h2 className="font-semibold">Açıklama</h2>
               </div>
               <label className="block text-sm mb-1" htmlFor="desc">Açıklama</label>
-              <textarea id="desc" className={textareaClass} rows={6} placeholder="Detaylı açıklama" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <textarea id="desc" className={textareaClass} rows={6} placeholder="Detaylı açıklama" value={description} onChange={(e) => setDescription(toTitleCase(e.target.value))} />
+              <div className="mt-1 text-xs text-gray-500">Her cümlenin ilk harfi otomatik büyük yapılır</div>
             </div>
           </div>
 

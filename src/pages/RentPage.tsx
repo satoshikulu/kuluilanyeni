@@ -147,7 +147,7 @@ function RentPage() {
     const { name, value } = e.target
     
     // Otomatik büyük harf yapılacak alanlar
-    const titleCaseFields = ['title', 'owner_name']
+    const titleCaseFields = ['title', 'owner_name', 'description']
     const newValue = titleCaseFields.includes(name) ? toTitleCase(value) : value
     
     setFormData(prev => ({
@@ -358,6 +358,7 @@ function RentPage() {
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 placeholder="Emlak hakkında detaylı bilgi verin..."
               />
+              <p className="mt-1 text-xs text-gray-500">Her cümlenin ilk harfi otomatik büyük yapılır</p>
             </div>
 
             {/* 7) Konum Bilgileri */}

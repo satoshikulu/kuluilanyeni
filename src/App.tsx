@@ -5,6 +5,7 @@ import { LogOut, User } from 'lucide-react'
 function App() {
   const currentUser = getCurrentUser()
   const userIsAdmin = isAdmin()
+  const isAdminSession = sessionStorage.getItem('isAdmin') === 'true'
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -25,7 +26,34 @@ function App() {
               İlanlara Bak
             </NavLink>
             
-            {currentUser ? (
+            {isAdminSession ? (
+              <>
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) => [
+                    'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-colors',
+                    'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-md',
+                    isActive ? 'ring-2 ring-purple-300' : 'ring-1 ring-black/10'
+                  ].join(' ')}
+                >
+                  👑 Admin Panel
+                </NavLink>
+                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
+                  <span className="text-xl">👑</span>
+                  <span className="text-purple-900 font-bold">Admin Yönetici</span>
+                </div>
+                <button
+                  onClick={() => {
+                    sessionStorage.removeItem('isAdmin')
+                    window.location.href = '/'
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-colors bg-red-50 text-red-600 hover:bg-red-100 shadow-sm"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Çıkış
+                </button>
+              </>
+            ) : currentUser ? (
               <>
                 {userIsAdmin && (
                   <NavLink

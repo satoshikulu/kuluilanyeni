@@ -187,6 +187,45 @@ function AdminPage() {
     }
   }
 
+  async function deleteListing(id: string, title: string) {
+    // Onay dialogu
+    const confirmed = window.confirm(
+      `Bu ilanı kalıcı olarak silmek istediğinize emin misiniz?\n\n` +
+      `İlan: ${title}\n\n` +
+      `⚠️ Bu işlem geri alınamaz!`
+    )
+    
+    if (!confirmed) return
+    
+    try {
+      const adminId = '00000000-0000-0000-0000-000000000000'
+      
+      const { data, error } = await supabase
+        .rpc('delete_listing', {
+          p_listing_id: id,
+          p_admin_id: adminId
+        })
+      
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
+      }
+      
+      const result = data as any
+      if (!result.success) {
+        throw new Error(result.error || 'İşlem başarısız')
+      }
+      
+      // UI'dan ilanı kaldır
+      setListings((prev) => prev.filter((l) => l.id !== id))
+      
+      alert('✅ İlan başarıyla silindi!')
+    } catch (e: any) {
+      console.error('deleteListing error:', e)
+      alert('Hata: ' + (e.message || 'İlan silinemedi'))
+    }
+  }
+
   async function decideUser(id: string, decision: 'approved' | 'rejected') {
     try {
       // RPC fonksiyonunu kullan (RLS bypass için)
@@ -632,6 +671,11 @@ function AdminPage() {
                       <button onClick={() => void decide(l.id, 'rejected')} className="group/btn rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                         <span className="flex items-center justify-center gap-2">
                           ✕ Reddet
+                        </span>
+                      </button>
+                      <button onClick={() => void deleteListing(l.id, l.title)} className="group/btn rounded-xl bg-gradient-to-r from-gray-700 to-gray-900 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-700 hover:to-red-900 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                        <span className="flex items-center justify-center gap-2">
+                          🗑️ Sil
                         </span>
                       </button>
                       {l.status === 'approved' && (

@@ -117,11 +117,19 @@ function HomePage() {
             <span className="animate-pulse">|</span>
           </p>
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
-            <Link to="/satmak" className="inline-flex items-center justify-center rounded-xl bg-white text-gray-900 px-6 py-4 font-medium hover:bg-white/90">
-              Satmak istiyorum
+            <Link 
+              to="/satmak" 
+              className="group relative inline-flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-md text-gray-900 px-6 py-4 font-semibold shadow-lg border border-white/20 hover:bg-orange-500/90 hover:text-white hover:border-orange-400/50 hover:shadow-orange-500/50 hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+            >
+              <span className="relative z-10">Satmak istiyorum</span>
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/0 to-orange-600/0 group-hover:from-orange-400/20 group-hover:to-orange-600/20 transition-all duration-300"></div>
             </Link>
-            <Link to="/kiralamak" className="inline-flex items-center justify-center rounded-xl bg-white text-gray-900 px-6 py-4 font-medium hover:bg-white/90">
-              Kiralamak istiyorum
+            <Link 
+              to="/kiralamak" 
+              className="group relative inline-flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-md text-gray-900 px-6 py-4 font-semibold shadow-lg border border-white/20 hover:bg-orange-500/90 hover:text-white hover:border-orange-400/50 hover:shadow-orange-500/50 hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+            >
+              <span className="relative z-10">Kiralamak istiyorum</span>
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/0 to-orange-600/0 group-hover:from-orange-400/20 group-hover:to-orange-600/20 transition-all duration-300"></div>
             </Link>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3">

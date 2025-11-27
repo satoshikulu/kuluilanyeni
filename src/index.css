@@ -5,3 +5,13 @@
 html, body, #root {
   height: 100%;
 }
+
+/* Nunito Sans Font - Modern & Professional */
+body {
+  font-family: 'Nunito Sans', system-ui, -apple-system, sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

@@ -368,7 +368,7 @@ function AdminPage() {
               {/* Title & User Info */}
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-4xl font-black text-white tracking-tight" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  <h1 className="text-4xl font-black text-white tracking-tight">
                     Admin Panel
                   </h1>
                   <span className="px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-lg">

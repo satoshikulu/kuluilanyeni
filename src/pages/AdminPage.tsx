@@ -339,34 +339,90 @@ function AdminPage() {
 
   return (
     <AdminGate>
-    <div className="min-h-screen bg-gray-50">
-      {/* Admin Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      {/* Modern Admin Header with Background Image */}
+      <div className="relative overflow-hidden">
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: 'url(https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1920&q=80)',
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/95 via-purple-900/90 to-pink-900/95 backdrop-blur-sm"></div>
+        </div>
+
+        {/* Header Content */}
+        <div className="relative max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
-                <span className="text-2xl">👑</span>
+            {/* Left Side - Title & User */}
+            <div className="flex items-center gap-6">
+              {/* Avatar */}
+              <div className="relative">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-500 flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                  <span className="text-4xl">👑</span>
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-4 border-white shadow-lg"></div>
               </div>
+
+              {/* Title & User Info */}
               <div>
-                <h1 className="text-2xl font-bold">Admin Paneli</h1>
-                <p className="text-blue-100 text-sm">Yönetim Kontrol Merkezi</p>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-4xl font-black text-white tracking-tight" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    Admin Panel
+                  </h1>
+                  <span className="px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-lg">
+                    PRO
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                    <span className="text-2xl">👤</span>
+                    <div>
+                      <div className="text-white font-bold text-sm">Admin Yönetici</div>
+                      <div className="text-purple-200 text-xs">Tam Yetki • Süper Admin</div>
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-white/20"></div>
+                  <div className="text-white/80 text-sm">
+                    <div className="font-semibold">Yönetim Kontrol Merkezi</div>
+                    <div className="text-xs text-white/60">Tüm sistem erişimi aktif</div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-sm font-semibold">Admin Kullanıcı</div>
-                <div className="text-xs text-blue-100">Tam Yetki</div>
+
+            {/* Right Side - Actions */}
+            <div className="flex items-center gap-3">
+              {/* Stats */}
+              <div className="hidden lg:flex items-center gap-3">
+                <div className="px-4 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                  <div className="text-2xl font-bold text-white">{totalCount}</div>
+                  <div className="text-xs text-white/70">İlanlar</div>
+                </div>
+                <div className="px-4 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                  <div className="text-2xl font-bold text-white">{pendingUsers.length}</div>
+                  <div className="text-xs text-white/70">Bekleyen</div>
+                </div>
               </div>
+
+              {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 border border-white/20 backdrop-blur-sm"
+                className="group flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-red-500 backdrop-blur-md rounded-xl transition-all duration-300 border border-white/20 hover:border-red-400 shadow-lg hover:shadow-red-500/50"
               >
-                <span>🚪</span>
-                <span className="font-medium">Çıkış Yap</span>
+                <span className="text-xl group-hover:rotate-12 transition-transform duration-300">🚪</span>
+                <span className="font-bold text-white">Çıkış</span>
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Decorative Bottom Wave */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+            <path d="M0 48h1440V0c-240 48-480 48-720 24C480 0 240 0 0 24v24z" fill="currentColor" className="text-gray-50"/>
+          </svg>
         </div>
       </div>
 

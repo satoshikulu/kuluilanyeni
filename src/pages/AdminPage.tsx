@@ -273,6 +273,50 @@ function AdminPage() {
     }
   }
 
+  async function deleteUser(id: string, fullName: string, phone: string) {
+    // Onay dialogu
+    const confirmed = window.confirm(
+      `Bu kullanıcıyı kalıcı olarak silmek istediğinize emin misiniz?\n\n` +
+      `Kullanıcı: ${fullName}\n` +
+      `Telefon: ${phone}\n\n` +
+      `⚠️ UYARI: Kullanıcının TÜM ilanları da silinecek!\n` +
+      `⚠️ Bu işlem geri alınamaz!`
+    )
+    
+    if (!confirmed) return
+    
+    try {
+      const adminId = '00000000-0000-0000-0000-000000000000'
+      
+      const { data, error } = await supabase
+        .rpc('delete_user', {
+          p_user_id: id,
+          p_admin_id: adminId
+        })
+      
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
+      }
+      
+      const result = data as any
+      if (!result.success) {
+        throw new Error(result.error || 'İşlem başarısız')
+      }
+      
+      // UI'dan kullanıcıyı kaldır
+      setPendingUsers((prev) => prev.filter((u) => u.id !== id))
+      setApprovedUsers((prev) => prev.filter((u) => u.id !== id))
+      setRejectedUsers((prev) => prev.filter((u) => u.id !== id))
+      
+      const deletedListings = result.deleted_listings || 0
+      alert(`✅ Kullanıcı başarıyla silindi!\n${deletedListings} ilan da silindi.`)
+    } catch (e: any) {
+      console.error('deleteUser error:', e)
+      alert('Hata: ' + (e.message || 'Kullanıcı silinemedi'))
+    }
+  }
+
   async function resetPassword(userId: string, phone: string) {
     const newPassword = prompt(`${phone} için yeni şifre girin:`)
     if (!newPassword) return
@@ -812,6 +856,9 @@ function AdminPage() {
                       <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                         🔑 Şifre
                       </button>
+                      <button onClick={() => void deleteUser(u.id, u.full_name, u.phone)} className="rounded-xl bg-gradient-to-r from-gray-700 to-gray-900 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-700 hover:to-red-900 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                        🗑️ Sil
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -849,6 +896,9 @@ function AdminPage() {
                       <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-1.5 text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-200">
                         🔑 Şifre Değiştir
                       </button>
+                      <button onClick={() => void deleteUser(u.id, u.full_name, u.phone)} className="rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 text-white px-3 py-1.5 text-xs font-semibold hover:from-red-700 hover:to-red-900 shadow-sm hover:shadow-md transition-all duration-200">
+                        🗑️ Sil
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -862,17 +912,24 @@ function AdminPage() {
           ) : (
             <div className="space-y-3">
               {rejectedUsers.map((u) => (
-                <div key={u.id} className="rounded-xl border border-red-200 p-4 bg-gradient-to-br from-white to-red-50 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-lg text-gray-900 mb-2">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-sm text-gray-600">📞 {u.phone}</div>
-                      <div className="text-xs text-gray-500">🕐 Başvuru: {formatDate(u.created_at)} · ⏱️ Geçen: {daysSince(u.created_at)}</div>
+                <div key={u.id} className="rounded-xl border border-red-200 p-4 bg-gradient-to-br from-white to-red-50 shadow-sm hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-semibold text-lg text-gray-900 mb-2">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
+                      <div className="flex flex-col gap-1">
+                        <div className="text-sm text-gray-600">📞 {u.phone}</div>
+                        <div className="text-xs text-gray-500">🕐 Başvuru: {formatDate(u.created_at)} · ⏱️ Geçen: {daysSince(u.created_at)}</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 items-end">
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                        ✕ Reddedildi
+                      </span>
+                      <button onClick={() => void deleteUser(u.id, u.full_name, u.phone)} className="rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 text-white px-3 py-1.5 text-xs font-semibold hover:from-red-700 hover:to-red-900 shadow-sm hover:shadow-md transition-all duration-200">
+                        🗑️ Sil
+                      </button>
                     </div>
                   </div>
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
-                    ✕ Reddedildi
-                  </span>
                 </div>
               ))}
             </div>

@@ -231,7 +231,7 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
                       <div className="flex gap-2">
                         <button
                           onClick={(e) => handleQuickContact(item, e)}
-                          className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2.5 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+                          className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-700 to-emerald-700 text-white px-4 py-2.5 rounded-lg hover:from-green-800 hover:to-emerald-800 transition-all duration-200 text-sm font-bold shadow-md hover:shadow-lg transform hover:scale-105"
                         >
                           <MessageCircle className="w-4 h-4" />
                           İlgileniyorum

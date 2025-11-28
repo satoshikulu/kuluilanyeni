@@ -68,6 +68,12 @@ function AdminPage() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'listings' | 'users'>('listings')
+  
+  // User listings modal state
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [userListings, setUserListings] = useState<Listing[]>([])
+  const [userListingsLoading, setUserListingsLoading] = useState(false)
+  const [userListingsCounts, setUserListingsCounts] = useState<Record<string, { pending: number; approved: number; rejected: number }>>({})
 
   // Helpers
   function formatDate(ts?: string) {
@@ -414,6 +420,60 @@ function AdminPage() {
       alert(e.message || 'Fiyat bilgileri güncellenemedi')
     }
   }
+
+  async function loadUserListings(userId: string, phone: string) {
+    setSelectedUserId(userId)
+    setUserListingsLoading(true)
+    try {
+      // Telefon numarasına göre ilanları getir
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('owner_phone', phone)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      setUserListings((data as Listing[]) || [])
+    } catch (e: any) {
+      console.error('Kullanıcı ilanları yüklenirken hata:', e)
+      alert('Hata: ' + (e.message || 'İlanlar yüklenemedi'))
+    } finally {
+      setUserListingsLoading(false)
+    }
+  }
+
+  async function loadUserListingsCounts() {
+    try {
+      // Tüm kullanıcılar için ilan sayılarını getir
+      const allUsers = [...pendingUsers, ...approvedUsers, ...rejectedUsers]
+      const counts: Record<string, { pending: number; approved: number; rejected: number }> = {}
+      
+      for (const user of allUsers) {
+        const { data, error } = await supabase
+          .from('listings')
+          .select('status')
+          .eq('owner_phone', user.phone)
+        
+        if (!error && data) {
+          counts[user.id] = {
+            pending: data.filter(l => l.status === 'pending').length,
+            approved: data.filter(l => l.status === 'approved').length,
+            rejected: data.filter(l => l.status === 'rejected').length
+          }
+        }
+      }
+      
+      setUserListingsCounts(counts)
+    } catch (e: any) {
+      console.error('İlan sayıları yüklenirken hata:', e)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'users' && (pendingUsers.length > 0 || approvedUsers.length > 0 || rejectedUsers.length > 0)) {
+      void loadUserListingsCounts()
+    }
+  }, [activeTab, pendingUsers, approvedUsers, rejectedUsers])
 
   function handleLogout() {
     sessionStorage.removeItem('isAdmin')
@@ -857,6 +917,14 @@ function AdminPage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 w-full lg:w-auto lg:min-w-[140px]">
+                      {userListingsCounts[u.id] && (userListingsCounts[u.id].pending + userListingsCounts[u.id].approved + userListingsCounts[u.id].rejected) >= 1 && (
+                        <button 
+                          onClick={() => void loadUserListings(u.id, u.phone)} 
+                          className="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-purple-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        >
+                          📋 İlanları ({userListingsCounts[u.id].pending + userListingsCounts[u.id].approved + userListingsCounts[u.id].rejected})
+                        </button>
+                      )}
                       <button onClick={() => void decideUser(u.id, 'approved')} className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                         ✓ Onayla
                       </button>
@@ -903,6 +971,14 @@ function AdminPage() {
                       <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
                         ✓ Onaylı
                       </span>
+                      {userListingsCounts[u.id] && (userListingsCounts[u.id].pending + userListingsCounts[u.id].approved + userListingsCounts[u.id].rejected) >= 1 && (
+                        <button 
+                          onClick={() => void loadUserListings(u.id, u.phone)} 
+                          className="rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-3 py-1.5 text-xs font-semibold hover:from-purple-600 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                          📋 İlanları ({userListingsCounts[u.id].pending + userListingsCounts[u.id].approved + userListingsCounts[u.id].rejected})
+                        </button>
+                      )}
                       <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-1.5 text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-200">
                         🔑 Şifre Değiştir
                       </button>
@@ -935,6 +1011,14 @@ function AdminPage() {
                       <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
                         ✕ Reddedildi
                       </span>
+                      {userListingsCounts[u.id] && (userListingsCounts[u.id].pending + userListingsCounts[u.id].approved + userListingsCounts[u.id].rejected) >= 1 && (
+                        <button 
+                          onClick={() => void loadUserListings(u.id, u.phone)} 
+                          className="rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-3 py-1.5 text-xs font-semibold hover:from-purple-600 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                          📋 İlanları ({userListingsCounts[u.id].pending + userListingsCounts[u.id].approved + userListingsCounts[u.id].rejected})
+                        </button>
+                      )}
                       <button onClick={() => void deleteUser(u.id, u.full_name, u.phone)} className="rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 text-white px-3 py-1.5 text-xs font-semibold hover:from-red-700 hover:to-red-900 shadow-sm hover:shadow-md transition-all duration-200">
                         🗑️ Sil
                       </button>
@@ -948,6 +1032,118 @@ function AdminPage() {
       )}
       </div>
     </div>
+
+    {/* Kullanıcı İlanları Modal */}
+    {selectedUserId && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedUserId(null)}>
+        <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-white">Kullanıcı İlanları</h3>
+            <button 
+              onClick={() => setSelectedUserId(null)}
+              className="text-white hover:bg-white/20 rounded-lg px-3 py-1 transition-colors"
+            >
+              ✕ Kapat
+            </button>
+          </div>
+
+          {/* Modal Body */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+            {userListingsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <svg className="animate-spin h-8 w-8 text-purple-600" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span className="ml-3 text-gray-600">İlanlar yükleniyor...</span>
+              </div>
+            ) : userListings.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📭</div>
+                <p className="text-gray-600">Bu kullanıcının henüz ilanı yok.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* İstatistikler */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-yellow-700">{userListings.filter(l => l.status === 'pending').length}</div>
+                    <div className="text-sm text-yellow-600">Bekleyen</div>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-green-700">{userListings.filter(l => l.status === 'approved').length}</div>
+                    <div className="text-sm text-green-600">Onaylı</div>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-red-700">{userListings.filter(l => l.status === 'rejected').length}</div>
+                    <div className="text-sm text-red-600">Reddedilen</div>
+                  </div>
+                </div>
+
+                {/* İlan Listesi */}
+                {userListings.map((listing) => (
+                  <div key={listing.id} className="border rounded-xl p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-gray-900">{listing.title}</h4>
+                          {listing.status === 'pending' && (
+                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">Bekliyor</span>
+                          )}
+                          {listing.status === 'approved' && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Onaylı</span>
+                          )}
+                          {listing.status === 'rejected' && (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Reddedildi</span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                          <span>{listing.property_type}</span>
+                          <span>•</span>
+                          <span>{listing.rooms}</span>
+                          <span>•</span>
+                          <span>{listing.area_m2} m²</span>
+                          <span>•</span>
+                          <span className="font-semibold text-green-600">{listing.price_tl?.toLocaleString('tr-TR')} TL</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {formatDate(listing.created_at)}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {listing.status === 'pending' && (
+                          <>
+                            <button 
+                              onClick={() => { void decide(listing.id, 'approved'); setUserListings(prev => prev.filter(l => l.id !== listing.id)) }}
+                              className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700"
+                            >
+                              ✓ Onayla
+                            </button>
+                            <button 
+                              onClick={() => { void decide(listing.id, 'rejected'); setUserListings(prev => prev.filter(l => l.id !== listing.id)) }}
+                              className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700"
+                            >
+                              ✕ Reddet
+                            </button>
+                          </>
+                        )}
+                        <button 
+                          onClick={() => { void deleteListing(listing.id, listing.title); setUserListings(prev => prev.filter(l => l.id !== listing.id)) }}
+                          className="px-3 py-1.5 bg-gray-700 text-white text-xs font-semibold rounded-lg hover:bg-red-700"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
     </AdminGate>
   )
 }

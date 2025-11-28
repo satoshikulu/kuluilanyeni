@@ -249,7 +249,7 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
                       </div>
                       <button
                         onClick={(e) => handleQuickContact(listing, e)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-700 text-white text-xs font-bold rounded-lg hover:bg-green-800 transition-colors shadow-sm"
                         title="İlanla ilgileniyorum"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
@@ -333,7 +333,7 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
                     <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 mb-2">
                       {listing.rooms} {listing.property_type} · {listing.area_m2} m²
                     </div>
-                    <div className="flex items-center gap-1 text-orange-600 text-sm font-medium mb-3">
+                    <div className="flex items-center gap-1 text-orange-700 text-sm font-medium mb-3">
                       <MapPin className="w-3.5 h-3.5" />
                       {listing.neighborhood}
                     </div>
@@ -351,7 +351,7 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
                       </div>
                       <button
                         onClick={(e) => handleQuickContact(listing, e)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-sm font-bold rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg transform hover:scale-105"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-700 to-emerald-700 text-white text-sm font-bold rounded-lg hover:from-green-800 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg transform hover:scale-105"
                         title="İlanla ilgileniyorum"
                       >
                         <MessageCircle className="w-4 h-4" />

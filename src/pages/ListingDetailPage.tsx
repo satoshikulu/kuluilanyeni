@@ -232,7 +232,7 @@ ${item.area_m2 ? `📐 Alan: ${item.area_m2} m²` : ''}
               </div>
               <button
                 onClick={handleContactClick}
-                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300"
+                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-green-700 to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-green-800 hover:to-emerald-800 transform hover:scale-105 transition-all duration-300"
               >
                 <MessageCircle className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />
                 <span>İlanla İlgileniyorum</span>

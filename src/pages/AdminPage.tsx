@@ -436,38 +436,38 @@ function AdminPage() {
         </div>
 
         {/* Header Content */}
-        <div className="relative max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             {/* Left Side - Title & User */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 sm:gap-6">
               {/* Avatar */}
               <div className="relative">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-500 flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
-                  <span className="text-4xl">👑</span>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-500 flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                  <span className="text-3xl sm:text-4xl">👑</span>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-4 border-white shadow-lg"></div>
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-green-400 rounded-full border-2 sm:border-4 border-white shadow-lg"></div>
               </div>
 
               {/* Title & User Info */}
               <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-4xl font-black text-white tracking-tight">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
                     Admin Panel
                   </h1>
-                  <span className="px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-lg">
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-lg">
                     PRO
                   </span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
-                    <span className="text-2xl">👤</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                    <span className="text-xl sm:text-2xl">👤</span>
                     <div>
-                      <div className="text-white font-bold text-sm">Admin Yönetici</div>
-                      <div className="text-purple-200 text-xs">Tam Yetki • Süper Admin</div>
+                      <div className="text-white font-bold text-xs sm:text-sm">Admin Yönetici</div>
+                      <div className="text-purple-200 text-xs hidden sm:block">Tam Yetki • Süper Admin</div>
                     </div>
                   </div>
-                  <div className="h-8 w-px bg-white/20"></div>
-                  <div className="text-white/80 text-sm">
+                  <div className="hidden md:block h-8 w-px bg-white/20"></div>
+                  <div className="text-white/80 text-xs sm:text-sm hidden md:block">
                     <div className="font-semibold">Yönetim Kontrol Merkezi</div>
                     <div className="text-xs text-white/60">Tüm sistem erişimi aktif</div>
                   </div>
@@ -476,8 +476,18 @@ function AdminPage() {
             </div>
 
             {/* Right Side - Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto">
               {/* Stats */}
+              <div className="flex lg:hidden items-center gap-2 flex-1">
+                <div className="flex-1 px-3 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                  <div className="text-lg font-bold text-white">{totalCount}</div>
+                  <div className="text-xs text-white/70">İlanlar</div>
+                </div>
+                <div className="flex-1 px-3 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                  <div className="text-lg font-bold text-white">{pendingUsers.length}</div>
+                  <div className="text-xs text-white/70">Bekleyen</div>
+                </div>
+              </div>
               <div className="hidden lg:flex items-center gap-3">
                 <div className="px-4 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
                   <div className="text-2xl font-bold text-white">{totalCount}</div>
@@ -492,10 +502,10 @@ function AdminPage() {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="group flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-red-500 backdrop-blur-md rounded-xl transition-all duration-300 border border-white/20 hover:border-red-400 shadow-lg hover:shadow-red-500/50"
+                className="group flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-red-500 backdrop-blur-md rounded-xl transition-all duration-300 border border-white/20 hover:border-red-400 shadow-lg hover:shadow-red-500/50"
               >
-                <span className="text-xl group-hover:rotate-12 transition-transform duration-300">🚪</span>
-                <span className="font-bold text-white">Çıkış</span>
+                <span className="text-lg sm:text-xl group-hover:rotate-12 transition-transform duration-300">🚪</span>
+                <span className="font-bold text-white text-sm sm:text-base">Çıkış</span>
               </button>
             </div>
           </div>
@@ -557,7 +567,7 @@ function AdminPage() {
           <h2 className="text-xl font-semibold mb-4">İlan Yönetimi</h2>
           
           {/* Filters */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         <div>
           <label className="block text-xs text-gray-600 mb-1">Durum</label>
           <select className="w-full rounded-lg border px-3 py-2" value={status} onChange={(e) => { setStatus(e.target.value as any); void queryListings(true) }}>
@@ -650,8 +660,8 @@ function AdminPage() {
                     )}
                   </div>
                   
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1 pr-24">
+                  <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+                    <div className="flex-1 w-full lg:pr-24">
                       <div className="font-bold text-xl text-gray-900 mb-3">{l.title}</div>
                       {/* Property Details */}
                       <div className="flex flex-wrap gap-3 mb-3">
@@ -706,7 +716,7 @@ function AdminPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col gap-2.5 min-w-[140px]">
+                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 w-full lg:w-auto lg:min-w-[140px]">
                       <button onClick={() => void decide(l.id, 'approved')} className="group/btn rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                         <span className="flex items-center justify-center gap-2">
                           ✓ Onayla
@@ -823,8 +833,8 @@ function AdminPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1 pr-24">
+                  <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+                    <div className="flex-1 w-full lg:pr-24">
                       <div className="font-bold text-xl text-gray-900 mb-3">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
                       
                       {/* Contact Info */}
@@ -846,7 +856,7 @@ function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2.5 min-w-[140px]">
+                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 w-full lg:w-auto lg:min-w-[140px]">
                       <button onClick={() => void decideUser(u.id, 'approved')} className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                         ✓ Onayla
                       </button>
@@ -873,8 +883,8 @@ function AdminPage() {
             <div className="space-y-3">
               {approvedUsers.map((u) => (
                 <div key={u.id} className="rounded-xl border border-green-200 p-4 bg-gradient-to-br from-white to-green-50 shadow-sm hover:shadow-md transition-all duration-200">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                    <div className="flex-1 w-full">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="font-semibold text-lg text-gray-900">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
                         {u.role === 'admin' && (
@@ -889,8 +899,8 @@ function AdminPage() {
                         <div className="text-xs text-gray-500">🕐 Başvuru: {formatDate(u.created_at)} · ⏱️ Geçen: {daysSince(u.created_at)}</div>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 items-end">
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2 w-full sm:w-auto items-stretch sm:items-end">
+                      <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
                         ✓ Onaylı
                       </span>
                       <button onClick={() => void resetPassword(u.id, u.phone)} className="rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-1.5 text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-200">
@@ -913,16 +923,16 @@ function AdminPage() {
             <div className="space-y-3">
               {rejectedUsers.map((u) => (
                 <div key={u.id} className="rounded-xl border border-red-200 p-4 bg-gradient-to-br from-white to-red-50 shadow-sm hover:shadow-md transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex-1 w-full">
                       <div className="font-semibold text-lg text-gray-900 mb-2">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
                       <div className="flex flex-col gap-1">
                         <div className="text-sm text-gray-600">📞 {u.phone}</div>
                         <div className="text-xs text-gray-500">🕐 Başvuru: {formatDate(u.created_at)} · ⏱️ Geçen: {daysSince(u.created_at)}</div>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 items-end">
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2 w-full sm:w-auto items-stretch sm:items-end">
+                      <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
                         ✕ Reddedildi
                       </span>
                       <button onClick={() => void deleteUser(u.id, u.full_name, u.phone)} className="rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 text-white px-3 py-1.5 text-xs font-semibold hover:from-red-700 hover:to-red-900 shadow-sm hover:shadow-md transition-all duration-200">

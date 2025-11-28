@@ -106,7 +106,11 @@ function HomePage() {
   ]
   return (
     <div className="relative">
-      <section className="relative overflow-hidden rounded-2xl bg-[url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center">
+      <section className="relative overflow-hidden rounded-2xl">
+        {/* Ken Burns Effect Background */}
+        <div 
+          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center animate-ken-burns"
+        />
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 px-6 py-20 text-white">
           <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight">

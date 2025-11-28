@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { MapPin, Zap, ArrowRight, TrendingDown, MessageCircle } from 'lucide-react'
+import { MapPin, Zap, ArrowRight, TrendingDown, MessageCircle, Eye } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { getMultipleListingInterestCounts, recordListingInterest } from '../lib/listingInterests'
 
 function HomePage() {
   const [typewriterText, setTypewriterText] = useState('')
@@ -11,6 +12,7 @@ function HomePage() {
   const [opportunityListings, setOpportunityListings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [opportunityLoading, setOpportunityLoading] = useState(true)
+  const [interestCounts, setInterestCounts] = useState<Record<string, number>>({})
   
   const texts = [
     'Kulu Emlak Pazarı',
@@ -47,6 +49,17 @@ function HomePage() {
     fetchFeaturedListings()
     fetchOpportunityListings()
   }, [])
+
+  useEffect(() => {
+    // İlgi sayılarını getir
+    const allListings = [...featuredListings, ...opportunityListings]
+    if (allListings.length > 0) {
+      const listingIds = allListings.map(l => l.id)
+      getMultipleListingInterestCounts(listingIds).then(counts => {
+        setInterestCounts(counts)
+      })
+    }
+  }, [featuredListings, opportunityListings])
 
   const fetchFeaturedListings = async () => {
     try {
@@ -105,9 +118,18 @@ function HomePage() {
     'https://images.unsplash.com/photo-1501183638710-841dd1904471?q=80&w=1200&auto=format&fit=crop', // modern house exterior (reliable)
   ]
 
-  function handleQuickContact(listing: any, e: React.MouseEvent) {
+  async function handleQuickContact(listing: any, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
+    
+    // İlgi kaydını veritabanına ekle
+    await recordListingInterest(listing.id)
+    
+    // İlgi sayısını güncelle
+    setInterestCounts(prev => ({
+      ...prev,
+      [listing.id]: (prev[listing.id] || 0) + 1
+    }))
     
     const whatsappPhone = '905556874803'
     const message = `Merhaba, bir ilanla ilgileniyorum:
@@ -205,6 +227,13 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
                       style={{ backgroundImage: `url(${firstImage})` }}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                    {/* İlgi Badge */}
+                    {interestCounts[listing.id] > 0 && (
+                      <div className="absolute top-3 left-3 flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+                        <Eye className="w-3 h-3" />
+                        {interestCounts[listing.id]}
+                      </div>
+                    )}
                   </div>
                   <div className="p-4 group-hover:bg-gray-50 transition-colors duration-300">
                     <div className="font-medium group-hover:text-blue-600 transition-colors duration-300 mb-2">
@@ -284,12 +313,21 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
                       <Zap className="w-3 h-3" />
                       FIRSAT
                     </div>
-                    {discount > 0 && (
-                      <div className="absolute top-3 left-3 flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
-                        <TrendingDown className="w-3 h-3" />
-                        %{discount}
-                      </div>
-                    )}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      {discount > 0 && (
+                        <div className="flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+                          <TrendingDown className="w-3 h-3" />
+                          %{discount}
+                        </div>
+                      )}
+                      {/* İlgi Badge */}
+                      {interestCounts[listing.id] > 0 && (
+                        <div className="flex items-center gap-1 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+                          <Eye className="w-3 h-3" />
+                          {interestCounts[listing.id]}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="p-5 group-hover:bg-gray-50 transition-colors duration-300">
                     <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 mb-2">

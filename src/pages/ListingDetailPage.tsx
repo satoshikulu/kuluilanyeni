@@ -6,8 +6,9 @@ import { getListingImageUrl } from '../lib/storage'
 import { getPlaceholderImage } from '../constants/placeholders'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
-import { MapPin, Home, Maximize2, Share2, ArrowLeft, MessageCircle } from 'lucide-react'
+import { MapPin, Home, Maximize2, Share2, ArrowLeft, MessageCircle, Eye } from 'lucide-react'
 import LocationMap from '../components/LocationMap'
+import { recordListingInterest, getListingInterestCount } from '../lib/listingInterests'
 
 type Listing = {
   id: string
@@ -49,6 +50,7 @@ export default function ListingDetailPage() {
   const [error, setError] = useState('')
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [interestCount, setInterestCount] = useState<number>(0)
 
   useEffect(() => {
     async function load() {
@@ -64,6 +66,10 @@ export default function ListingDetailPage() {
           .single()
         if (error) throw error
         setItem(data as Listing)
+        
+        // İlgi sayısını getir
+        const count = await getListingInterestCount(id)
+        setInterestCount(count)
       } catch (e: any) {
         setError(e.message || 'İlan yüklenemedi')
       } finally {
@@ -96,8 +102,15 @@ export default function ListingDetailPage() {
     }
   }
 
-  function handleContactClick() {
+  async function handleContactClick() {
     if (!item) return
+    
+    // İlgi kaydını veritabanına ekle
+    const recorded = await recordListingInterest(item.id)
+    if (recorded) {
+      // İlgi sayısını güncelle
+      setInterestCount(prev => prev + 1)
+    }
     
     const whatsappPhone = '905556874803' // Admin telefon numarası
     const message = `Merhaba, bir ilanla ilgileniyorum:
@@ -228,13 +241,30 @@ ${item.area_m2 ? `📐 Alan: ${item.area_m2} m²` : ''}
             </div>
           </div>
 
-          {/* Fiyat */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 shadow-lg border border-green-100">
-            <div className="text-sm text-gray-600 mb-1">Fiyat</div>
-            <div className="text-4xl font-bold text-green-700">
-              {item.price_tl ? item.price_tl.toLocaleString('tr-TR') : '-'}
-              <span className="text-xl font-normal text-gray-600 ml-2">TL</span>
+          {/* Fiyat ve İlgi Sayısı */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 shadow-lg border border-green-100">
+              <div className="text-sm text-gray-600 mb-1">Fiyat</div>
+              <div className="text-4xl font-bold text-green-700">
+                {item.price_tl ? item.price_tl.toLocaleString('tr-TR') : '-'}
+                <span className="text-xl font-normal text-gray-600 ml-2">TL</span>
+              </div>
             </div>
+            
+            {/* İlgi Sayısı Badge */}
+            {interestCount > 0 && (
+              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 shadow-lg border border-orange-100">
+                <div className="flex items-center gap-2 text-orange-600 mb-2">
+                  <Eye className="w-5 h-5" />
+                  <span className="text-sm font-medium">İlgi</span>
+                </div>
+                <div className="text-3xl font-bold text-orange-700">
+                  {interestCount}
+                  <span className="text-base font-normal text-gray-600 ml-2">kişi</span>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">ilgilendi</div>
+              </div>
+            )}
           </div>
 
           {/* Özellikler */}

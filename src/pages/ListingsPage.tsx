@@ -5,7 +5,7 @@ import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import FavoriteButton from '../components/FavoriteButton'
 import { getListingImageUrl } from '../lib/storage'
 import { getPlaceholderImage, isNewListing } from '../constants/placeholders'
-import { MapPin, Home, Maximize2 } from 'lucide-react'
+import { MapPin, Home, Maximize2, MessageCircle } from 'lucide-react'
 
 type Listing = {
   id: string
@@ -66,6 +66,27 @@ function ListingsPage() {
       return first.startsWith('http') ? first : getListingImageUrl(first)
     }
     return getPlaceholderImage(l.property_type)
+  }
+
+  function handleQuickContact(listing: Listing, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const whatsappPhone = '905556874803'
+    const message = `Merhaba, bir ilanla ilgileniyorum:
+
+📋 İlan: ${listing.title}
+🏠 Tür: ${listing.property_type || 'Belirtilmemiş'}
+${listing.rooms ? `🚪 Oda: ${listing.rooms}` : ''}
+${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
+📍 Mahalle: ${listing.neighborhood || 'Belirtilmemiş'}
+💰 Fiyat: ${listing.price_tl ? listing.price_tl.toLocaleString('tr-TR') + ' TL' : 'Belirtilmemiş'}
+🔗 Link: ${window.location.origin}/ilan/${listing.id}
+
+İlan sahibi ile görüşmek istiyorum.`
+
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
   }
 
   return (
@@ -192,21 +213,33 @@ function ListingsPage() {
                       )}
                     </div>
                     
-                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Fiyat</div>
-                        <div className="text-2xl font-bold text-green-600">
-                          {item.price_tl ? (
-                            <>
-                              {item.price_tl.toLocaleString('tr-TR')}
-                              <span className="text-sm font-normal text-gray-500 ml-1">TL</span>
-                            </>
-                          ) : '-'}
+                    <div className="space-y-3 pt-4 border-t border-gray-100">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">Fiyat</div>
+                          <div className="text-2xl font-bold text-green-600">
+                            {item.price_tl ? (
+                              <>
+                                {item.price_tl.toLocaleString('tr-TR')}
+                                <span className="text-sm font-normal text-gray-500 ml-1">TL</span>
+                              </>
+                            ) : '-'}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <FavoriteButton listingId={item.id} />
-                        <Link to={`/ilan/${item.id}`} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium">
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => handleQuickContact(item, e)}
+                          className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2.5 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          İlgileniyorum
+                        </button>
+                        <Link 
+                          to={`/ilan/${item.id}`} 
+                          className="inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-semibold"
+                        >
                           Detay
                         </Link>
                       </div>

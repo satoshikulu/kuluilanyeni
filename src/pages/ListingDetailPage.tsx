@@ -6,7 +6,7 @@ import { getListingImageUrl } from '../lib/storage'
 import { getPlaceholderImage } from '../constants/placeholders'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
-import { MapPin, Home, Maximize2, Share2, ArrowLeft } from 'lucide-react'
+import { MapPin, Home, Maximize2, Share2, ArrowLeft, MessageCircle } from 'lucide-react'
 import LocationMap from '../components/LocationMap'
 
 type Listing = {
@@ -94,6 +94,26 @@ export default function ListingDetailPage() {
     } catch {
       // kullanıcı paylaşımı iptal etti
     }
+  }
+
+  function handleContactClick() {
+    if (!item) return
+    
+    const whatsappPhone = '905556874803' // Admin telefon numarası
+    const message = `Merhaba, bir ilanla ilgileniyorum:
+
+📋 İlan: ${item.title}
+🏠 Tür: ${item.property_type || 'Belirtilmemiş'}
+${item.rooms ? `🚪 Oda: ${item.rooms}` : ''}
+${item.area_m2 ? `📐 Alan: ${item.area_m2} m²` : ''}
+📍 Mahalle: ${item.neighborhood || 'Belirtilmemiş'}
+💰 Fiyat: ${item.price_tl ? item.price_tl.toLocaleString('tr-TR') + ' TL' : 'Belirtilmemiş'}
+🔗 Link: ${window.location.href}
+
+İlan sahibi ile görüşmek istiyorum.`
+
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
   }
 
   return (
@@ -184,6 +204,26 @@ export default function ListingDetailPage() {
               >
                 <Share2 className="w-4 h-4" />
                 Paylaş
+              </button>
+            </div>
+          </div>
+
+          {/* İlanla İlgileniyorum Butonu - ÖNEMLİ */}
+          <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 rounded-2xl p-6 shadow-lg border-2 border-green-200">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex-1 text-center md:text-left">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Bu İlanla İlgileniyor musunuz?</h3>
+                <p className="text-gray-600 text-sm">
+                  WhatsApp üzerinden bizimle iletişime geçin. İlan sahibi ile sizi buluşturalım ve size en iyi hizmeti sunalım.
+                </p>
+              </div>
+              <button
+                onClick={handleContactClick}
+                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300"
+              >
+                <MessageCircle className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />
+                <span>İlanla İlgileniyorum</span>
+                <div className="absolute inset-0 rounded-xl bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
               </button>
             </div>
           </div>

@@ -5,6 +5,8 @@ import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
 import { toTitleCase } from '../lib/textUtils'
+import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
+import MembershipRequiredModal from '../components/MembershipRequiredModal'
 
 function RentPage() {
   const [formData, setFormData] = useState({
@@ -29,6 +31,8 @@ function RentPage() {
   const [locationType, setLocationType] = useState<'address' | 'coordinates'>('address')
   const [phoneWarning, setPhoneWarning] = useState<string>('')
   const [phoneChecking, setPhoneChecking] = useState(false)
+  const [showMembershipModal, setShowMembershipModal] = useState(false)
+  const [hasPendingMembership, setHasPendingMembership] = useState(false)
 
   const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
 
@@ -69,6 +73,11 @@ function RentPage() {
         setLoading(false)
         return
       }
+      
+      // ÜYELİK KONTROLÜ - HİBRİT SİSTEM
+      const membershipCheck = await checkApprovedMembership(formData.owner_phone)
+      const pendingCheck = await checkPendingMembership(formData.owner_phone)
+      
       // 1) İlanı önce oluştur ve id al
       const finalAddress = address || `${formData.neighborhood || 'Kulu'}, Konya`
       
@@ -82,7 +91,9 @@ function RentPage() {
           latitude: latitude,
           longitude: longitude,
           location_type: locationType,
-          status: 'pending'
+          status: 'pending',
+          user_id: membershipCheck.userId, // Üye ise user_id ekle
+          requires_membership: !membershipCheck.isMember, // Üye değilse üyelik gerektiğini işaretle
         }])
         .select('id')
         .single()
@@ -116,7 +127,15 @@ function RentPage() {
         }
       }
 
-      setMessage('Kiralama ilanınız başarıyla gönderildi! Admin onayından sonra yayınlanacak.')
+      // Başarı mesajı ve modal göster
+      if (membershipCheck.isMember) {
+        setMessage(`✅ İlanınız başarıyla gönderildi! Admin onayından sonra yayınlanacak.`)
+      } else {
+        setMessage('✅ İlanınız alındı!')
+        setHasPendingMembership(pendingCheck)
+        setShowMembershipModal(true)
+      }
+      
       setFormData({
         title: '',
         owner_name: '',
@@ -494,6 +513,13 @@ function RentPage() {
           </div>
         </div>
       </div>
+      
+      {/* Üyelik Gerekli Modal */}
+      <MembershipRequiredModal 
+        isOpen={showMembershipModal}
+        onClose={() => setShowMembershipModal(false)}
+        hasPendingMembership={hasPendingMembership}
+      />
     </div>
   )
 }

@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
 import { toTitleCase } from '../lib/textUtils'
+import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
+import MembershipRequiredModal from '../components/MembershipRequiredModal'
 
 function SellPage() {
   const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
@@ -30,6 +32,8 @@ function SellPage() {
   const [locationType, setLocationType] = useState<'address' | 'coordinates'>('address')
   const [phoneWarning, setPhoneWarning] = useState<string>('')
   const [phoneChecking, setPhoneChecking] = useState(false)
+  const [showMembershipModal, setShowMembershipModal] = useState(false)
+  const [hasPendingMembership, setHasPendingMembership] = useState(false)
 
   const waMessage = useMemo(() => {
     return 'Merhaba ilan vermek istiyorum, Adınız Soyadınızı (isminizi Soyadınızı, Telefon Numaranızı girin) Mahalle ismini, oda sayısını, Resimlerini, fiyatını ve açıklama girin..'
@@ -83,6 +87,11 @@ function SellPage() {
         setError(`Bu telefon numarasıyla zaten ${phoneCheck.pendingCount} adet bekleyen ilan var. Lütfen önceki ilanınızın onaylanmasını bekleyin.`)
         return
       }
+      
+      // ÜYELİK KONTROLÜ - HİBRİT SİSTEM
+      const membershipCheck = await checkApprovedMembership(ownerPhone)
+      const pendingCheck = await checkPendingMembership(ownerPhone)
+      
       // 1) İlanı önce oluştur ve id al
       // Konum verisi
       const finalAddress = address || `${neighborhood || 'Kulu'}, Konya`
@@ -105,6 +114,8 @@ function SellPage() {
           longitude: longitude,
           location_type: locationType,
           status: 'pending',
+          user_id: membershipCheck.userId, // Üye ise user_id ekle
+          requires_membership: !membershipCheck.isMember, // Üye değilse üyelik gerektiğini işaretle
         })
         .select('id')
         .single()
@@ -141,7 +152,15 @@ function SellPage() {
         }
       }
 
-      setMessage('İlanınız alındı. Admin onayından sonra yayına alınacaktır.')
+      // Başarı mesajı ve modal göster
+      if (membershipCheck.isMember) {
+        setMessage(`✅ İlanınız başarıyla gönderildi! Admin onayından sonra yayınlanacak.`)
+      } else {
+        setMessage('✅ İlanınız alındı!')
+        setHasPendingMembership(pendingCheck)
+        setShowMembershipModal(true)
+      }
+      
       // formu temizle
       setTitle('')
       setOwnerName('')
@@ -440,6 +459,13 @@ function SellPage() {
           </div>
         </form>
       </div>
+      
+      {/* Üyelik Gerekli Modal */}
+      <MembershipRequiredModal 
+        isOpen={showMembershipModal}
+        onClose={() => setShowMembershipModal(false)}
+        hasPendingMembership={hasPendingMembership}
+      />
     </div>
   )
 }

@@ -25,6 +25,7 @@ type Listing = {
   opportunity_order: number
   original_price_tl?: number | null
   discount_percentage?: number | null
+  user_id?: string | null
 }
 
 type UserMin = {
@@ -53,6 +54,7 @@ function AdminPage() {
   // Filters & sorting
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
   const [isFor, setIsFor] = useState<'satilik' | 'kiralik' | 'all'>('all')
+  const [membershipFilter, setMembershipFilter] = useState<'all' | 'members' | 'non-members'>('all')
   const [neighborhood, setNeighborhood] = useState<string>('')
   const [propertyType, setPropertyType] = useState<string>('')
   const [priceMin, setPriceMin] = useState<string>('')
@@ -131,6 +133,13 @@ function AdminPage() {
       if (propertyType) q = q.eq('property_type', propertyType)
       if (priceMin) q = q.gte('price_tl', Number(priceMin))
       if (priceMax) q = q.lte('price_tl', Number(priceMax))
+
+      // Membership filter
+      if (membershipFilter === 'members') {
+        q = q.not('user_id', 'is', null)
+      } else if (membershipFilter === 'non-members') {
+        q = q.is('user_id', null)
+      }
 
       if (search.trim()) {
         const s = search.trim()
@@ -646,6 +655,14 @@ function AdminPage() {
           </select>
         </div>
         <div>
+          <label className="block text-xs text-gray-600 mb-1">Üyelik Durumu</label>
+          <select className="w-full rounded-lg border px-3 py-2" value={membershipFilter} onChange={(e) => { setMembershipFilter(e.target.value as any); void queryListings(true) }}>
+            <option value="all">Tümü</option>
+            <option value="members">Sadece Üyeler</option>
+            <option value="non-members">Sadece Üye Olmayanlar</option>
+          </select>
+        </div>
+        <div>
           <label className="block text-xs text-gray-600 mb-1">Mahalle</label>
           <NeighborhoodSelect value={neighborhood} onChange={(v) => { setNeighborhood(v); void queryListings(true) }} />
         </div>
@@ -702,7 +719,7 @@ function AdminPage() {
               {listings.map((l) => (
                 <div key={l.id} className="group relative rounded-2xl border border-gray-200 p-6 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300">
                   {/* Status Badge */}
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
                     {l.status === 'pending' && (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
                         ⏳ Bekliyor
@@ -792,6 +809,12 @@ function AdminPage() {
                           🗑️ Sil
                         </span>
                       </button>
+                      {/* Üyelik Badge - Butonların Altında */}
+                      {!l.user_id && (
+                        <div className="rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2.5 text-sm font-bold shadow-lg animate-pulse text-center border-2 border-orange-600">
+                          ⚠️ ÜYE DEĞİL
+                        </div>
+                      )}
                       {l.status === 'approved' && (
                         <>
                           <button 
@@ -1066,7 +1089,7 @@ function AdminPage() {
             ) : (
               <div className="space-y-4">
                 {/* İstatistikler */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-yellow-700">{userListings.filter(l => l.status === 'pending').length}</div>
                     <div className="text-sm text-yellow-600">Bekleyen</div>
@@ -1078,6 +1101,14 @@ function AdminPage() {
                   <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-red-700">{userListings.filter(l => l.status === 'rejected').length}</div>
                     <div className="text-sm text-red-600">Reddedilen</div>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-700">{userListings.filter(l => l.user_id).length}</div>
+                    <div className="text-sm text-blue-600">Üyeli İlan</div>
+                  </div>
+                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-orange-700">{userListings.filter(l => !l.user_id).length}</div>
+                    <div className="text-sm text-orange-600">Üyesiz İlan</div>
                   </div>
                 </div>
 
@@ -1096,6 +1127,11 @@ function AdminPage() {
                           )}
                           {listing.status === 'rejected' && (
                             <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Reddedildi</span>
+                          )}
+                          {!listing.user_id && (
+                            <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full border border-orange-600">
+                              ⚠️ Üye Değil
+                            </span>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-2 text-sm text-gray-600">

@@ -1,9 +1,15 @@
-import OneSignal from 'react-onesignal'
-
 // OneSignal App ID - Bu değeri OneSignal dashboard'dan alacaksınız
 const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'YOUR_ONESIGNAL_APP_ID'
 
 let isInitialized = false
+
+// OneSignal global object type
+declare global {
+  interface Window {
+    OneSignalDeferred?: Array<(OneSignal: any) => void>
+    OneSignal?: any
+  }
+}
 
 /**
  * OneSignal'i başlat
@@ -13,24 +19,38 @@ export async function initOneSignal() {
     console.log('⚠️ OneSignal already initialized, skipping...')
     return
   }
-  
+
   // Sadece production'da çalış (OneSignal Dashboard'da sadece bu domain kayıtlı)
   const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
-  
+
   if (!isProduction) {
     console.log('ℹ️ OneSignal skipped: Development mode (only works on production)')
     isInitialized = true // Tekrar denemeyi önle
     return
   }
-  
+
   try {
-    await OneSignal.init({
-      appId: ONESIGNAL_APP_ID,
-      notifyButton: {
-        enable: false, // Kendi UI'ımızı kullanacağız
-      },
+    // OneSignal SDK'yı yükle
+    if (!window.OneSignalDeferred) {
+      window.OneSignalDeferred = []
+    }
+
+    // OneSignal script'i yükle
+    if (!document.getElementById('onesignal-sdk')) {
+      const script = document.createElement('script')
+      script.id = 'onesignal-sdk'
+      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'
+      script.defer = true
+      document.head.appendChild(script)
+    }
+
+    // OneSignal'i başlat
+    window.OneSignalDeferred.push(async function (OneSignal: any) {
+      await OneSignal.init({
+        appId: ONESIGNAL_APP_ID,
+      })
     })
-    
+
     isInitialized = true
     console.log('✅ OneSignal initialized')
   } catch (error) {
@@ -48,17 +68,22 @@ export async function subscribeUser(userId: string, phone: string) {
     if (!isInitialized) {
       await initOneSignal()
     }
-    
+
+    if (!window.OneSignal) {
+      console.error('OneSignal not loaded')
+      return false
+    }
+
     // External User ID olarak telefon numarasını kullan
-    await OneSignal.setExternalUserId(phone)
-    
+    await window.OneSignal.login(phone)
+
     // Kullanıcı bilgilerini tag olarak ekle
-    await OneSignal.sendTags({
+    await window.OneSignal.User.addTags({
       user_id: userId,
       phone: phone,
-      subscribed_at: new Date().toISOString()
+      subscribed_at: new Date().toISOString(),
     })
-    
+
     console.log('✅ User subscribed to OneSignal:', phone)
     return true
   } catch (error) {
@@ -75,10 +100,15 @@ export async function requestNotificationPermission() {
     if (!isInitialized) {
       await initOneSignal()
     }
-    
+
+    if (!window.OneSignal) {
+      console.error('OneSignal not loaded')
+      return false
+    }
+
     // Slidedown prompt göster
-    await OneSignal.showSlidedownPrompt()
-    
+    await window.OneSignal.Slidedown.promptPush()
+
     return true
   } catch (error) {
     console.error('❌ Notification permission request failed:', error)
@@ -94,9 +124,13 @@ export async function getNotificationPermission(): Promise<'granted' | 'denied' 
     if (!isInitialized) {
       await initOneSignal()
     }
-    
-    const permission = await OneSignal.getNotificationPermission()
-    return permission as 'granted' | 'denied' | 'default'
+
+    if (!window.OneSignal) {
+      return 'default'
+    }
+
+    const permission = await window.OneSignal.Notifications.permission
+    return permission ? 'granted' : 'default'
   } catch (error) {
     console.error('❌ Get notification permission failed:', error)
     return 'default'
@@ -111,8 +145,12 @@ export async function getPlayerId(): Promise<string | null> {
     if (!isInitialized) {
       await initOneSignal()
     }
-    
-    const playerId = await OneSignal.getUserId()
+
+    if (!window.OneSignal) {
+      return null
+    }
+
+    const playerId = window.OneSignal.User.PushSubscription.id
     return playerId
   } catch (error) {
     console.error('❌ Get player ID failed:', error)
@@ -128,8 +166,12 @@ export async function unsubscribeUser() {
     if (!isInitialized) {
       await initOneSignal()
     }
-    
-    await OneSignal.setSubscription(false)
+
+    if (!window.OneSignal) {
+      return false
+    }
+
+    await window.OneSignal.User.PushSubscription.optOut()
     console.log('✅ User unsubscribed from OneSignal')
     return true
   } catch (error) {
@@ -148,7 +190,7 @@ export async function sendTestNotification() {
       console.error('No player ID found')
       return false
     }
-    
+
     console.log('Player ID:', playerId)
     console.log('Test notification için OneSignal dashboard kullanın')
     return true

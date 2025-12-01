@@ -8,7 +8,11 @@ export default function PushNotificationPrompt() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    checkPermissionAndShow()
+    // Sadece production'da göster
+    const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
+    if (isProduction) {
+      checkPermissionAndShow()
+    }
   }, [])
 
   async function checkPermissionAndShow() {

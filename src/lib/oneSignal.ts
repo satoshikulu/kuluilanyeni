@@ -9,12 +9,23 @@ let isInitialized = false
  * OneSignal'i başlat
  */
 export async function initOneSignal() {
-  if (isInitialized) return
+  if (isInitialized) {
+    console.log('⚠️ OneSignal already initialized, skipping...')
+    return
+  }
+  
+  // Sadece production'da çalış (OneSignal Dashboard'da sadece bu domain kayıtlı)
+  const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
+  
+  if (!isProduction) {
+    console.log('ℹ️ OneSignal skipped: Development mode (only works on production)')
+    isInitialized = true // Tekrar denemeyi önle
+    return
+  }
   
   try {
     await OneSignal.init({
       appId: ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: true, // Development için
       notifyButton: {
         enable: false, // Kendi UI'ımızı kullanacağız
       },
@@ -24,6 +35,8 @@ export async function initOneSignal() {
     console.log('✅ OneSignal initialized')
   } catch (error) {
     console.error('❌ OneSignal initialization failed:', error)
+    // Hata durumunda da initialized olarak işaretle ki tekrar denemesin
+    isInitialized = true
   }
 }
 

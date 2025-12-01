@@ -50,16 +50,5 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// Register PWA Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
-      (registration) => {
-        console.log('✅ PWA Service Worker registered:', registration.scope)
-      },
-      (error) => {
-        console.log('❌ PWA Service Worker registration failed:', error)
-      }
-    )
-  })
-}
+// PWA Service Worker otomatik olarak vite-plugin-pwa tarafından yönetiliyor
+// Manuel kayıt yapmaya gerek yok

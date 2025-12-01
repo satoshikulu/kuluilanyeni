@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import AdminGate from '../components/AdminGate'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
+import { 
+  sendListingApprovedNotification, 
+  sendListingRejectedNotification,
+  sendUserApprovedNotification,
+  sendUserRejectedNotification 
+} from '../lib/oneSignalAPI'
 
 type Listing = {
   id: string
@@ -168,6 +174,9 @@ function AdminPage() {
 
   async function decide(id: string, decision: 'approved' | 'rejected') {
     try {
+      // İlan bilgilerini al (push notification için)
+      const listing = listings.find(l => l.id === id)
+      
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_listing' : 'reject_listing'
       
@@ -190,11 +199,27 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
+      // Push notification gönder
+      if (listing) {
+        if (decision === 'approved') {
+          await sendListingApprovedNotification(
+            listing.owner_phone,
+            listing.title,
+            listing.id
+          )
+        } else {
+          await sendListingRejectedNotification(
+            listing.owner_phone,
+            listing.title
+          )
+        }
+      }
+      
       // UI'dan ilanı kaldır
       setListings((prev) => prev.filter((l) => l.id !== id))
       
       // Başarı mesajı göster
-      alert(`✅ İlan ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}!`)
+      alert(`✅ İlan ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}! Bildirim gönderildi.`)
     } catch (e: any) {
       console.error('decide error:', e)
       // Hata mesajını göster
@@ -243,6 +268,9 @@ function AdminPage() {
 
   async function decideUser(id: string, decision: 'approved' | 'rejected') {
     try {
+      // Kullanıcı bilgilerini al (push notification için)
+      const user = pendingUsers.find(u => u.id === id)
+      
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_user' : 'reject_user'
       
@@ -265,23 +293,36 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
+      // Push notification gönder
+      if (user) {
+        if (decision === 'approved') {
+          await sendUserApprovedNotification(
+            user.phone,
+            user.full_name
+          )
+        } else {
+          await sendUserRejectedNotification(
+            user.phone,
+            user.full_name
+          )
+        }
+      }
+      
       // Listeyi güncelle
       setPendingUsers((prev) => prev.filter((u) => u.id !== id))
       
       // Onaylanan/reddedilen listeye ekle
       if (decision === 'approved') {
-        const user = pendingUsers.find(u => u.id === id)
         if (user) {
           setApprovedUsers((prev) => [{ ...user, status: 'approved' }, ...prev])
         }
       } else {
-        const user = pendingUsers.find(u => u.id === id)
         if (user) {
           setRejectedUsers((prev) => [{ ...user, status: 'rejected' }, ...prev])
         }
       }
       
-      alert(`✅ Kullanıcı ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}!`)
+      alert(`✅ Kullanıcı ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}! Bildirim gönderildi.`)
     } catch (e: any) {
       console.error('decideUser error:', e)
       alert('Hata: ' + (e.message || 'Kullanıcı durumu güncellenemedi'))

@@ -1,0 +1,42 @@
+{
+  "name": "Kulu İlan - Emlak İlanları",
+  "short_name": "Kulu İlan",
+  "description": "Kulu'da satılık ve kiralık emlak ilanları",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "lifestyle"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Satılık İlanlar",
+      "short_name": "Satılık",
+      "description": "Satılık emlak ilanlarını görüntüle",
+      "url": "/satilik",
+      "icons": [{ "src": "/icon-192x192.jpg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Kiralık İlanlar",
+      "short_name": "Kiralık",
+      "description": "Kiralık emlak ilanlarını görüntüle",
+      "url": "/kiralik",
+      "icons": [{ "src": "/icon-192x192.jpg", "sizes": "192x192" }]
+    }
+  ]
+}

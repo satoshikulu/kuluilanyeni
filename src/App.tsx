@@ -2,6 +2,10 @@ import { Outlet, Link, NavLink } from 'react-router-dom'
 import { getCurrentUser, logoutUser, isAdmin } from './lib/simpleAuth'
 import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
+import PushNotificationPrompt from './components/PushNotificationPrompt'
+import { useEffect } from 'react'
+import { initOneSignal } from './lib/oneSignal'
 
 function App() {
   const currentUser = getCurrentUser()
@@ -10,6 +14,11 @@ function App() {
   
   // Kullanıcı adını title case yap
   const displayName = currentUser?.full_name ? toTitleCase(currentUser.full_name) : ''
+
+  // OneSignal'i başlat
+  useEffect(() => {
+    initOneSignal()
+  }, [])
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -138,6 +147,8 @@ function App() {
           </span>
         </div>
       </footer>
+      <PWAInstallPrompt />
+      <PushNotificationPrompt />
     </div>
   )
 }

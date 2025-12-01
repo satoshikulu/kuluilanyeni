@@ -46,13 +46,38 @@ export async function initOneSignal() {
 
     // OneSignal'i başlat
     window.OneSignalDeferred.push(async function (OneSignal: any) {
-      await OneSignal.init({
-        appId: ONESIGNAL_APP_ID,
-      })
+      try {
+        await OneSignal.init({
+          appId: ONESIGNAL_APP_ID,
+          allowLocalhostAsSecureOrigin: false,
+        })
+        console.log('✅ OneSignal initialized')
+      } catch (error: any) {
+        // AppID uyuşmazlığı hatası - eski kaydı temizle
+        if (error?.message?.includes("AppID doesn't match")) {
+          console.warn('⚠️ OneSignal AppID mismatch detected, clearing old data...')
+          // Service Worker'ı temizle
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+              registrations.forEach((registration) => {
+                if (registration.active?.scriptURL.includes('onesignal')) {
+                  registration.unregister()
+                }
+              })
+            })
+          }
+          // IndexedDB'yi temizle
+          if ('indexedDB' in window) {
+            indexedDB.deleteDatabase('ONE_SIGNAL_SDK_DB')
+          }
+          console.log('ℹ️ Please refresh the page to complete OneSignal setup')
+        } else {
+          console.error('❌ OneSignal initialization failed:', error)
+        }
+      }
     })
 
     isInitialized = true
-    console.log('✅ OneSignal initialized')
   } catch (error) {
     console.error('❌ OneSignal initialization failed:', error)
     // Hata durumunda da initialized olarak işaretle ki tekrar denemesin

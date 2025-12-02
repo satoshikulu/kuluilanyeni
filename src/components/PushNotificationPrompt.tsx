@@ -55,14 +55,21 @@ export default function PushNotificationPrompt() {
 
   async function handleEnable() {
     const user = getCurrentUser()
-    if (!user) return
+    if (!user) {
+      console.error('No user found')
+      return
+    }
 
+    console.log('🔔 Starting notification permission request...')
     setLoading(true)
+    
     try {
       const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
+      console.log('Environment:', isProduction ? 'Production' : 'Development')
       
       if (isProduction) {
         // Production'da OneSignal kullan
+        console.log('Using OneSignal...')
         const success = await requestNotificationPermission()
         
         if (success) {
@@ -77,34 +84,58 @@ export default function PushNotificationPrompt() {
             setShowPrompt(false)
             alert('✅ Bildirimler açıldı! İlanınız onaylandığında haber vereceğiz.')
           }
+        } else {
+          throw new Error('OneSignal permission request failed')
         }
       } else {
         // Development'ta native browser notification API kullan
-        const result = await Notification.requestPermission()
+        console.log('Using native Notification API...')
+        
+        // Timeout ekle - 10 saniye içinde cevap gelmezse hata ver
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Permission request timeout')), 10000)
+        })
+        
+        const permissionPromise = Notification.requestPermission()
+        
+        const result = await Promise.race([permissionPromise, timeoutPromise]) as NotificationPermission
+        
+        console.log('Permission result:', result)
         
         if (result === 'granted') {
           setPermission('granted')
           setShowPrompt(false)
           
           // Test bildirimi göster
-          new Notification('✅ Bildirimler Açıldı!', {
-            body: 'İlanınız onaylandığında haber vereceğiz. (Development modu - OneSignal production\'da çalışacak)',
-            icon: '/icon-192x192.png',
-            badge: '/icon-192x192.png'
-          })
+          try {
+            new Notification('✅ Bildirimler Açıldı!', {
+              body: 'İlanınız onaylandığında haber vereceğiz.',
+              icon: '/icon-192x192.png',
+              badge: '/icon-192x192.png'
+            })
+          } catch (notifError) {
+            console.warn('Could not show test notification:', notifError)
+          }
           
           console.log('✅ Bildirimler açıldı (Development mode)')
-          alert('✅ Bildirimler açıldı! (Development modu - Production\'da OneSignal kullanılacak)')
+          alert('✅ Bildirimler açıldı!')
         } else if (result === 'denied') {
           setPermission('denied')
+          setShowPrompt(false)
           alert('❌ Bildirim izni reddedildi. Tarayıcı ayarlarından izin verebilirsiniz.')
+        } else {
+          // default - kullanıcı kapatmış
+          setShowPrompt(false)
+          console.log('User dismissed the permission dialog')
         }
       }
     } catch (error) {
-      console.error('Push notification enable error:', error)
+      console.error('❌ Push notification enable error:', error)
       alert('❌ Bildirimler açılamadı. Lütfen tarayıcı ayarlarınızı kontrol edin.')
+      setShowPrompt(false)
     } finally {
       setLoading(false)
+      console.log('🔔 Notification permission request completed')
     }
   }
 

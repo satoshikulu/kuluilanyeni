@@ -8,19 +8,32 @@ export default function PushNotificationPrompt() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Sadece production'da göster
-    const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
-    if (isProduction) {
-      checkPermissionAndShow()
-    }
+    checkPermissionAndShow()
   }, [])
 
   async function checkPermissionAndShow() {
     const user = getCurrentUser()
     if (!user) return
 
+    // Tarayıcı bildirim desteğini kontrol et
+    if (!('Notification' in window)) {
+      console.log('Bu tarayıcı bildirimleri desteklemiyor')
+      return
+    }
+
     // Bildirim iznini kontrol et
-    const currentPermission = await getNotificationPermission()
+    let currentPermission: 'granted' | 'denied' | 'default' = 'default'
+    
+    const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
+    
+    if (isProduction) {
+      // Production'da OneSignal kullan
+      currentPermission = await getNotificationPermission()
+    } else {
+      // Development'ta native API kullan
+      currentPermission = Notification.permission as 'granted' | 'denied' | 'default'
+    }
+    
     setPermission(currentPermission)
 
     // Eğer izin verilmediyse ve daha önce reddedilmediyse göster
@@ -46,21 +59,45 @@ export default function PushNotificationPrompt() {
 
     setLoading(true)
     try {
-      // Bildirim izni iste
-      const success = await requestNotificationPermission()
+      const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
       
-      if (success) {
-        // Kullanıcıyı OneSignal'e kaydet
-        await subscribeUser(user.id, user.phone)
+      if (isProduction) {
+        // Production'da OneSignal kullan
+        const success = await requestNotificationPermission()
         
-        // Permission'ı güncelle
-        const newPermission = await getNotificationPermission()
-        setPermission(newPermission)
+        if (success) {
+          // Kullanıcıyı OneSignal'e kaydet
+          await subscribeUser(user.id, user.phone)
+          
+          // Permission'ı güncelle
+          const newPermission = await getNotificationPermission()
+          setPermission(newPermission)
+          
+          if (newPermission === 'granted') {
+            setShowPrompt(false)
+            alert('✅ Bildirimler açıldı! İlanınız onaylandığında haber vereceğiz.')
+          }
+        }
+      } else {
+        // Development'ta native browser notification API kullan
+        const result = await Notification.requestPermission()
         
-        if (newPermission === 'granted') {
+        if (result === 'granted') {
+          setPermission('granted')
           setShowPrompt(false)
-          // Başarı mesajı göster
-          alert('✅ Bildirimler açıldı! İlanınız onaylandığında haber vereceğiz.')
+          
+          // Test bildirimi göster
+          new Notification('✅ Bildirimler Açıldı!', {
+            body: 'İlanınız onaylandığında haber vereceğiz. (Development modu - OneSignal production\'da çalışacak)',
+            icon: '/icon-192x192.png',
+            badge: '/icon-192x192.png'
+          })
+          
+          console.log('✅ Bildirimler açıldı (Development mode)')
+          alert('✅ Bildirimler açıldı! (Development modu - Production\'da OneSignal kullanılacak)')
+        } else if (result === 'denied') {
+          setPermission('denied')
+          alert('❌ Bildirim izni reddedildi. Tarayıcı ayarlarından izin verebilirsiniz.')
         }
       }
     } catch (error) {

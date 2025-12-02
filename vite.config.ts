@@ -8,7 +8,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon-192x192.png', 'icon-512x512.png', 'apple-touch-icon.png'],
+      includeAssets: [
+        'icon-192x192.png',
+        'icon-192x192-maskable.png',
+        'icon-512x512.png',
+        'icon-512x512-maskable.png',
+        'apple-touch-icon.png'
+      ],
       manifest: {
         name: 'Kulu İlan - Emlak İlanları',
         short_name: 'Kulu İlan',
@@ -21,13 +27,25 @@ export default defineConfig({
             src: '/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/icon-192x192-maskable.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
           },
           {
             src: '/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/icon-512x512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },

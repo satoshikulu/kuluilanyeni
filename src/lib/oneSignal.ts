@@ -20,14 +20,16 @@ export async function initOneSignal() {
     return
   }
 
-  // Sadece production'da çalış (OneSignal Dashboard'da sadece bu domain kayıtlı)
+  // Sadece production'da çalış (OneSignal Service Worker sorunları nedeniyle)
   const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
 
   if (!isProduction) {
-    console.log('ℹ️ OneSignal skipped: Development mode (only works on production)')
+    console.log('ℹ️ OneSignal skipped: Development mode (use native Notification API)')
     isInitialized = true // Tekrar denemeyi önle
     return
   }
+  
+  console.log('🔔 OneSignal initializing on:', window.location.hostname)
 
   try {
     // OneSignal SDK'yı yükle

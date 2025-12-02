@@ -27,10 +27,10 @@ export default function PushNotificationPrompt() {
     const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
     
     if (isProduction) {
-      // Production'da OneSignal kullan
+      // Sadece production'da OneSignal kullan
       currentPermission = await getNotificationPermission()
     } else {
-      // Development'ta native API kullan
+      // Localhost ve development'ta native API kullan
       currentPermission = Notification.permission as 'granted' | 'denied' | 'default'
     }
     
@@ -65,10 +65,12 @@ export default function PushNotificationPrompt() {
     
     try {
       const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
-      console.log('Environment:', isProduction ? 'Production' : 'Development')
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      
+      console.log('Environment:', isProduction ? 'Production' : isLocalhost ? 'Localhost' : 'Development')
       
       if (isProduction) {
-        // Production'da OneSignal kullan
+        // Sadece production'da OneSignal kullan
         console.log('Using OneSignal...')
         const success = await requestNotificationPermission()
         

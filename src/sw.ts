@@ -1,15 +1,15 @@
 /// <reference lib="webworker" />
+
+declare const self: ServiceWorkerGlobalScope;
+
+self.addEventListener("message", () => {});
+
 import { clientsClaim } from 'workbox-core';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
-
-declare const self: ServiceWorkerGlobalScope;
-
-// Service Worker message event listener - MUST BE FIRST - prevents OneSignal postMessage errors
-self.addEventListener("message", () => {});
 
 // Skip waiting and claim clients immediately
 self.skipWaiting();
@@ -19,7 +19,7 @@ clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Clean up old caches
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(

@@ -51,6 +51,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,jpg,jpeg,png,svg,webp}'],
+        // OneSignal service worker'larını hariç tut - PWA ile çakışmasın
+        navigateFallbackDenylist: [/^\/OneSignalSDK.*\.js$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,

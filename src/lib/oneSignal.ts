@@ -1,6 +1,3 @@
-// OneSignal App ID - Bu değeri OneSignal dashboard'dan alacaksınız
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'YOUR_ONESIGNAL_APP_ID'
-
 let isInitialized = false
 
 // OneSignal global object type
@@ -13,6 +10,7 @@ declare global {
 
 /**
  * OneSignal'i başlat
+ * NOT: OneSignal SDK index.html'de yükleniyor, burada sadece hazır olmasını bekliyoruz
  */
 export async function initOneSignal() {
   if (isInitialized) {
@@ -29,56 +27,26 @@ export async function initOneSignal() {
     return
   }
   
-  console.log('🔔 OneSignal initializing on:', window.location.hostname)
+  console.log('🔔 OneSignal waiting for SDK to load...')
 
   try {
-    // OneSignal SDK'yı yükle
-    if (!window.OneSignalDeferred) {
-      window.OneSignalDeferred = []
+    // OneSignal SDK'nın yüklenmesini bekle (index.html'de yükleniyor)
+    // SDK'yı TEKRAR yükleme - bu "SDK already initialized" hatasına neden olur!
+    
+    // OneSignal'in hazır olmasını bekle
+    let attempts = 0
+    const maxAttempts = 50 // 5 saniye (50 * 100ms)
+    
+    while (!window.OneSignal && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
     }
 
-    // OneSignal script'i yükle
-    if (!document.getElementById('onesignal-sdk')) {
-      const script = document.createElement('script')
-      script.id = 'onesignal-sdk'
-      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'
-      script.defer = true
-      document.head.appendChild(script)
+    if (!window.OneSignal) {
+      throw new Error('OneSignal SDK failed to load')
     }
 
-    // OneSignal'i başlat
-    window.OneSignalDeferred.push(async function (OneSignal: any) {
-      try {
-        await OneSignal.init({
-          appId: ONESIGNAL_APP_ID,
-          allowLocalhostAsSecureOrigin: false,
-        })
-        console.log('✅ OneSignal initialized')
-      } catch (error: any) {
-        // AppID uyuşmazlığı hatası - eski kaydı temizle
-        if (error?.message?.includes("AppID doesn't match")) {
-          console.warn('⚠️ OneSignal AppID mismatch detected, clearing old data...')
-          // Service Worker'ı temizle
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-              registrations.forEach((registration) => {
-                if (registration.active?.scriptURL.includes('onesignal')) {
-                  registration.unregister()
-                }
-              })
-            })
-          }
-          // IndexedDB'yi temizle
-          if ('indexedDB' in window) {
-            indexedDB.deleteDatabase('ONE_SIGNAL_SDK_DB')
-          }
-          console.log('ℹ️ Please refresh the page to complete OneSignal setup')
-        } else {
-          console.error('❌ OneSignal initialization failed:', error)
-        }
-      }
-    })
-
+    console.log('✅ OneSignal SDK ready')
     isInitialized = true
   } catch (error) {
     console.error('❌ OneSignal initialization failed:', error)

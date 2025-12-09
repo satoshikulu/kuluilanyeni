@@ -33,3 +33,6 @@ dist-ssr
 .env.production
 .env.test
 !.env.example
+
+# Local Netlify folder
+.netlify

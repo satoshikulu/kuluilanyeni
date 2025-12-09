@@ -32,15 +32,17 @@
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       // OneSignal'in sadece 1 kez initialize olmasını sağla
-      if (!window.OneSignalInitialized) {
-        window.OneSignalInitialized = true;
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function(OneSignal) {
-          await OneSignal.init({
-            appId: "b6fe2840-fc48-4fe3-90fa-0de6ee5274e9",
-          });
+      if (window.OneSignalInitialized) return;
+      window.OneSignalInitialized = true;
+      
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "b6fe2840-fc48-4fe3-90fa-0de6ee5274e9",
+          serviceWorkerPath: "/OneSignalSDKWorker.js",
+          serviceWorkerParam: { scope: "/" }
         });
-      }
+      });
     </script>
   </body>
 </html>

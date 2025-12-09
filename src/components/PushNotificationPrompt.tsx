@@ -1,6 +1,50 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUser } from '../lib/simpleAuth'
-import { requestNotificationPermission, getNotificationPermission, subscribeUser } from '../lib/oneSignal'
+
+// OneSignal helper functions - using window.OneSignal directly
+async function requestNotificationPermission(): Promise<boolean> {
+  try {
+    if (!window.OneSignal) return false
+    await window.OneSignal.Slidedown.promptPush()
+    return true
+  } catch (error) {
+    console.error('OneSignal permission request failed:', error)
+    return false
+  }
+}
+
+async function getNotificationPermission(): Promise<'granted' | 'denied' | 'default'> {
+  try {
+    if (!window.OneSignal) return 'default'
+    const permission = await window.OneSignal.Notifications.permission
+    return permission ? 'granted' : 'default'
+  } catch (error) {
+    console.error('Get notification permission failed:', error)
+    return 'default'
+  }
+}
+
+async function subscribeUser(userId: string, phone: string): Promise<boolean> {
+  try {
+    if (!window.OneSignal) return false
+    await window.OneSignal.login(phone)
+    await window.OneSignal.User.addTags({
+      user_id: userId,
+      phone: phone,
+      subscribed_at: new Date().toISOString(),
+    })
+    return true
+  } catch (error) {
+    console.error('OneSignal subscription failed:', error)
+    return false
+  }
+}
+
+declare global {
+  interface Window {
+    OneSignal?: any
+  }
+}
 
 export default function PushNotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false)

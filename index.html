@@ -28,21 +28,16 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- OneSignal Push Notifications -->
+    <!-- OneSignal Push Notifications V16 -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
-      window.OneSignalInitialized = window.OneSignalInitialized || false;
-      if (!window.OneSignalInitialized) {
-        window.OneSignalInitialized = true;
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function(OneSignal) {
-          await OneSignal.init({
-            appId: "eb4688c6-138a-499a-b1da-bb3bee7369af",
-            serviceWorkerPath: "/OneSignalSDKWorker.js",
-            serviceWorkerParam: { scope: "/" }
-          });
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "eb4688c6-138a-499a-b1da-bb3bee7369af",
+          serviceWorkerPath: "/OneSignalSDKWorker.js"
         });
-      }
+      });
     </script>
   </body>
 </html>

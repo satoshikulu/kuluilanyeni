@@ -91,7 +91,7 @@ export async function loginUser(
       
       // OneSignal push notification subscribe işlemi
       try {
-        await subscribeUserToPush(result.user.id);
+        await subscribeUserToPush(result.user.id, result.user.phone);
       } catch (error) {
         console.warn('OneSignal subscription failed during login:', error);
       }

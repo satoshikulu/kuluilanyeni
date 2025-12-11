@@ -1,44 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUser } from '../lib/simpleAuth'
-
-// OneSignal helper functions - using window.OneSignal directly
-async function requestNotificationPermission(): Promise<boolean> {
-  try {
-    if (!window.OneSignal) return false
-    await window.OneSignal.Slidedown.promptPush()
-    return true
-  } catch (error) {
-    console.error('OneSignal permission request failed:', error)
-    return false
-  }
-}
-
-async function getNotificationPermission(): Promise<'granted' | 'denied' | 'default'> {
-  try {
-    if (!window.OneSignal) return 'default'
-    const permission = await window.OneSignal.Notifications.permission
-    return permission ? 'granted' : 'default'
-  } catch (error) {
-    console.error('Get notification permission failed:', error)
-    return 'default'
-  }
-}
-
-async function subscribeUser(userId: string, phone: string): Promise<boolean> {
-  try {
-    if (!window.OneSignal) return false
-    await window.OneSignal.login(phone)
-    await window.OneSignal.User.addTags({
-      user_id: userId,
-      phone: phone,
-      subscribed_at: new Date().toISOString(),
-    })
-    return true
-  } catch (error) {
-    console.error('OneSignal subscription failed:', error)
-    return false
-  }
-}
+import { subscribeUserToPush, checkPushPermission, isOneSignalReady } from '../lib/oneSignal'
 
 declare global {
   interface Window {
@@ -70,9 +32,9 @@ export default function PushNotificationPrompt() {
     
     const isProduction = window.location.hostname === 'kuluilanyeni.netlify.app'
     
-    if (isProduction) {
-      // Sadece production'da OneSignal kullan
-      currentPermission = await getNotificationPermission()
+    if (isProduction && isOneSignalReady()) {
+      // Production'da OneSignal kullan
+      currentPermission = await checkPushPermission()
     } else {
       // Localhost ve development'ta native API kullan
       currentPermission = Notification.permission as 'granted' | 'denied' | 'default'
@@ -113,17 +75,14 @@ export default function PushNotificationPrompt() {
       
       console.log('Environment:', isProduction ? 'Production' : isLocalhost ? 'Localhost' : 'Development')
       
-      if (isProduction) {
-        // Sadece production'da OneSignal kullan
+      if (isProduction && isOneSignalReady()) {
+        // Production'da OneSignal kullan
         console.log('Using OneSignal...')
-        const success = await requestNotificationPermission()
+        const success = await subscribeUserToPush(user.id)
         
         if (success) {
-          // Kullanıcıyı OneSignal'e kaydet
-          await subscribeUser(user.id, user.phone)
-          
           // Permission'ı güncelle
-          const newPermission = await getNotificationPermission()
+          const newPermission = await checkPushPermission()
           setPermission(newPermission)
           
           if (newPermission === 'granted') {
@@ -131,7 +90,7 @@ export default function PushNotificationPrompt() {
             alert('✅ Bildirimler açıldı! İlanınız onaylandığında haber vereceğiz.')
           }
         } else {
-          throw new Error('OneSignal permission request failed')
+          throw new Error('OneSignal subscription failed')
         }
       } else {
         // Development'ta native browser notification API kullan

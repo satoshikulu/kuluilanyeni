@@ -21,18 +21,12 @@ export default function PWAInstallPrompt() {
                       (window.navigator as any).standalone === true
     setIsStandalone(standalone)
 
-    // Android/Chrome install prompt
+    // Android/Chrome install prompt - sadece event yakala, otomatik prompt gösterme
     const handler = (e: Event) => {
       e.preventDefault()
       const promptEvent = e as BeforeInstallPromptEvent
       setDeferredPrompt(promptEvent)
-      
-      // 2 saniye sonra otomatik prompt göster
-      setTimeout(() => {
-        promptEvent.prompt()
-      }, 2000)
-      
-      setShowInstallPrompt(true)
+      setShowInstallPrompt(true) // Modal'ı göster ama otomatik prompt yapma
     }
 
     window.addEventListener('beforeinstallprompt', handler)

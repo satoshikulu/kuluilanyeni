@@ -34,6 +34,15 @@ function App() {
               İlanlara Bak
             </NavLink>
             
+            {/* PWA Install Button */}
+            <button
+              onClick={() => (window as any).installPWA?.()}
+              className="inline-flex items-center rounded-xl px-4 py-2 font-medium shadow-sm transition-colors bg-purple-600 text-white hover:bg-purple-700 ring-1 ring-black/10"
+              title="Uygulamayı Yükle"
+            >
+              📱 Yükle
+            </button>
+            
             {currentUser && !isAdminSession && (
               <NavLink
                 to="/ilanlarim"

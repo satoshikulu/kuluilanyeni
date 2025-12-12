@@ -55,15 +55,22 @@ createRoot(document.getElementById('root')!).render(
 // Manuel kayıt yapmaya gerek yok
 
 // Global PWA Install Prompt Handler
-let deferredPrompt: any;
+let deferredPrompt: any = null;
 
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  
-  setTimeout(() => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-    }
-  }, 2000);
+  console.log("PWA install prompt hazır.");
 });
+
+// Global PWA install function for buttons
+(window as any).installPWA = async () => {
+  if (!deferredPrompt) return;
+  
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  
+  console.log("User choice:", choice.outcome);
+  
+  deferredPrompt = null;
+};

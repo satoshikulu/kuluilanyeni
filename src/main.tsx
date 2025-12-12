@@ -53,3 +53,17 @@ createRoot(document.getElementById('root')!).render(
 
 // PWA Service Worker otomatik olarak vite-plugin-pwa tarafından yönetiliyor
 // Manuel kayıt yapmaya gerek yok
+
+// Global PWA Install Prompt Handler
+let deferredPrompt: any;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  setTimeout(() => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+    }
+  }, 2000);
+});

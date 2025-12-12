@@ -2,7 +2,9 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
-self.addEventListener("message", () => {});
+self.addEventListener("message", (event) => {
+  console.log("SW message:", event.data);
+});
 
 import { clientsClaim } from 'workbox-core';
 import { ExpirationPlugin } from 'workbox-expiration';

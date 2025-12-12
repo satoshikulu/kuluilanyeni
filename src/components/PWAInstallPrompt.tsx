@@ -24,7 +24,14 @@ export default function PWAInstallPrompt() {
     // Android/Chrome install prompt
     const handler = (e: Event) => {
       e.preventDefault()
-      setDeferredPrompt(e as BeforeInstallPromptEvent)
+      const promptEvent = e as BeforeInstallPromptEvent
+      setDeferredPrompt(promptEvent)
+      
+      // 2 saniye sonra otomatik prompt göster
+      setTimeout(() => {
+        promptEvent.prompt()
+      }, 2000)
+      
       setShowInstallPrompt(true)
     }
 

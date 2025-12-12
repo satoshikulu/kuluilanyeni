@@ -3,7 +3,8 @@
 declare global {
   interface Window {
     OneSignal?: any;
-    OneSignalDeferred?: any[];
+    OneSignalDeferred: any[];
+    enablePush?: () => Promise<void>;
   }
 }
 

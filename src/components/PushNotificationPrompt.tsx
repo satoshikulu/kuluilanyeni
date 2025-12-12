@@ -2,13 +2,6 @@ import { useEffect, useState } from 'react'
 import { getCurrentUser } from '../lib/simpleAuth'
 import { checkPushPermission, isOneSignalReady } from '../lib/oneSignal'
 
-declare global {
-  interface Window {
-    OneSignal?: any
-    enablePush?: () => Promise<void>
-  }
-}
-
 export default function PushNotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false)
   const [permission, setPermission] = useState<'granted' | 'denied' | 'default'>('default')

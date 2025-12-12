@@ -43,7 +43,7 @@ function LoginPage() {
       if (result.success && result.user) {
         // Başarılı giriş - OneSignal push notification'ı etkinleştir
         window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async function(OneSignal) {
+        window.OneSignalDeferred.push(async function() {
           try {
             await OneSignal.User.Push.enable();
             console.log("Push enabled after login!");

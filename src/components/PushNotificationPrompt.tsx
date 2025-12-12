@@ -70,23 +70,10 @@ export default function PushNotificationPrompt() {
       console.log('Environment:', isProduction ? 'Production' : isLocalhost ? 'Localhost' : 'Development')
       
       if (isProduction && isOneSignalReady()) {
-        // Production'da OneSignal kullan - global enablePush fonksiyonunu çağır
-        console.log('Using OneSignal...')
-        
-        if (window.enablePush) {
-          await window.enablePush();
-          
-          // Permission'ı güncelle
-          const newPermission = await checkPushPermission()
-          setPermission(newPermission)
-          
-          if (newPermission === 'granted') {
-            setShowPrompt(false)
-            alert('✅ Bildirimler açıldı! İlanınız onaylandığında haber vereceğiz.')
-          }
-        } else {
-          throw new Error('enablePush function not available')
-        }
+        // Production'da OneSignal kullan - ama otomatik subscribe yok, sadece login sonrası
+        console.log('OneSignal ready but no auto subscribe - login required')
+        setShowPrompt(false)
+        alert('⚠️ Lütfen önce giriş yapın, sonra bildirimler otomatik açılacak.')
       } else {
         // Development'ta native browser notification API kullan
         console.log('Using native Notification API...')

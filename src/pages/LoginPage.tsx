@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { initializeOneSignal } from '../lib/oneSignal'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -36,7 +35,24 @@ function LoginPage() {
       
       if (result.success && result.user) {
         // Başarılı giriş - OneSignal push notification'ı etkinleştir
-        await initializeOneSignal();
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async (OneSignal: any) => {
+          console.log("🔔 Login sonrası OneSignal subscribe başlıyor...");
+          
+          try {
+            const permission = await OneSignal.Notifications.requestPermission();
+            
+            if (permission !== "granted") {
+              console.log("Permission reddedildi");
+              return;
+            }
+            
+            await OneSignal.User.Push.subscribe();
+            console.log("🎉 Kullanıcı subscribe oldu!");
+          } catch (err) {
+            console.error("Subscribe error:", err);
+          }
+        });
         
         // Ana sayfaya yönlendir
         navigate('/')

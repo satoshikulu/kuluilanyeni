@@ -3,10 +3,9 @@ import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
 import { Eye, EyeOff } from 'lucide-react'
 
-// OneSignal TypeScript declarations
 declare global {
   interface Window {
-    OneSignalDeferred?: any[];
+    OneSignalDeferred: any[];
   }
 }
 
@@ -43,7 +42,7 @@ function LoginPage() {
       if (result.success && result.user) {
         // Başarılı giriş - OneSignal push notification'ı etkinleştir
         window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async function() {
+        window.OneSignalDeferred.push(async function(OneSignal) {
           try {
             await OneSignal.User.Push.enable();
             console.log("Push enabled after login!");

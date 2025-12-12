@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
+import { initializeOneSignal } from '../lib/oneSignal'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -35,15 +36,7 @@ function LoginPage() {
       
       if (result.success && result.user) {
         // Başarılı giriş - OneSignal push notification'ı etkinleştir
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async function(OneSignal: any) {
-          try {
-            await OneSignal.User.Push.enable();
-            console.log("Push enabled after login!");
-          } catch (e) {
-            console.error("Login push error:", e);
-          }
-        });
+        await initializeOneSignal();
         
         // Ana sayfaya yönlendir
         navigate('/')

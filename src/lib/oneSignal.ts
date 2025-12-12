@@ -1,4 +1,5 @@
 // OneSignal V16 Helper Functions
+import { supabase } from "./supabaseClient";
 
 declare global {
   interface Window {
@@ -6,6 +7,32 @@ declare global {
     OneSignalDeferred: any[];
     enablePush?: () => Promise<void>;
   }
+}
+
+export async function initializeOneSignal() {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async function (OneSignal: any) {
+    try {
+      await OneSignal.Notifications.requestPermission();
+      await OneSignal.User.Push.subscribe();
+      console.log("Push subscribed!");
+
+      // --- Supabase kullanıcı eşleşmesi ---
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        await OneSignal.User.addTag("uid", user.id);
+        console.log("OneSignal tag eklendi (uid):", user.id);
+      } else {
+        console.log("Kullanıcı giriş yapmamış, tag eklenmedi.");
+      }
+
+    } catch (err) {
+      console.error("OneSignal init error:", err);
+    }
+  });
 }
 
 /**

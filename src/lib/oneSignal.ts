@@ -15,7 +15,7 @@ export function isOneSignalReady(): boolean {
 }
 
 /**
- * Kullanıcı için push notification subscribe işlemi
+ * Kullanıcı için push notification enable işlemi (V16 API)
  */
 export async function subscribeUserToPush(userId: string, phone?: string): Promise<boolean> {
   try {
@@ -24,9 +24,12 @@ export async function subscribeUserToPush(userId: string, phone?: string): Promi
       return false;
     }
 
-    // Push notification izni iste
-    const sub = await window.OneSignal.User.Push.subscribe();
-    console.log("Push izin sonucu:", sub);
+    // V16 API: Request permission first
+    await window.OneSignal.Notifications.requestPermission();
+    
+    // V16 API: Enable push notifications
+    await window.OneSignal.User.Push.enable();
+    console.log("Push enabled successfully!");
     
     // Kullanıcı ID'sini tag olarak ekle
     await window.OneSignal.User.addTag("user_id", userId);
@@ -85,7 +88,7 @@ export async function checkPushPermission(): Promise<'granted' | 'denied' | 'def
 }
 
 /**
- * Kullanıcı giriş yaptığında OneSignal abonelik işlemi (özel fonksiyon)
+ * Kullanıcı giriş yaptığında OneSignal abonelik işlemi (V16 API)
  * Bu fonksiyon istediğiniz yerde manuel olarak çağrılabilir
  */
 export async function onUserLogin(userPhone: string, userId?: string): Promise<boolean> {
@@ -98,15 +101,18 @@ export async function onUserLogin(userPhone: string, userId?: string): Promise<b
     return new Promise((resolve) => {
       window.OneSignalDeferred!.push(async function(OneSignal: any) {
         try {
-          // 📌 1. Kullanıcıya Push izni iste
-          const sub = await OneSignal.User.Push.subscribe();
-          console.log("Push izin sonucu:", sub);
+          // 📌 1. V16 API: Request permission first
+          await OneSignal.Notifications.requestPermission();
           
-          // 📌 2. OneSignal'a kullanıcıya ait telefon numarasını kaydet
+          // 📌 2. V16 API: Enable push notifications
+          await OneSignal.User.Push.enable();
+          console.log("Push enabled successfully!");
+          
+          // 📌 3. OneSignal'a kullanıcıya ait telefon numarasını kaydet
           await OneSignal.User.addTag("phone", userPhone);
           console.log("OneSignal tag eklendi:", userPhone);
           
-          // 📌 3. Kullanıcı ID'si varsa onu da ekle
+          // 📌 4. Kullanıcı ID'si varsa onu da ekle
           if (userId) {
             await OneSignal.User.addTag("user_id", userId);
             console.log("OneSignal user_id tag eklendi:", userId);

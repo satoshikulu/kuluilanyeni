@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUser } from '../lib/simpleAuth'
-import { subscribeUserToPush, checkPushPermission, isOneSignalReady } from '../lib/oneSignal'
+import { checkPushPermission, isOneSignalReady } from '../lib/oneSignal'
 
 declare global {
   interface Window {
     OneSignal?: any
+    enablePush?: () => Promise<void>
   }
 }
 
@@ -76,11 +77,12 @@ export default function PushNotificationPrompt() {
       console.log('Environment:', isProduction ? 'Production' : isLocalhost ? 'Localhost' : 'Development')
       
       if (isProduction && isOneSignalReady()) {
-        // Production'da OneSignal kullan
+        // Production'da OneSignal kullan - global enablePush fonksiyonunu çağır
         console.log('Using OneSignal...')
-        const success = await subscribeUserToPush(user.id)
         
-        if (success) {
+        if (window.enablePush) {
+          await window.enablePush();
+          
           // Permission'ı güncelle
           const newPermission = await checkPushPermission()
           setPermission(newPermission)
@@ -90,7 +92,7 @@ export default function PushNotificationPrompt() {
             alert('✅ Bildirimler açıldı! İlanınız onaylandığında haber vereceğiz.')
           }
         } else {
-          throw new Error('OneSignal subscription failed')
+          throw new Error('enablePush function not available')
         }
       } else {
         // Development'ta native browser notification API kullan

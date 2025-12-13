@@ -1,4 +1,5 @@
 // OneSignal V16 Integration
-// Otomatik subscribe kodları kaldırıldı - sadece LoginPage.tsx'te subscribe yapılacak
+// Bu dosya artık kullanılmıyor - tüm OneSignal işlemleri src/lib/oneSignal.ts'de yapılıyor
+// Otomatik subscribe kodları tamamen kaldırıldı
 
 export {};

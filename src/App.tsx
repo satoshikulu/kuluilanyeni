@@ -18,42 +18,27 @@ function App() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b">
-        <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="font-semibold text-lg tracking-tight">
-            Kulu İlan <span className="text-gray-500">·</span> <span className="text-gray-600">Kulu Emlak Pazarı</span>
+        <div className="mx-auto max-w-6xl px-2 sm:px-4 h-16 flex items-center justify-between">
+          <Link to="/" className="font-semibold text-base sm:text-lg tracking-tight">
+            <span className="hidden sm:inline">Kulu İlan <span className="text-gray-500">·</span> <span className="text-gray-600">Kulu Emlak Pazarı</span></span>
+            <span className="sm:hidden">Kulu İlan</span>
           </Link>
-          <nav className="flex items-center gap-4 text-sm">
-            <NavLink
-              to="/ilanlar"
-              className={({ isActive }) => [
-                'inline-flex items-center rounded-2xl px-5 py-2.5 font-medium transition-all duration-300',
-                'bg-gradient-to-r from-blue-100/80 to-indigo-100/80 backdrop-blur-md',
-                'text-blue-700 hover:from-blue-200/90 hover:to-indigo-200/90 hover:text-blue-800',
-                'border border-blue-200/50 hover:border-blue-300/60',
-                'shadow-lg hover:shadow-xl hover:shadow-blue-200/25',
-                'hover:scale-105 transform',
-                isActive ? 'ring-2 ring-blue-300/50 shadow-blue-200/30' : ''
-              ].join(' ')}
-            >
-              <span className="mr-2">🏠</span>
-              İlanlara Bak
-            </NavLink>
-            
+          <nav className="flex items-center gap-1 sm:gap-4 text-xs sm:text-sm">
             {/* PWA Install Button */}
             <button
               onClick={() => (window as any).installPWA?.()}
-              className="inline-flex items-center rounded-2xl px-5 py-2.5 font-medium transition-all duration-300 bg-gradient-to-r from-purple-100/80 to-pink-100/80 backdrop-blur-md text-purple-700 hover:from-purple-200/90 hover:to-pink-200/90 hover:text-purple-800 border border-purple-200/50 hover:border-purple-300/60 shadow-lg hover:shadow-xl hover:shadow-purple-200/25 hover:scale-105 transform"
+              className="inline-flex items-center rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300 bg-gradient-to-r from-purple-100/80 to-pink-100/80 backdrop-blur-md text-purple-700 hover:from-purple-200/90 hover:to-pink-200/90 hover:text-purple-800 border border-purple-200/50 hover:border-purple-300/60 shadow-lg hover:shadow-xl hover:shadow-purple-200/25 hover:scale-105 transform"
               title="Uygulamayı Yükle"
             >
-              <span className="mr-2">📱</span>
-              Yükle
+              <span className="sm:mr-2">📱</span>
+              <span className="hidden sm:inline">Yükle</span>
             </button>
             
             {currentUser && !isAdminSession && (
               <NavLink
                 to="/ilanlarim"
                 className={({ isActive }) => [
-                  'inline-flex items-center rounded-2xl px-5 py-2.5 font-medium transition-all duration-300',
+                  'inline-flex items-center rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300',
                   'bg-gradient-to-r from-emerald-100/80 to-teal-100/80 backdrop-blur-md',
                   'text-emerald-700 hover:from-emerald-200/90 hover:to-teal-200/90 hover:text-emerald-800',
                   'border border-emerald-200/50 hover:border-emerald-300/60',
@@ -62,7 +47,8 @@ function App() {
                   isActive ? 'ring-2 ring-emerald-300/50 shadow-emerald-200/30' : ''
                 ].join(' ')}
               >
-                📋 İlanlarım
+                <span className="sm:mr-1">📋</span>
+                <span className="hidden sm:inline">İlanlarım</span>
               </NavLink>
             )}
             
@@ -71,7 +57,7 @@ function App() {
                 <NavLink
                   to="/admin"
                   className={({ isActive }) => [
-                    'inline-flex items-center rounded-2xl px-5 py-2.5 font-medium transition-all duration-300',
+                    'inline-flex items-center rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300',
                     'bg-gradient-to-r from-indigo-100/80 to-purple-100/80 backdrop-blur-md',
                     'text-indigo-700 hover:from-indigo-200/90 hover:to-purple-200/90 hover:text-indigo-800',
                     'border border-indigo-200/50 hover:border-indigo-300/60',
@@ -80,9 +66,10 @@ function App() {
                     isActive ? 'ring-2 ring-indigo-300/50 shadow-indigo-200/30' : ''
                   ].join(' ')}
                 >
-                  👑 Admin Panel
+                  <span className="sm:mr-1">👑</span>
+                  <span className="hidden sm:inline">Admin Panel</span>
                 </NavLink>
-                <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-100/80 to-purple-100/80 backdrop-blur-md rounded-2xl border border-indigo-200/50 shadow-lg">
+                <div className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-100/80 to-purple-100/80 backdrop-blur-md rounded-2xl border border-indigo-200/50 shadow-lg">
                   <span className="text-xl">👑</span>
                   <span className="text-indigo-800 font-bold">Admin Yönetici</span>
                 </div>
@@ -91,10 +78,10 @@ function App() {
                     sessionStorage.removeItem('isAdmin')
                     window.location.href = '/'
                   }}
-                  className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition-all duration-300 bg-gradient-to-r from-red-100/80 to-rose-100/80 backdrop-blur-md text-red-700 hover:from-red-200/90 hover:to-rose-200/90 hover:text-red-800 border border-red-200/50 hover:border-red-300/60 shadow-lg hover:shadow-xl hover:shadow-red-200/25 hover:scale-105 transform"
+                  className="inline-flex items-center gap-1 sm:gap-2 rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300 bg-gradient-to-r from-red-100/80 to-rose-100/80 backdrop-blur-md text-red-700 hover:from-red-200/90 hover:to-rose-200/90 hover:text-red-800 border border-red-200/50 hover:border-red-300/60 shadow-lg hover:shadow-xl hover:shadow-red-200/25 hover:scale-105 transform"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Çıkış
+                  <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Çıkış</span>
                 </button>
               </>
             ) : currentUser ? (
@@ -103,7 +90,7 @@ function App() {
                   <NavLink
                     to="/admin"
                     className={({ isActive }) => [
-                      'inline-flex items-center rounded-2xl px-5 py-2.5 font-medium transition-all duration-300',
+                      'inline-flex items-center rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300',
                       'bg-gradient-to-r from-violet-100/80 to-purple-100/80 backdrop-blur-md',
                       'text-violet-700 hover:from-violet-200/90 hover:to-purple-200/90 hover:text-violet-800',
                       'border border-violet-200/50 hover:border-violet-300/60',
@@ -112,20 +99,20 @@ function App() {
                       isActive ? 'ring-2 ring-violet-300/50 shadow-violet-200/30' : ''
                     ].join(' ')}
                   >
-                    <span className="mr-2">👑</span>
-                    Admin
+                    <span className="sm:mr-2">👑</span>
+                    <span className="hidden sm:inline">Admin</span>
                   </NavLink>
                 )}
-                <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-slate-100/80 to-gray-100/80 backdrop-blur-md rounded-2xl border border-slate-200/50 shadow-lg">
-                  <User className="w-4 h-4 text-slate-600" />
-                  <span className="text-slate-700 font-medium">{displayName}</span>
+                <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-5 py-1.5 sm:py-2.5 bg-gradient-to-r from-slate-100/80 to-gray-100/80 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-200/50 shadow-lg">
+                  <User className="w-3 h-3 sm:w-4 sm:h-4 text-slate-600" />
+                  <span className="text-slate-700 font-medium text-xs sm:text-sm truncate max-w-20 sm:max-w-none">{displayName}</span>
                 </div>
                 <button
                   onClick={() => logoutUser()}
-                  className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition-all duration-300 bg-gradient-to-r from-red-100/80 to-rose-100/80 backdrop-blur-md text-red-700 hover:from-red-200/90 hover:to-rose-200/90 hover:text-red-800 border border-red-200/50 hover:border-red-300/60 shadow-lg hover:shadow-xl hover:shadow-red-200/25 hover:scale-105 transform"
+                  className="inline-flex items-center gap-1 sm:gap-2 rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300 bg-gradient-to-r from-red-100/80 to-rose-100/80 backdrop-blur-md text-red-700 hover:from-red-200/90 hover:to-rose-200/90 hover:text-red-800 border border-red-200/50 hover:border-red-300/60 shadow-lg hover:shadow-xl hover:shadow-red-200/25 hover:scale-105 transform"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Çıkış
+                  <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Çıkış</span>
                 </button>
               </>
             ) : (
@@ -133,7 +120,7 @@ function App() {
                 <NavLink
                   to="/giris"
                   className={({ isActive }) => [
-                    'inline-flex items-center rounded-2xl px-5 py-2.5 font-medium transition-all duration-300',
+                    'inline-flex items-center rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300',
                     'bg-gradient-to-r from-orange-100/80 to-amber-100/80 backdrop-blur-md',
                     'text-orange-700 hover:from-orange-200/90 hover:to-amber-200/90 hover:text-orange-800',
                     'border border-orange-200/50 hover:border-orange-300/60',
@@ -142,13 +129,13 @@ function App() {
                     isActive ? 'ring-2 ring-orange-300/50 shadow-orange-200/30' : ''
                   ].join(' ')}
                 >
-                  <span className="mr-2">🔑</span>
-                  Giriş Yap
+                  <span className="sm:mr-2">🔑</span>
+                  <span className="hidden sm:inline">Giriş Yap</span>
                 </NavLink>
                 <NavLink
                   to="/uye-ol"
                   className={({ isActive }) => [
-                    'inline-flex items-center rounded-2xl px-5 py-2.5 font-medium transition-all duration-300',
+                    'inline-flex items-center rounded-xl sm:rounded-2xl px-2 sm:px-5 py-1.5 sm:py-2.5 font-medium transition-all duration-300',
                     'bg-gradient-to-r from-rose-100/80 to-pink-100/80 backdrop-blur-md',
                     'text-rose-700 hover:from-rose-200/90 hover:to-pink-200/90 hover:text-rose-800',
                     'border border-rose-200/50 hover:border-rose-300/60',
@@ -157,8 +144,8 @@ function App() {
                     isActive ? 'ring-2 ring-rose-300/50 shadow-rose-200/30' : ''
                   ].join(' ')}
                 >
-                  <span className="mr-2">✨</span>
-                  Üye Ol
+                  <span className="sm:mr-2">✨</span>
+                  <span className="hidden sm:inline">Üye Ol</span>
                 </NavLink>
               </>
             )}

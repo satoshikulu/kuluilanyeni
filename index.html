@@ -36,8 +36,16 @@
         await OneSignal.init({
           appId: "eb4688c6-138a-499a-b1da-bb3bee7369af",
           serviceWorkerPath: "/OneSignalSDKWorker.js",
-          autoPrompt: false
+          // 🔴 Kritik ayarlar - hiçbir otomatik popup yok
+          autoRegister: false,
+          autoPrompt: false,
+          notifyButton: { enable: false },
+          promptOptions: {
+            slidedown: { enabled: false },
+            customlink: { enabled: false }
+          }
         });
+        console.log("✅ OneSignal initialized (no auto prompt, no auto register)");
       });
     </script>
   </body>

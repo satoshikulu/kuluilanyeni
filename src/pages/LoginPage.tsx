@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
+import { enablePushAfterLogin } from '../lib/oneSignal'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -34,25 +35,24 @@ function LoginPage() {
       const result = await loginUser(phone, password)
       
       if (result.success && result.user) {
-        // Başarılı giriş - OneSignal push notification'ı etkinleştir
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async (OneSignal: any) => {
-          console.log("🔔 Login sonrası OneSignal subscribe başlıyor...");
+        console.log("✅ Login başarılı, OneSignal External ID bağlanıyor...");
+        
+        // OneSignal External ID bağla ve push notification etkinleştir
+        try {
+          const pushEnabled = await enablePushAfterLogin({
+            id: result.user.id,
+            phone: result.user.phone || phone
+          });
           
-          try {
-            const permission = await OneSignal.Notifications.requestPermission();
-            
-            if (permission !== "granted") {
-              console.log("Permission reddedildi");
-              return;
-            }
-            
-            await OneSignal.User.Push.subscribe();
-            console.log("🎉 Kullanıcı subscribe oldu!");
-          } catch (err) {
-            console.error("Subscribe error:", err);
+          if (pushEnabled) {
+            console.log("🎉 Push notifications başarıyla etkinleştirildi!");
+          } else {
+            console.log("⚠️ Push notifications etkinleştirilemedi (kullanıcı reddetti veya hata oluştu)");
           }
-        });
+        } catch (pushError) {
+          console.error("❌ Push notification setup error:", pushError);
+          // Push notification hatası login'i engellemez
+        }
         
         // Ana sayfaya yönlendir
         navigate('/')

@@ -1,50 +1,80 @@
-// React component for OneSignal V16 push notification button
+import { useState } from 'react'
+import { enablePushAfterLogin } from '../lib/oneSignal'
+import { getCurrentUser } from '../lib/simpleAuth'
 
 /**
- * Example component showing how to use the global enablePush() function
- * This demonstrates the correct V16 API usage
+ * OneSignal V16 Push Notification Button Component
+ * TypeScript strict build uyumlu - hiçbir global window kullanımı yok
  */
 export default function PushNotificationButton() {
-  const handleEnablePush = () => {
-    // Call the global enablePush function
-    if (window.enablePush) {
-      window.enablePush();
-    } else {
-      console.error('enablePush function not available');
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const handleEnablePush = async () => {
+    const currentUser = getCurrentUser()
+    
+    if (!currentUser) {
+      setMessage('❌ Lütfen önce giriş yapın!')
+      return
     }
-  };
+
+    setLoading(true)
+    setMessage('🔔 Push notification etkinleştiriliyor...')
+
+    try {
+      const success = await enablePushAfterLogin({
+        id: currentUser.id,
+        phone: currentUser.phone
+      })
+
+      if (success) {
+        setMessage('✅ Push notifications başarıyla etkinleştirildi!')
+      } else {
+        setMessage('❌ Push notification etkinleştirilemedi (izin reddedildi)')
+      }
+    } catch (error) {
+      console.error('Push enable error:', error)
+      setMessage('❌ Bir hata oluştu')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="p-4">
-      <h3 className="text-lg font-semibold mb-2">OneSignal V16 Test</h3>
-      <button 
-        onClick={handleEnablePush}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Bildirim Aç
-      </button>
+    <div className="p-6 bg-white rounded-2xl shadow-lg border">
+      <h3 className="text-xl font-bold mb-4 text-gray-900">OneSignal V16 Push Notifications</h3>
       
-      {/* Alternative: Direct HTML onclick (as requested) */}
-      <button 
-        onClick={() => (window as any).enablePush?.()}
-        className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Enable Push (Direct)
-      </button>
-      
-      {/* HTML onclick version (as requested in requirements) */}
-      <div className="mt-4">
-        <p className="text-sm text-gray-600 mb-2">HTML onclick version:</p>
+      <div className="space-y-4">
         <button 
-          onClick={() => {
-            // This simulates the HTML onclick behavior
-            (window as any).enablePush?.();
-          }}
-          className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+          onClick={handleEnablePush}
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
         >
-          Bildirim Aç (HTML Style)
+          {loading ? '🔄 Etkinleştiriliyor...' : '🔔 Push Notifications Etkinleştir'}
         </button>
+
+        {message && (
+          <div className={`p-3 rounded-lg text-sm font-medium ${
+            message.includes('✅') 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : message.includes('❌')
+              ? 'bg-red-50 text-red-700 border border-red-200'
+              : 'bg-blue-50 text-blue-700 border border-blue-200'
+          }`}>
+            {message}
+          </div>
+        )}
+
+        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+          <p className="font-semibold mb-1">ℹ️ Nasıl Çalışır:</p>
+          <ul className="space-y-1">
+            <li>• Önce giriş yapmanız gerekir</li>
+            <li>• OneSignal External ID otomatik bağlanır</li>
+            <li>• Tarayıcı izin popup'ı çıkar</li>
+            <li>• İzin verirseniz push notifications etkin olur</li>
+          </ul>
+        </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { enablePushAfterLogin } from '../lib/oneSignal'
+import { shouldShowPushModal } from '../lib/pushPermission'
+import PushPermissionModal from '../components/PushPermissionModal'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -12,6 +13,7 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [isAdminSession, setIsAdminSession] = useState(false)
+  const [showPushModal, setShowPushModal] = useState(false)
 
   useEffect(() => {
     // Admin session kontrolü
@@ -35,23 +37,14 @@ function LoginPage() {
       const result = await loginUser(phone, password)
       
       if (result.success && result.user) {
-        console.log("✅ Login başarılı, OneSignal External ID bağlanıyor...");
+        console.log("✅ Login başarılı!");
         
-        // OneSignal External ID bağla ve push notification etkinleştir
-        try {
-          const pushEnabled = await enablePushAfterLogin({
-            id: result.user.id,
-            phone: result.user.phone || phone
-          });
-          
-          if (pushEnabled) {
-            console.log("🎉 Push notifications başarıyla etkinleştirildi!");
-          } else {
-            console.log("⚠️ Push notifications etkinleştirilemedi (kullanıcı reddetti veya hata oluştu)");
-          }
-        } catch (pushError) {
-          console.error("❌ Push notification setup error:", pushError);
-          // Push notification hatası login'i engellemez
+        // Push permission modal'ını göster (eğer gösterilmesi gerekiyorsa)
+        if (shouldShowPushModal()) {
+          console.log("🔔 Push permission modal gösteriliyor...");
+          setShowPushModal(true);
+        } else {
+          console.log("🔔 Push permission modal gösterilmeyecek (daha önce işlem yapılmış)");
         }
         
         // Ana sayfaya yönlendir
@@ -173,6 +166,11 @@ function LoginPage() {
           </div>
         </form>
       </div>
+
+      {/* Push Permission Modal */}
+      {showPushModal && (
+        <PushPermissionModal onClose={() => setShowPushModal(false)} />
+      )}
     </div>
   )
 }

@@ -211,68 +211,8 @@ export async function setOneSignalUserData({
   });
 }
 
-/**
- * Login sonrası OneSignal native slidedown popup'ını manuel olarak göster
- * Kullanıcı daha önce izin vermediyse popup gösterir
- */
-export async function showPushSubscriptionPrompt(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (!isOneSignalReady()) {
-      console.warn('OneSignal is not ready for slidedown prompt');
-      resolve(false);
-      return;
-    }
-
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    
-    window.OneSignalDeferred.push(async function (OneSignal: any) {
-      try {
-        console.log("🔔 Login sonrası OneSignal slidedown prompt kontrol ediliyor...");
-
-        // Önce mevcut permission durumunu kontrol et
-        const permission = await OneSignal.Notifications.permission;
-        
-        if (permission) {
-          console.log("✅ Kullanıcı zaten push izni vermiş, popup gösterilmeyecek");
-          resolve(true); // Zaten izin var
-          return;
-        }
-
-        // Kullanıcı daha önce izin vermemişse slidedown popup'ını göster
-        console.log("🔔 OneSignal slidedown popup gösteriliyor...");
-        
-        // OneSignal V16 slidedown prompt
-        const result = await OneSignal.Slidedown.promptPush();
-        
-        if (result) {
-          console.log("✅ Kullanıcı OneSignal slidedown'dan izin verdi!");
-          
-          // User data'yı ekle (eğer login yapılmışsa)
-          const currentUser = getCurrentUser();
-          if (currentUser) {
-            try {
-              await setOneSignalUserData({
-                phone: currentUser.phone,
-                email: (currentUser as any).email
-              });
-              console.log("✅ OneSignal user data eklendi");
-            } catch (userDataError) {
-              console.warn("⚠️ OneSignal user data eklenemedi:", userDataError);
-            }
-          }
-          
-          resolve(true);
-        } else {
-          console.log("❌ Kullanıcı OneSignal slidedown'ı reddetti");
-          resolve(false);
-        }
-      } catch (error) {
-        console.error("❌ OneSignal slidedown prompt hatası:", error);
-        resolve(false);
-      }
-    });
-  });
-}
+// showPushSubscriptionPrompt fonksiyonu kaldırıldı
+// Artık PushEnableButton içinde user click event ile slidedown açılıyor
 
 /**
  * OneSignal push permission durumunu kontrol et

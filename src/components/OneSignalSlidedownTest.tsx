@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { showPushSubscriptionPrompt, checkOneSignalPermission } from '../lib/oneSignal'
+import { checkOneSignalPermission, setOneSignalUserData } from '../lib/oneSignal'
 import { getCurrentUser } from '../lib/simpleAuth'
 
 /**
@@ -13,23 +13,59 @@ export default function OneSignalSlidedownTest() {
   const currentUser = getCurrentUser()
 
   const testSlidedownPrompt = async () => {
+    if (!currentUser) {
+      setResult('❌ Önce giriş yapmanız gerekiyor')
+      return
+    }
+
     setLoading(true)
-    setResult('🔄 OneSignal slidedown popup gösteriliyor...')
+    setResult('🔄 OneSignal slidedown popup gösteriliyor (user click içinde)...')
 
     try {
-      const success = await showPushSubscriptionPrompt()
+      // User click event içinde OneSignal slidedown aç
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
       
-      if (success) {
-        setResult('✅ OneSignal slidedown başarılı! Push subscription aktif.')
-      } else {
-        setResult('❌ OneSignal slidedown reddedildi veya hata oluştu.')
-      }
+      window.OneSignalDeferred.push(async function (OneSignal: any) {
+        try {
+          const permission = await OneSignal.Notifications.permission;
+          
+          if (permission) {
+            setResult('✅ Kullanıcı zaten push izni vermiş')
+            setLoading(false)
+            checkPermissionStatus()
+            return
+          }
+
+          console.log("🔔 OneSignal slidedown prompt açılıyor (user click içinde)...")
+          
+          const result = await OneSignal.Slidedown.promptPush()
+          
+          if (result) {
+            setResult('✅ OneSignal slidedown başarılı! Push subscription aktif.')
+            
+            // User data ekle
+            try {
+              await setOneSignalUserData({
+                phone: currentUser.phone,
+                email: (currentUser as any).email
+              })
+              console.log("✅ OneSignal user data eklendi")
+            } catch (userDataError) {
+              console.warn("⚠️ OneSignal user data eklenemedi:", userDataError)
+            }
+          } else {
+            setResult('❌ OneSignal slidedown reddedildi')
+          }
+        } catch (error) {
+          setResult('❌ OneSignal slidedown hatası: ' + (error as Error).message)
+        } finally {
+          setLoading(false)
+          checkPermissionStatus()
+        }
+      })
     } catch (error) {
       setResult('❌ Hata: ' + (error as Error).message)
-    } finally {
       setLoading(false)
-      // Permission durumunu yenile
-      checkPermissionStatus()
     }
   }
 
@@ -44,30 +80,8 @@ export default function OneSignalSlidedownTest() {
   }
 
   const simulateLoginSuccess = async () => {
-    if (!currentUser) {
-      setResult('❌ Önce giriş yapmanız gerekiyor')
-      return
-    }
-
-    setLoading(true)
-    setResult('🔄 Login success simülasyonu - slidedown tetikleniyor...')
-
-    try {
-      // Login sonrası davranışı simüle et
-      setTimeout(async () => {
-        const pushResult = await showPushSubscriptionPrompt()
-        if (pushResult) {
-          setResult('✅ Login sonrası OneSignal slidedown başarılı!')
-        } else {
-          setResult('⚠️ Login sonrası OneSignal slidedown reddedildi veya zaten var')
-        }
-        setLoading(false)
-        checkPermissionStatus()
-      }, 1000)
-    } catch (error) {
-      setResult('❌ Simülasyon hatası: ' + (error as Error).message)
-      setLoading(false)
-    }
+    setResult('✅ Login success simülasyonu - Artık PushEnableButton komponenti kullanılıyor!')
+    setResult('ℹ️ Gerçek uygulamada login sonrası PushEnableButton gösterilir ve user click ile slidedown açılır.')
   }
 
   // Component mount olduğunda permission durumunu kontrol et

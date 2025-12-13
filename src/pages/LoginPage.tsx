@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { showPushSubscriptionPrompt } from '../lib/oneSignal'
+import PushEnableButton from '../components/PushEnableButton'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -12,6 +12,7 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [isAdminSession, setIsAdminSession] = useState(false)
+  const [showPushButton, setShowPushButton] = useState(false)
 
   useEffect(() => {
     // Admin session kontrolü
@@ -37,23 +38,9 @@ function LoginPage() {
       if (result.success && result.user) {
         console.log("✅ Login başarılı!");
         
-        // OneSignal slidedown popup'ını manuel olarak göster
-        try {
-          console.log("🔔 OneSignal slidedown prompt tetikleniyor...");
-          
-          // 1 saniye bekle ki OneSignal tam yüklensin
-          setTimeout(async () => {
-            const pushResult = await showPushSubscriptionPrompt();
-            if (pushResult) {
-              console.log("✅ OneSignal push subscription başarılı!");
-            } else {
-              console.log("⚠️ OneSignal push subscription reddedildi veya zaten var");
-            }
-          }, 1000);
-        } catch (pushError) {
-          console.error("❌ OneSignal slidedown error:", pushError);
-          // Push hatası login'i engellemez
-        }
+        // Push enable butonunu göster (user click gerekli)
+        console.log("🔔 Push enable butonu gösteriliyor...");
+        setShowPushButton(true);
         
         // Ana sayfaya yönlendir
         navigate('/')
@@ -174,6 +161,12 @@ function LoginPage() {
           </div>
         </form>
       </div>
+
+      {/* Push Enable Button - Login sonrası gösterilir */}
+      <PushEnableButton 
+        show={showPushButton} 
+        onComplete={() => setShowPushButton(false)} 
+      />
     </div>
   )
 }

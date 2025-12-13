@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { enablePushAfterLogin } from '../lib/oneSignal'
+import { enablePushAfterLogin, setOneSignalUserData } from '../lib/oneSignal'
 import { denyPushForFiveDays, markPushPermissionGranted, denyPushPermanently } from '../lib/pushPermission'
 import { getCurrentUser } from '../lib/simpleAuth'
 
@@ -31,6 +31,18 @@ export default function PushPermissionModal({ onClose }: Props) {
       })
 
       if (success) {
+        // Kullanıcı telefon ve email bilgilerini OneSignal'a ekle
+        try {
+          await setOneSignalUserData({
+            phone: currentUser.phone,
+            email: (currentUser as any).email || undefined // TypeScript cache sorunu için geçici
+          })
+          console.log("✅ OneSignal kullanıcı bilgileri eklendi");
+        } catch (userDataError) {
+          console.warn("⚠️ OneSignal kullanıcı bilgileri eklenemedi:", userDataError);
+          // Bu hata push permission'ı engellemez
+        }
+
         // Başarılı - izin verildi olarak işaretle
         markPushPermissionGranted()
         console.log("✅ Push permission başarıyla verildi!");

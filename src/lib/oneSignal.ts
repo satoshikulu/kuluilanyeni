@@ -134,3 +134,77 @@ export async function getOneSignalUserId(): Promise<string | null> {
     });
   });
 }
+
+/**
+ * OneSignal kullanıcı telefon ve email bilgilerini ekle
+ * Telefon numarası E.164 formatında olmalı (+905xxxxxxxxx)
+ */
+export async function setOneSignalUserData({
+  phone,
+  email,
+}: {
+  phone?: string;
+  email?: string;
+}): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!isOneSignalReady()) {
+      console.warn('OneSignal is not ready');
+      resolve(false);
+      return;
+    }
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    
+    window.OneSignalDeferred.push(async function (OneSignal: any) {
+      try {
+        console.log("📱 OneSignal kullanıcı bilgileri ekleniyor...");
+
+        // Email ekle
+        if (email && email.includes('@')) {
+          try {
+            await OneSignal.User.addEmail(email);
+            console.log("✅ Email eklendi:", email);
+          } catch (emailError) {
+            console.error("❌ Email ekleme hatası:", emailError);
+          }
+        }
+
+        // Telefon ekle (E.164 formatında)
+        if (phone) {
+          try {
+            // Telefon numarasını E.164 formatına çevir
+            let formattedPhone = phone;
+            
+            // Türkiye telefon numarası formatlaması
+            if (phone.startsWith('5') && phone.length === 10) {
+              // 5xxxxxxxxx -> +905xxxxxxxxx
+              formattedPhone = '+90' + phone;
+            } else if (phone.startsWith('05') && phone.length === 11) {
+              // 05xxxxxxxxx -> +905xxxxxxxxx
+              formattedPhone = '+9' + phone;
+            } else if (phone.startsWith('905') && phone.length === 12) {
+              // 905xxxxxxxxx -> +905xxxxxxxxx
+              formattedPhone = '+' + phone;
+            } else if (!phone.startsWith('+90')) {
+              // Diğer durumlar için +90 ekle
+              formattedPhone = '+90' + phone.replace(/^0+/, '');
+            }
+
+            console.log("📱 Telefon formatlanıyor:", phone, "->", formattedPhone);
+            
+            await OneSignal.User.addSms(formattedPhone);
+            console.log("✅ SMS/Phone eklendi:", formattedPhone);
+          } catch (phoneError) {
+            console.error("❌ Telefon ekleme hatası:", phoneError);
+          }
+        }
+
+        console.log("✅ OneSignal kullanıcı bilgileri başarıyla eklendi");
+        resolve(true);
+      } catch (error) {
+        console.error("❌ OneSignal kullanıcı bilgileri ekleme hatası:", error);
+        resolve(false);
+      }
+    });
+  });
+}

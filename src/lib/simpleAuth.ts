@@ -11,6 +11,7 @@ export interface User {
   id: string
   full_name: string
   phone: string
+  email?: string // OneSignal için email desteği
   role: 'user' | 'admin'
   status: 'pending' | 'approved' | 'rejected'
 }

@@ -1,8 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { shouldShowPushModal } from '../lib/pushPermission'
-import PushPermissionModal from '../components/PushPermissionModal'
+import { showPushSubscriptionPrompt } from '../lib/oneSignal'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -13,7 +12,6 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [isAdminSession, setIsAdminSession] = useState(false)
-  const [showPushModal, setShowPushModal] = useState(false)
 
   useEffect(() => {
     // Admin session kontrolü
@@ -39,12 +37,22 @@ function LoginPage() {
       if (result.success && result.user) {
         console.log("✅ Login başarılı!");
         
-        // Push permission modal'ını göster (eğer gösterilmesi gerekiyorsa)
-        if (shouldShowPushModal()) {
-          console.log("🔔 Push permission modal gösteriliyor...");
-          setShowPushModal(true);
-        } else {
-          console.log("🔔 Push permission modal gösterilmeyecek (daha önce işlem yapılmış)");
+        // OneSignal slidedown popup'ını manuel olarak göster
+        try {
+          console.log("🔔 OneSignal slidedown prompt tetikleniyor...");
+          
+          // 1 saniye bekle ki OneSignal tam yüklensin
+          setTimeout(async () => {
+            const pushResult = await showPushSubscriptionPrompt();
+            if (pushResult) {
+              console.log("✅ OneSignal push subscription başarılı!");
+            } else {
+              console.log("⚠️ OneSignal push subscription reddedildi veya zaten var");
+            }
+          }, 1000);
+        } catch (pushError) {
+          console.error("❌ OneSignal slidedown error:", pushError);
+          // Push hatası login'i engellemez
         }
         
         // Ana sayfaya yönlendir
@@ -166,11 +174,6 @@ function LoginPage() {
           </div>
         </form>
       </div>
-
-      {/* Push Permission Modal */}
-      {showPushModal && (
-        <PushPermissionModal onClose={() => setShowPushModal(false)} />
-      )}
     </div>
   )
 }

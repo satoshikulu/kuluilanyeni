@@ -36,12 +36,19 @@
         await OneSignal.init({
           appId: "eb4688c6-138a-499a-b1da-bb3bee7369af",
           serviceWorkerPath: "/OneSignalSDKWorker.js",
-          // 🔴 Kritik ayarlar - hiçbir otomatik popup yok
+          // 🔴 Kritik ayarlar - otomatik popup yok ama manuel slidedown kullanılabilir
           autoRegister: false,
           autoPrompt: false,
+          autoResubscribe: false,
           notifyButton: { enable: false },
           promptOptions: {
-            slidedown: { enabled: false },
+            slidedown: { 
+              enabled: true, // Manuel kullanım için açık
+              autoPrompt: false, // Otomatik gösterim kapalı
+              acceptButton: "İzin Ver",
+              cancelButton: "Şimdi Değil",
+              actionMessage: "Yeni ilanlar ve güncellemeler hakkında bildirim almak ister misiniz?"
+            },
             customlink: { enabled: false }
           }
         });

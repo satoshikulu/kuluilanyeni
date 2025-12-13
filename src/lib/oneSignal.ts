@@ -1,7 +1,5 @@
 // OneSignal V16 Helper Functions - Modern API
 
-import { getCurrentUser } from './simpleAuth'
-
 // OneSignal V16 Types - sadece gerekli olanlar
 declare global {
   interface Window {

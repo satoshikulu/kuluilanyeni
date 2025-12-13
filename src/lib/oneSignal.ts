@@ -8,11 +8,101 @@ declare global {
   }
 }
 
+// Supabase User type import
+interface User {
+  id: string;
+  email?: string;
+  phone?: string;
+  [key: string]: any;
+}
+
 /**
  * OneSignal'in yüklenip yüklenmediğini kontrol et
  */
 export function isOneSignalReady(): boolean {
   return typeof window !== 'undefined' && !!window.OneSignal;
+}
+
+/**
+ * OneSignal init (external_id destekli)
+ * Bu fonksiyon uygulama başlangıcında çağrılmalı
+ */
+export async function initOneSignal(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!("OneSignal" in window)) {
+      console.warn("OneSignal SDK yüklenmemiş");
+      resolve(false);
+      return;
+    }
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    
+    window.OneSignalDeferred.push(async function (OneSignal: any) {
+      try {
+        await OneSignal.init({
+          appId: "eb4688c6-138a-499a-b1da-bb3bee7369af",
+          serviceWorkerPath: "/OneSignalSDKWorker.js",
+          autoRegister: false,
+          autoPrompt: false,
+          autoResubscribe: false,
+          notifyButton: { enable: false },
+          allowLocalhostAsSecureOrigin: true, // Development için
+          promptOptions: {
+            slidedown: { 
+              enabled: true,
+              autoPrompt: false,
+              acceptButton: "İzin Ver",
+              cancelButton: "Şimdi Değil",
+              actionMessage: "Yeni ilanlar ve güncellemeler hakkında bildirim almak ister misiniz?"
+            }
+          }
+        });
+
+        console.log("✅ OneSignal initialized (external_id destekli)");
+        resolve(true);
+      } catch (error) {
+        console.error("❌ OneSignal init hatası:", error);
+        resolve(false);
+      }
+    });
+  });
+}
+
+/**
+ * Login sonrası external_id bağlama (EN KRİTİK KISIM)
+ * Supabase user.id = OneSignal external_id
+ */
+export async function linkUserToOneSignal(user: User): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!user?.id) {
+      console.warn("User ID bulunamadı");
+      resolve(false);
+      return;
+    }
+
+    if (!isOneSignalReady()) {
+      console.warn("OneSignal is not ready");
+      resolve(false);
+      return;
+    }
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    
+    window.OneSignalDeferred.push(async function (OneSignal: any) {
+      try {
+        console.log("🔗 OneSignal external_id bağlanıyor:", user.id);
+        
+        // 🔥 EN KRİTİK: OneSignal.login(external_id) → external_id = user.id
+        await OneSignal.login(user.id);
+        
+        console.log("✅ OneSignal external_id bağlandı:", user.id);
+        resolve(true);
+      } catch (error) {
+        console.error("❌ OneSignal external_id hatası:", error);
+        resolve(false);
+      }
+    });
+  });
 }
 
 /**
@@ -63,9 +153,10 @@ export async function enablePushAfterLogin(user: { id: string; phone?: string })
 }
 
 /**
- * Kullanıcı logout olduğunda OneSignal'dan çıkış yap
+ * Logout → OneSignal bağlantısını kopar (ÇOK ÖNEMLİ)
+ * Aynı tarayıcıda başka kullanıcı login olursa push'lar karışmaz
  */
-export async function logoutFromOneSignal(): Promise<boolean> {
+export async function unlinkOneSignalUser(): Promise<boolean> {
   return new Promise((resolve) => {
     if (!isOneSignalReady()) {
       console.warn('OneSignal is not ready');
@@ -80,18 +171,28 @@ export async function logoutFromOneSignal(): Promise<boolean> {
         // User tag'lerini temizle
         await OneSignal.User.removeTag("user_id");
         await OneSignal.User.removeTag("phone");
+        await OneSignal.User.removeTag("email");
         
-        // OneSignal'dan logout
+        // 🚪 OneSignal logout - external_id bağlantısını kopar
         await OneSignal.logout();
         
-        console.log('✅ OneSignal logout başarılı');
+        console.log('🚪 OneSignal logout - external_id bağlantısı koparıldı');
         resolve(true);
       } catch (error) {
-        console.error('❌ OneSignal logout failed:', error);
+        console.error('❌ OneSignal logout hatası:', error);
         resolve(false);
       }
     });
   });
+}
+
+/**
+ * Kullanıcı logout olduğunda OneSignal'dan çıkış yap (DEPRECATED)
+ * unlinkOneSignalUser() kullanın
+ */
+export async function logoutFromOneSignal(): Promise<boolean> {
+  console.warn("logoutFromOneSignal() deprecated, unlinkOneSignalUser() kullanın");
+  return unlinkOneSignalUser();
 }
 
 /**

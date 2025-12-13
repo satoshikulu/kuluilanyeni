@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { checkOneSignalPermission, setOneSignalUserData } from '../lib/oneSignal'
+import { checkOneSignalPermission, setOneSignalUserData, linkUserToOneSignal } from '../lib/oneSignal'
 import { getCurrentUser } from '../lib/simpleAuth'
 
 interface Props {
@@ -69,6 +69,18 @@ export default function PushEnableButton({ show, onComplete }: Props) {
           
           if (result) {
             console.log("✅ Kullanıcı OneSignal slidedown'dan izin verdi!")
+            
+            // 🔗 External ID bağlama (Supabase user.id = OneSignal external_id)
+            try {
+              await linkUserToOneSignal({
+                id: currentUser.id,
+                email: (currentUser as any).email,
+                phone: currentUser.phone
+              })
+              console.log("🔗 OneSignal external_id bağlandı")
+            } catch (linkError) {
+              console.warn("⚠️ OneSignal external_id bağlanamadı:", linkError)
+            }
             
             // User data ekle
             try {

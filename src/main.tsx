@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
+import { initOneSignal } from './lib/oneSignal'
 import App from './App.tsx'
 import HomePage from './pages/HomePage.tsx'
 import ListingsPage from './pages/ListingsPage.tsx'
@@ -52,6 +53,15 @@ createRoot(document.getElementById('root')!).render(
 
 // PWA Service Worker otomatik olarak vite-plugin-pwa tarafından yönetiliyor
 // Manuel kayıt yapmaya gerek yok
+
+// OneSignal init (external_id destekli)
+initOneSignal().then((success) => {
+  if (success) {
+    console.log("🔔 OneSignal başlatıldı (external_id destekli)");
+  } else {
+    console.warn("⚠️ OneSignal başlatılamadı");
+  }
+});
 
 // Global PWA Install Prompt Handler
 let deferredPrompt: any = null;

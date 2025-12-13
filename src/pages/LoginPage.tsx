@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
+import { linkUserToOneSignal } from '../lib/oneSignal'
 import PushEnableButton from '../components/PushEnableButton'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -37,6 +38,19 @@ function LoginPage() {
       
       if (result.success && result.user) {
         console.log("✅ Login başarılı!");
+        
+        // 🔗 OneSignal external_id bağlama (Supabase → OneSignal)
+        try {
+          await linkUserToOneSignal({
+            id: result.user.id,
+            email: (result.user as any).email,
+            phone: result.user.phone
+          });
+          console.log("🔗 OneSignal external_id bağlandı:", result.user.id);
+        } catch (linkError) {
+          console.warn("⚠️ OneSignal external_id bağlanamadı:", linkError);
+          // External ID hatası login'i engellemez
+        }
         
         // Push enable butonunu göster (user click gerekli)
         console.log("🔔 Push enable butonu gösteriliyor...");

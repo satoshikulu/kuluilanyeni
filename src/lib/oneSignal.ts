@@ -1,39 +1,15 @@
-// OneSignal V16 Helper Functions
-import { supabase } from "./supabaseClient";
+// OneSignal V16 Helper Functions - Subscribe Sonrası Tag Set Sistemi
 
 declare global {
   interface Window {
     OneSignal?: any;
     OneSignalDeferred: any[];
-    enablePush?: () => Promise<void>;
   }
 }
 
-export async function initializeOneSignal() {
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.OneSignalDeferred.push(async function (OneSignal: any) {
-    try {
-      await OneSignal.Notifications.requestPermission();
-      await OneSignal.User.Push.subscribe();
-      console.log("Push subscribed!");
-
-      // --- Supabase kullanıcı eşleşmesi ---
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        await OneSignal.User.addTag("uid", user.id);
-        console.log("OneSignal tag eklendi (uid):", user.id);
-      } else {
-        console.log("Kullanıcı giriş yapmamış, tag eklenmedi.");
-      }
-
-    } catch (err) {
-      console.error("OneSignal init error:", err);
-    }
-  });
-}
+// Mevcut kullanıcı bilgilerini saklamak için
+let currentUserData: { id: string; phone?: string; email?: string } | null = null;
+let subscriptionListenerSetup = false;
 
 /**
  * OneSignal'in yüklenip yüklenmediğini kontrol et
@@ -43,63 +19,147 @@ export function isOneSignalReady(): boolean {
 }
 
 /**
- * Kullanıcı için push notification enable işlemi (V16 API)
+ * Login başarılı olduğunda - SADECE external_id bağla
+ * Tag'leri set ETME, subscribe sonrası yapılacak
  */
-export async function subscribeUserToPush(userId: string, phone?: string): Promise<boolean> {
-  try {
-    if (!isOneSignalReady()) {
-      console.warn('OneSignal is not ready');
-      return false;
+export async function linkUserToOneSignal(user: { id: string; phone?: string; email?: string }): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!user?.id) {
+      console.warn("❌ User ID bulunamadı");
+      resolve(false);
+      return;
     }
 
-    // V16 API: Request permission first
-    await window.OneSignal.Notifications.requestPermission();
+    // Kullanıcı bilgilerini sakla (subscribe sonrası kullanmak için)
+    currentUserData = user;
+    console.log("💾 Kullanıcı bilgileri saklandı:", { id: user.id, phone: user.phone });
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
     
-    // V16 API: Enable push notifications
-    await window.OneSignal.User.Push.enable();
-    console.log("Push enabled successfully!");
-    
-    // Kullanıcı ID'sini tag olarak ekle
-    await window.OneSignal.User.addTag("user_id", userId);
-    
-    // Telefon numarasını da tag olarak ekle (varsa)
-    if (phone) {
-      await window.OneSignal.User.addTag("phone", phone);
-      console.log("OneSignal tag eklendi:", phone);
-    }
-    
-    console.log('✅ OneSignal subscription successful for user:', userId);
-    return true;
-  } catch (error) {
-    console.error('❌ OneSignal subscription failed:', error);
-    return false;
-  }
+    window.OneSignalDeferred.push(async function (OneSignal: any) {
+      try {
+        console.log("🔗 OneSignal external_id bağlanıyor:", user.id);
+        
+        // SADECE external_id bağla - tag'leri set etme
+        await OneSignal.login(user.id);
+        
+        console.log("✅ OneSignal external_id bağlandı:", user.id);
+        console.log("ℹ️ Tag'ler subscribe sonrası set edilecek");
+        
+        resolve(true);
+      } catch (error) {
+        console.error("❌ OneSignal external_id hatası:", error);
+        resolve(false);
+      }
+    });
+  });
 }
 
 /**
- * Kullanıcı logout olduğunda OneSignal tag'lerini temizle
+ * Subscribe sonrası tag'leri otomatik set et
+ * OneSignal.User.PushSubscription.addEventListener("change") kullanır
  */
-export async function unsubscribeUserFromPush(): Promise<boolean> {
-  try {
-    if (!isOneSignalReady()) {
-      console.warn('OneSignal is not ready');
-      return false;
-    }
-
-    // User ID ve phone tag'lerini kaldır
-    await window.OneSignal.User.removeTag("user_id");
-    await window.OneSignal.User.removeTag("phone");
-    
-    console.log('✅ OneSignal user tags removed (user_id, phone)');
-    return true;
-  } catch (error) {
-    console.error('❌ OneSignal tag removal failed:', error);
-    return false;
+export function setupSubscriptionListener(): void {
+  // Listener sadece bir kez kurulsun
+  if (subscriptionListenerSetup) {
+    console.log("ℹ️ Subscription listener zaten kurulmuş");
+    return;
   }
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  
+  window.OneSignalDeferred.push(async function (OneSignal: any) {
+    try {
+      console.log("🔔 OneSignal subscription listener kuruluyor...");
+      
+      // Subscribe değişikliklerini dinle
+      OneSignal.User.PushSubscription.addEventListener("change", async (event: any) => {
+        console.log("🔔 Push subscription değişti:", event);
+        
+        // Subscribe oldu mu kontrol et
+        if (event.current && event.current.optedIn === true) {
+          console.log("✅ Kullanıcı subscribe oldu, tag'ler set ediliyor...");
+          
+          if (currentUserData) {
+            try {
+              // Kısa bir gecikme ekle (OneSignal'in hazır olması için)
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              // User ID tag'i ekle
+              await OneSignal.User.addTag("user_id", currentUserData.id);
+              console.log("✅ user_id tag eklendi:", currentUserData.id);
+              
+              // Phone tag'i ekle
+              if (currentUserData.phone) {
+                await OneSignal.User.addTag("phone", currentUserData.phone);
+                console.log("✅ phone tag eklendi:", currentUserData.phone);
+              }
+              
+              // Email tag'i ekle (eğer varsa)
+              if (currentUserData.email) {
+                await OneSignal.User.addTag("email", currentUserData.email);
+                console.log("✅ email tag eklendi:", currentUserData.email);
+              }
+              
+              console.log("🎉 Tüm tag'ler başarıyla set edildi!");
+            } catch (tagError) {
+              console.error("❌ Tag set hatası:", tagError);
+            }
+          } else {
+            console.warn("⚠️ currentUserData bulunamadı, tag'ler set edilemedi");
+          }
+        } else if (event.current && event.current.optedIn === false) {
+          console.log("❌ Kullanıcı unsubscribe oldu");
+        }
+      });
+      
+      subscriptionListenerSetup = true;
+      console.log("✅ OneSignal subscription listener kuruldu");
+    } catch (error) {
+      console.error("❌ Subscription listener kurulum hatası:", error);
+    }
+  });
 }
 
 /**
- * Push notification permission durumunu kontrol et
+ * Logout - OneSignal bağlantısını tamamen temizle
+ */
+export async function logoutFromOneSignal(): Promise<boolean> {
+  return new Promise((resolve) => {
+    console.log("🚪 OneSignal logout başlıyor...");
+    
+    // Kullanıcı bilgilerini temizle
+    currentUserData = null;
+    
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    
+    window.OneSignalDeferred.push(async function (OneSignal: any) {
+      try {
+        // Tag'leri temizle (önce)
+        try {
+          await OneSignal.User.removeTag("user_id");
+          await OneSignal.User.removeTag("phone");
+          await OneSignal.User.removeTag("email");
+          console.log("✅ OneSignal tag'leri temizlendi");
+        } catch (tagError) {
+          console.warn("⚠️ Tag temizleme hatası:", tagError);
+        }
+        
+        // OneSignal logout (external_id bağlantısını kopar)
+        await OneSignal.logout();
+        
+        console.log("✅ OneSignal logout tamamlandı");
+        resolve(true);
+      } catch (error) {
+        console.error("❌ OneSignal logout hatası:", error);
+        resolve(false);
+      }
+    });
+  });
+}
+
+/**
+ * Push permission durumunu kontrol et
  */
 export async function checkPushPermission(): Promise<'granted' | 'denied' | 'default'> {
   try {
@@ -110,51 +170,31 @@ export async function checkPushPermission(): Promise<'granted' | 'denied' | 'def
     const permission = await window.OneSignal.Notifications.permission;
     return permission ? 'granted' : 'default';
   } catch (error) {
-    console.error('Push permission check failed:', error);
+    console.error("❌ Push permission check failed:", error);
     return 'default';
   }
 }
 
 /**
- * Kullanıcı giriş yaptığında OneSignal abonelik işlemi (V16 API)
- * Bu fonksiyon istediğiniz yerde manuel olarak çağrılabilir
+ * OneSignal init - Subscription listener'ı kur
  */
-export async function onUserLogin(userPhone: string, userId?: string): Promise<boolean> {
-  try {
-    // OneSignal SDK hazır olana kadar bekle
-    if (!window.OneSignalDeferred) {
-      window.OneSignalDeferred = [];
-    }
-    
-    return new Promise((resolve) => {
-      window.OneSignalDeferred!.push(async function(OneSignal: any) {
-        try {
-          // 📌 1. V16 API: Request permission first
-          await OneSignal.Notifications.requestPermission();
-          
-          // 📌 2. V16 API: Enable push notifications
-          await OneSignal.User.Push.enable();
-          console.log("Push enabled successfully!");
-          
-          // 📌 3. OneSignal'a kullanıcıya ait telefon numarasını kaydet
-          await OneSignal.User.addTag("phone", userPhone);
-          console.log("OneSignal tag eklendi:", userPhone);
-          
-          // 📌 4. Kullanıcı ID'si varsa onu da ekle
-          if (userId) {
-            await OneSignal.User.addTag("user_id", userId);
-            console.log("OneSignal user_id tag eklendi:", userId);
-          }
-          
-          resolve(true);
-        } catch (error) {
-          console.error("OneSignal onUserLogin failed:", error);
-          resolve(false);
-        }
-      });
-    });
-  } catch (error) {
-    console.error("OneSignal onUserLogin setup failed:", error);
-    return false;
-  }
+export function initOneSignal(): void {
+  console.log("🔔 OneSignal init başlıyor...");
+  
+  // Subscription listener'ı kur
+  setupSubscriptionListener();
+  
+  console.log("✅ OneSignal init tamamlandı");
+}
+
+/**
+ * Login sonrası OneSignal'i başlat (LoginPage'den çağrılacak)
+ */
+export async function initializeOneSignal(): Promise<void> {
+  console.log("🚀 OneSignal initialization başlıyor...");
+  
+  // Subscription listener'ı kur
+  setupSubscriptionListener();
+  
+  console.log("✅ OneSignal initialization tamamlandı");
 }

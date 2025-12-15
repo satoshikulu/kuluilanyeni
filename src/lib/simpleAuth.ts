@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { unsubscribeUserFromPush } from './oneSignal'
+import { logoutFromOneSignal } from './oneSignal'
 
 // Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
 function simpleHash(password: string): string {
@@ -113,11 +113,12 @@ export async function loginUser(
  * Çıkış yap
  */
 export async function logoutUser(): Promise<void> {
-  // OneSignal tag'lerini temizle
+  // OneSignal logout - external_id bağlantısını kopar ve tag'leri temizle
   try {
-    await unsubscribeUserFromPush();
+    await logoutFromOneSignal();
+    console.log('✅ OneSignal logout başarılı');
   } catch (error) {
-    console.warn('OneSignal unsubscribe failed during logout:', error);
+    console.warn('⚠️ OneSignal logout failed during user logout:', error);
   }
   
   localStorage.removeItem('user')

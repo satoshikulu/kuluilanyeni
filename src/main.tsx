@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
 import './onesignal/onesignal'
+import { initOneSignal } from './lib/oneSignal'
 import App from './App.tsx'
 import HomePage from './pages/HomePage.tsx'
 import ListingsPage from './pages/ListingsPage.tsx'
@@ -44,6 +45,9 @@ const router = createBrowserRouter([
     ],
   },
 ])
+
+// OneSignal subscription listener'ı uygulama başlangıcında kur
+initOneSignal();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

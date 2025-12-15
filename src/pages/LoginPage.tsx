@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { initializeOneSignal } from '../lib/oneSignal'
+import { linkUserToOneSignal, initializeOneSignal } from '../lib/oneSignal'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -35,8 +35,19 @@ function LoginPage() {
       const result = await loginUser(phone, password)
       
       if (result.success && result.user) {
-        // Başarılı giriş - OneSignal push notification'ı etkinleştir
+        console.log("✅ Login başarılı, OneSignal entegrasyonu başlıyor...");
+        
+        // OneSignal subscription listener'ı kur
         await initializeOneSignal();
+        
+        // OneSignal external_id bağla (tag'ler subscribe sonrası set edilecek)
+        await linkUserToOneSignal({
+          id: result.user.id,
+          phone: result.user.phone,
+          email: (result.user as any).email // Eğer email varsa
+        });
+        
+        console.log("🎉 OneSignal entegrasyonu tamamlandı");
         
         // Ana sayfaya yönlendir
         navigate('/')

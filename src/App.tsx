@@ -3,7 +3,7 @@ import { getCurrentUser, logoutUser, isAdmin } from './lib/simpleAuth'
 import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
-import PushNotificationPrompt from './components/PushNotificationPrompt'
+
 
 function App() {
   const currentUser = getCurrentUser()
@@ -13,7 +13,7 @@ function App() {
   // Kullanıcı adını title case yap
   const displayName = currentUser?.full_name ? toTitleCase(currentUser.full_name) : ''
 
-  // OneSignal initialization is handled in index.html
+
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -196,7 +196,7 @@ function App() {
         </div>
       </footer>
       <PWAInstallPrompt />
-      <PushNotificationPrompt />
+
     </div>
   )
 }

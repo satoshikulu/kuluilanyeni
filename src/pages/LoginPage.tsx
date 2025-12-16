@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { linkUserToOneSignal, initializeOneSignal } from '../lib/oneSignal'
+import { subscribeUserToFCM } from '../lib/firebaseMessaging'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -35,19 +35,15 @@ function LoginPage() {
       const result = await loginUser(phone, password)
       
       if (result.success && result.user) {
-        console.log("✅ Login başarılı, OneSignal entegrasyonu başlıyor...");
+        console.log("✅ Login başarılı, Firebase FCM entegrasyonu başlıyor...");
         
-        // OneSignal subscription listener'ı kur
-        await initializeOneSignal();
-        
-        // OneSignal external_id bağla (tag'ler subscribe sonrası set edilecek)
-        await linkUserToOneSignal({
-          id: result.user.id,
-          phone: result.user.phone,
-          email: (result.user as any).email // Eğer email varsa
-        });
-        
-        console.log("🎉 OneSignal entegrasyonu tamamlandı");
+        // Firebase FCM'e kullanıcıyı kaydet
+        try {
+          await subscribeUserToFCM(result.user.id, result.user.phone);
+          console.log("🎉 Firebase FCM entegrasyonu tamamlandı");
+        } catch (fcmError) {
+          console.warn("⚠️ Firebase FCM entegrasyonu başarısız:", fcmError);
+        }
         
         // Ana sayfaya yönlendir
         navigate('/')

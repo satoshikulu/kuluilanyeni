@@ -7,7 +7,8 @@ import {
   sendListingRejectedNotification,
   sendUserApprovedNotification,
   sendUserRejectedNotification 
-} from '../lib/oneSignalAPI'
+} from '../lib/firebaseAPI'
+
 
 type Listing = {
   id: string
@@ -199,7 +200,7 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
-      // Push notification gönder
+      // Firebase FCM bildirimi gönder
       if (listing) {
         if (decision === 'approved') {
           await sendListingApprovedNotification(
@@ -293,7 +294,7 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
-      // Push notification gönder
+      // Firebase FCM bildirimi gönder
       if (user) {
         if (decision === 'approved') {
           await sendUserApprovedNotification(

@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
-import './onesignal/onesignal'
-import { initOneSignal } from './lib/oneSignal'
+import { listenForMessages } from './lib/firebaseMessaging'
+
 import App from './App.tsx'
 import HomePage from './pages/HomePage.tsx'
 import ListingsPage from './pages/ListingsPage.tsx'
@@ -46,8 +46,19 @@ const router = createBrowserRouter([
   },
 ])
 
-// OneSignal subscription listener'ı uygulama başlangıcında kur
-initOneSignal();
+// Firebase FCM foreground message listener
+listenForMessages((payload) => {
+  console.log('📱 Foreground notification received:', payload);
+  
+  // Tarayıcı bildirimi göster
+  if (Notification.permission === 'granted') {
+    new Notification(payload.notification.title, {
+      body: payload.notification.body,
+      icon: '/icon-192x192.png',
+      tag: 'kulu-ilan-notification'
+    });
+  }
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

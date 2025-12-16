@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { logoutFromOneSignal } from './oneSignal'
+import { removeFCMTokenFromDatabase } from './firebaseMessaging'
 
 // Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
 function simpleHash(password: string): string {
@@ -113,12 +113,15 @@ export async function loginUser(
  * Çıkış yap
  */
 export async function logoutUser(): Promise<void> {
-  // OneSignal logout - external_id bağlantısını kopar ve tag'leri temizle
-  try {
-    await logoutFromOneSignal();
-    console.log('✅ OneSignal logout başarılı');
-  } catch (error) {
-    console.warn('⚠️ OneSignal logout failed during user logout:', error);
+  // FCM token'ı temizle
+  const currentUser = getCurrentUser();
+  if (currentUser) {
+    try {
+      await removeFCMTokenFromDatabase(currentUser.id);
+      console.log('✅ FCM token removed during logout');
+    } catch (error) {
+      console.warn('⚠️ FCM token removal failed during logout:', error);
+    }
   }
   
   localStorage.removeItem('user')

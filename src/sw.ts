@@ -35,12 +35,9 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Navigation route - exclude OneSignal workers
+// Navigation route
 const navigationRoute = new NavigationRoute(
-  createHandlerBoundToURL('index.html'),
-  {
-    denylist: [/^\/OneSignalSDK.*\.js$/],
-  }
+  createHandlerBoundToURL('index.html')
 );
 registerRoute(navigationRoute);
 

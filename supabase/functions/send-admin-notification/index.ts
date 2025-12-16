@@ -2,19 +2,56 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/json'
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-secret",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json"
 }
 
 console.info('🔥 PRODUCTION Admin Notification server - REAL PUSH NOTIFICATIONS')
 
 serve(async (req) => {
+  // CORS preflight handling
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Only allow POST method
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: 'Method not allowed. Only POST requests are supported.' 
+    }), { 
+      status: 405, 
+      headers: corsHeaders 
+    })
+  }
+
   try {
+    // Admin secret validation
+    const adminSecret = req.headers.get('x-admin-secret')
+    const expectedSecret = Deno.env.get('ADMIN_SECRET')
+    
+    if (!expectedSecret) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Admin secret not configured on server' 
+      }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
+    }
+    
+    if (!adminSecret || adminSecret !== expectedSecret) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Unauthorized. Invalid or missing admin secret.' 
+      }), { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
     // Firebase Admin credentials
     const FIREBASE_PROJECT_ID = Deno.env.get('FIREBASE_PROJECT_ID')
     const FIREBASE_CLIENT_EMAIL = Deno.env.get('FIREBASE_CLIENT_EMAIL')
@@ -24,7 +61,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Firebase Admin credentials not configured' 
-      }), { status: 500, headers: corsHeaders })
+      }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
     }
 
     const privateKey = FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
@@ -64,8 +104,13 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false,
         error: phone ? `No FCM token found for phone: ${phone}` : 'No FCM tokens found in database',
-        details: 'Users must login and grant notification permission first'
-      }), { status: 404, headers: corsHeaders })
+        details: 'Users must login and grant notification permission first',
+        phone: phone || 'all_users',
+        searched_tokens: 0
+      }), { 
+        status: 404, 
+        headers: corsHeaders 
+      })
     }
 
     console.log(`📡 Found ${tokens.length} FCM tokens to send notifications`)
@@ -231,7 +276,12 @@ serve(async (req) => {
     console.error('❌ Admin notification error:', error)
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message || 'Internal server error'
-    }), { status: 500, headers: corsHeaders })
+      error: error.message || 'Internal server error',
+      details: 'Check server logs for more information',
+      timestamp: new Date().toISOString()
+    }), { 
+      status: 500, 
+      headers: corsHeaders 
+    })
   }
 })

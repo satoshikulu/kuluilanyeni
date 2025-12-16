@@ -502,16 +502,37 @@ function AdminPage() {
     setNotificationStatus({ type: null, message: '' })
 
     try {
-      // Admin bildirim Edge Function'ını çağır
-      const { data, error } = await supabase.functions.invoke('send-admin-notification', {
-        body: {
+      // PRODUCTION-READY: Direct fetch ile Edge Function çağrısı
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+      const ADMIN_SECRET = 'kulu-admin-2024-secure-key-firebase-fcm' // Production'da env'den alınacak
+      
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/send-admin-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': ADMIN_SECRET
+        },
+        body: JSON.stringify({
           phone: notificationForm.phone.trim() || null, // Boşsa null gönder (herkese)
           title: notificationForm.title.trim(),
           body: notificationForm.body.trim()
-        }
+        })
       })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        // HTTP status kodlarına göre hata mesajları
+        if (response.status === 401) {
+          throw new Error('❌ Yetki Hatası: Admin secret geçersiz')
+        } else if (response.status === 404) {
+          throw new Error(`❌ Token Bulunamadı: ${data.error || 'FCM token bulunamadı'}`)
+        } else if (response.status === 500) {
+          throw new Error(`❌ Sunucu Hatası: ${data.error || 'Internal server error'}`)
+        } else {
+          throw new Error(`❌ HTTP ${response.status}: ${data.error || 'Bilinmeyen hata'}`)
+        }
+      }
 
       if (data.success) {
         setNotificationStatus({
@@ -528,7 +549,7 @@ function AdminPage() {
       console.error('Bildirim gönderme hatası:', error)
       setNotificationStatus({
         type: 'error',
-        message: `❌ Hata: ${error.message || 'Bildirim gönderilemedi'}`
+        message: error.message || '❌ Hata: Bildirim gönderilemedi'
       })
     } finally {
       setIsNotificationSending(false)

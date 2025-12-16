@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS fcm_tokens (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   -- Constraints
-  UNIQUE(user_id), -- Her kullanıcının sadece bir token'ı olabilir
+  UNIQUE(phone),   -- Her telefon numarasının sadece bir token'ı olabilir (UPSERT için)
   UNIQUE(token)    -- Her token benzersiz olmalı
 );
 

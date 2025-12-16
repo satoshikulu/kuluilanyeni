@@ -12,6 +12,9 @@ export default {
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',
         'slide-up': 'slideUp 0.35s ease-out',
+        'download-pulse': 'downloadPulse 2s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
+        'glow': 'glow 2s ease-in-out infinite alternate',
       },
       keyframes: {
         fadeIn: {
@@ -27,6 +30,24 @@ export default {
             transform: 'translateY(0)', 
             opacity: '1' 
           },
+        },
+        downloadPulse: {
+          '0%, 100%': { 
+            transform: 'scale(1)',
+            boxShadow: '0 0 0 0 rgba(59, 130, 246, 0.7)'
+          },
+          '50%': { 
+            transform: 'scale(1.05)',
+            boxShadow: '0 0 0 10px rgba(59, 130, 246, 0)'
+          },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        glow: {
+          '0%': { boxShadow: '0 0 5px rgba(59, 130, 246, 0.5)' },
+          '100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)' },
         },
       },
     },

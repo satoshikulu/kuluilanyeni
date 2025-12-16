@@ -9,7 +9,6 @@ import {
   sendUserRejectedNotification 
 } from '../lib/firebaseAPI'
 
-
 type Listing = {
   id: string
   created_at: string
@@ -76,13 +75,25 @@ function AdminPage() {
   const [page, setPage] = useState<number>(1)
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'listings' | 'users'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'notifications'>('listings')
   
   // User listings modal state
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [userListings, setUserListings] = useState<Listing[]>([])
   const [userListingsLoading, setUserListingsLoading] = useState(false)
   const [userListingsCounts, setUserListingsCounts] = useState<Record<string, { pending: number; approved: number; rejected: number }>>({})
+
+  // Notification form state
+  const [notificationForm, setNotificationForm] = useState({
+    phone: '',
+    title: '',
+    body: ''
+  })
+  const [isNotificationSending, setIsNotificationSending] = useState(false)
+  const [notificationStatus, setNotificationStatus] = useState<{
+    type: 'success' | 'error' | null
+    message: string
+  }>({ type: null, message: '' })
 
   // Helpers
   function formatDate(ts?: string) {
@@ -97,7 +108,6 @@ function AdminPage() {
     const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
     return `${days} gün`
   }
-
   async function load() {
     setLoading(true)
     setError('')
@@ -472,6 +482,59 @@ function AdminPage() {
     }
   }
 
+  function handleLogout() {
+    sessionStorage.removeItem('isAdmin')
+    window.location.href = '/'
+  }
+
+  async function handleNotificationSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    
+    if (!notificationForm.title.trim() || !notificationForm.body.trim()) {
+      setNotificationStatus({
+        type: 'error',
+        message: 'Başlık ve mesaj alanları zorunludur'
+      })
+      return
+    }
+
+    setIsNotificationSending(true)
+    setNotificationStatus({ type: null, message: '' })
+
+    try {
+      // Admin bildirim Edge Function'ını çağır
+      const { data, error } = await supabase.functions.invoke('send-admin-notification', {
+        body: {
+          phone: notificationForm.phone.trim() || null, // Boşsa null gönder (herkese)
+          title: notificationForm.title.trim(),
+          body: notificationForm.body.trim()
+        }
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        setNotificationStatus({
+          type: 'success',
+          message: `✅ Bildirim başarıyla gönderildi! ${data.sent_count || 1} kişiye ulaştı.`
+        })
+        
+        // Formu temizle
+        setNotificationForm({ phone: '', title: '', body: '' })
+      } else {
+        throw new Error(data.error || 'Bildirim gönderilemedi')
+      }
+    } catch (error: any) {
+      console.error('Bildirim gönderme hatası:', error)
+      setNotificationStatus({
+        type: 'error',
+        message: `❌ Hata: ${error.message || 'Bildirim gönderilemedi'}`
+      })
+    } finally {
+      setIsNotificationSending(false)
+    }
+  }
+
   async function loadUserListings(userId: string, phone: string) {
     setSelectedUserId(userId)
     setUserListingsLoading(true)
@@ -525,18 +588,11 @@ function AdminPage() {
       void loadUserListingsCounts()
     }
   }, [activeTab, pendingUsers, approvedUsers, rejectedUsers])
-
-  function handleLogout() {
-    sessionStorage.removeItem('isAdmin')
-    window.location.href = '/'
-  }
-
   return (
     <AdminGate>
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Modern Admin Header with Background Image */}
+      {/* Modern Admin Header */}
       <div className="relative overflow-hidden">
-        {/* Background Image with Overlay */}
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -546,12 +602,9 @@ function AdminPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/95 via-purple-900/90 to-pink-900/95 backdrop-blur-sm"></div>
         </div>
 
-        {/* Header Content */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            {/* Left Side - Title & User */}
             <div className="flex items-center gap-3 sm:gap-6">
-              {/* Avatar */}
               <div className="relative">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-500 flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
                   <span className="text-3xl sm:text-4xl">👑</span>
@@ -559,7 +612,6 @@ function AdminPage() {
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-green-400 rounded-full border-2 sm:border-4 border-white shadow-lg"></div>
               </div>
 
-              {/* Title & User Info */}
               <div>
                 <div className="flex items-center gap-2 sm:gap-3 mb-2">
                   <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
@@ -577,18 +629,11 @@ function AdminPage() {
                       <div className="text-purple-200 text-xs hidden sm:block">Tam Yetki • Süper Admin</div>
                     </div>
                   </div>
-                  <div className="hidden md:block h-8 w-px bg-white/20"></div>
-                  <div className="text-white/80 text-xs sm:text-sm hidden md:block">
-                    <div className="font-semibold">Yönetim Kontrol Merkezi</div>
-                    <div className="text-xs text-white/60">Tüm sistem erişimi aktif</div>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Side - Actions */}
             <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto">
-              {/* Stats */}
               <div className="flex lg:hidden items-center gap-2 flex-1">
                 <div className="flex-1 px-3 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
                   <div className="text-lg font-bold text-white">{totalCount}</div>
@@ -610,7 +655,6 @@ function AdminPage() {
                 </div>
               </div>
 
-              {/* Logout Button */}
               <button
                 onClick={handleLogout}
                 className="group flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-red-500 backdrop-blur-md rounded-xl transition-all duration-300 border border-white/20 hover:border-red-400 shadow-lg hover:shadow-red-500/50"
@@ -622,7 +666,6 @@ function AdminPage() {
           </div>
         </div>
 
-        {/* Decorative Bottom Wave */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
             <path d="M0 48h1440V0c-240 48-480 48-720 24C480 0 240 0 0 24v24z" fill="currentColor" className="text-gray-50"/>
@@ -669,9 +712,20 @@ function AdminPage() {
               )}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
+              activeTab === 'notifications'
+                ? 'bg-white text-blue-600 shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              📡 Bildirimler
+            </span>
+          </button>
         </div>
       </div>
-
       {/* İlanlar Tab */}
       {activeTab === 'listings' && (
         <div>
@@ -753,14 +807,19 @@ function AdminPage() {
             <div className="mb-4 rounded-lg bg-red-50 text-red-700 border border-red-200 px-3 py-2 text-sm">{error}</div>
           )}
           {loading ? (
-            <div className="flex items-center gap-3 text-gray-600"><svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Yükleniyor...</div>
+            <div className="flex items-center gap-3 text-gray-600">
+              <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              Yükleniyor...
+            </div>
           ) : listings.length === 0 ? (
             <div className="text-gray-600">Kriterlere uygun ilan bulunamadı.</div>
           ) : (
             <div className="space-y-4">
               {listings.map((l) => (
                 <div key={l.id} className="group relative rounded-2xl border border-gray-200 p-6 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300">
-                  {/* Status Badge */}
                   <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
                     {l.status === 'pending' && (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
@@ -782,7 +841,6 @@ function AdminPage() {
                   <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
                     <div className="flex-1 w-full lg:pr-24">
                       <div className="font-bold text-xl text-gray-900 mb-3">{l.title}</div>
-                      {/* Property Details */}
                       <div className="flex flex-wrap gap-3 mb-3">
                         <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100">
                           {l.is_for === 'satilik' ? '🏷️ Satılık' : '🔑 Kiralık'}
@@ -798,7 +856,6 @@ function AdminPage() {
                         </span>
                       </div>
 
-                      {/* Location & Price */}
                       <div className="flex items-center gap-4 mb-3">
                         <span className="text-sm text-gray-600">
                           📍 {l.neighborhood || 'Mahalle yok'}
@@ -808,7 +865,6 @@ function AdminPage() {
                         </span>
                       </div>
 
-                      {/* Owner Info */}
                       <div className="flex items-center gap-4 mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                         <span className="text-sm font-medium text-gray-700">
                           👤 {l.owner_name}
@@ -818,7 +874,6 @@ function AdminPage() {
                         </span>
                       </div>
 
-                      {/* Time Info */}
                       <div className="flex items-center gap-3 text-xs text-gray-500">
                         <span>🕐 Başvuru: {formatDate(l.created_at)}</span>
                         <span>⏱️ Geçen: {daysSince(l.created_at)}</span>
@@ -925,7 +980,6 @@ function AdminPage() {
                   </div>
                 </div>
               ))}
-              {/* Pagination */}
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="text-sm text-gray-600 font-medium">Toplam: {totalCount} ilan</div>
                 {listings.length < totalCount && (
@@ -938,20 +992,24 @@ function AdminPage() {
           )}
         </div>
       )}
-
       {/* Üyeler Tab */}
       {activeTab === 'users' && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">Bekleyen Üyelik Başvuruları</h2>
+          <h2 className="text-xl font-semibold mb-4">Üye Yönetimi</h2>
           {loading ? (
-            <div className="flex items-center gap-3 text-gray-600"><svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Yükleniyor...</div>
+            <div className="flex items-center gap-3 text-gray-600">
+              <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              Yükleniyor...
+            </div>
           ) : pendingUsers.length === 0 ? (
             <div className="text-gray-600 bg-gray-50 rounded-lg p-4 text-center">Bekleyen kullanıcı başvurusu yok.</div>
           ) : (
             <div className="space-y-4">
               {pendingUsers.map((u) => (
                 <div key={u.id} className="group relative rounded-2xl border border-gray-200 p-6 bg-gradient-to-br from-white to-blue-50 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300">
-                  {/* Pending Badge */}
                   <div className="absolute top-4 right-4">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200 animate-pulse">
                       ⏳ Bekliyor
@@ -962,7 +1020,6 @@ function AdminPage() {
                     <div className="flex-1 w-full lg:pr-24">
                       <div className="font-bold text-xl text-gray-900 mb-3">{(u.full_name || '').trim() || 'Ad Soyad (eksik)'}</div>
                       
-                      {/* Contact Info */}
                       <div className="flex flex-col gap-2 mb-3">
                         <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
                           <span className="text-sm font-medium text-gray-700">📞 Telefon:</span>
@@ -974,7 +1031,6 @@ function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Time Info */}
                       <div className="flex items-center gap-3 text-xs text-gray-500">
                         <span>🕐 Başvuru: {formatDate(u.created_at)}</span>
                         <span>⏱️ Geçen: {daysSince(u.created_at)}</span>
@@ -1095,6 +1151,103 @@ function AdminPage() {
           )}
         </div>
       )}
+
+      {/* Bildirimler Tab */}
+      {activeTab === 'notifications' && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Bildirim Gönder</h2>
+          
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg border border-blue-200/50 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-2xl">📡</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Push Bildirim Gönder</h3>
+                <p className="text-sm text-gray-600">Kullanıcılara anlık Firebase FCM bildirimi gönder</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleNotificationSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📱 Telefon Numarası (İsteğe Bağlı)
+                  </label>
+                  <input
+                    type="tel"
+                    value={notificationForm.phone}
+                    onChange={(e) => setNotificationForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="5xx xxx xx xx (boş bırakırsan herkese gönderilir)"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Boş bırakırsan tüm kullanıcılara gönderilir
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📝 Bildirim Başlığı *
+                  </label>
+                  <input
+                    type="text"
+                    value={notificationForm.title}
+                    onChange={(e) => setNotificationForm(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Örn: Yeni İlan Eklendi!"
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  💬 Bildirim Mesajı *
+                </label>
+                <textarea
+                  value={notificationForm.body}
+                  onChange={(e) => setNotificationForm(prev => ({ ...prev, body: e.target.value }))}
+                  placeholder="Örn: Kulu'da yeni bir emlak ilanı yayınlandı. Hemen inceleyin!"
+                  required
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                />
+              </div>
+
+              {notificationStatus.type && (
+                <div className={`p-4 rounded-lg border ${
+                  notificationStatus.type === 'success' 
+                    ? 'bg-green-50 border-green-200 text-green-800' 
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}>
+                  {notificationStatus.message}
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isNotificationSending || !notificationForm.title.trim() || !notificationForm.body.trim()}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+                >
+                  {isNotificationSending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Gönderiliyor...
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-lg">📤</span>
+                      Bildirimi Gönder
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       </div>
     </div>
 
@@ -1196,13 +1349,13 @@ function AdminPage() {
                               onClick={() => { void decide(listing.id, 'approved'); setUserListings(prev => prev.filter(l => l.id !== listing.id)) }}
                               className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700"
                             >
-                              ✓ Onayla
+                              ✓
                             </button>
                             <button 
                               onClick={() => { void decide(listing.id, 'rejected'); setUserListings(prev => prev.filter(l => l.id !== listing.id)) }}
                               className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700"
                             >
-                              ✕ Reddet
+                              ✕
                             </button>
                           </>
                         )}
@@ -1227,5 +1380,3 @@ function AdminPage() {
 }
 
 export default AdminPage
-
-

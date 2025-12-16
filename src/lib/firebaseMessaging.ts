@@ -92,7 +92,7 @@ async function saveFCMTokenToDatabase(userId: string, phone: string, token: stri
       tokenPreview: token.substring(0, 20) + '...'
     });
 
-    // UPSERT kullan - duplicate key hatası olmaz
+    // UPSERT by user_id - one token per user
     const { error } = await supabase
       .from('fcm_tokens')
       .upsert({
@@ -101,7 +101,7 @@ async function saveFCMTokenToDatabase(userId: string, phone: string, token: stri
         token: token,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'token' // Aynı token varsa güncelle
+        onConflict: 'user_id' // One token per user
       });
 
     if (error) {

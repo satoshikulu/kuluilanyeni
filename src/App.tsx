@@ -23,48 +23,43 @@ function App() {
             Kulu İlan <span className="text-gray-500">·</span> <span className="text-gray-600">Kulu Emlak Pazarı</span>
           </Link>
           <nav className="flex items-center gap-4 text-sm">
-            {/* PWA Install Button - Enhanced Download Theme */}
+            {/* Modern PWA Install Button - Compact & Interactive */}
             <button
               onClick={() => (window as any).installPWA?.()}
-              className="relative inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-all duration-300 overflow-hidden group"
-              title="Uygulamayı Telefonuna İndir ve Yükle"
+              className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 font-medium transition-all duration-300 overflow-hidden group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/50 hover:border-blue-300/60 shadow-sm hover:shadow-lg hover:shadow-blue-200/25 transform hover:scale-105 animate-download-pulse"
+              title="Uygulamayı Telefonuna İndir"
             >
-              {/* Animated Background Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-100/90 via-teal-100/90 to-cyan-100/90 backdrop-blur-md border border-emerald-200/50 rounded-xl group-hover:from-emerald-200/95 group-hover:via-teal-200/95 group-hover:to-cyan-200/95 group-hover:border-emerald-300/60 transition-all duration-300"></div>
+              {/* Animated Background Waves */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/5 to-indigo-400/5 rounded-lg"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-indigo-400/10 rounded-lg animate-pulse"></div>
               
-              {/* Download Progress Bar Effect */}
-              <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-b-xl w-0 group-hover:w-full transition-all duration-700 ease-out"></div>
-              
-              {/* Content */}
-              <div className="relative z-10 flex items-center gap-2 text-emerald-700 group-hover:text-emerald-800 transition-colors duration-300">
-                {/* Enhanced Download Icon with Animation */}
-                <div className="relative w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-300">
-                  {/* Phone Icon */}
-                  <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 4h10v12H7V4z"/>
-                  </svg>
-                  {/* Download Arrow Animation */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <svg className="w-2.5 h-2.5 text-white animate-bounce" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 9.586V4a1 1 0 011-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
+              {/* Download Icon Container */}
+              <div className="relative z-10 flex items-center justify-center w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 group-hover:scale-110 animate-glow">
+                {/* Modern Download Icon */}
+                <svg className="w-3 h-3 text-white transform group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
                 
-                {/* Text with Enhanced Typography */}
-                <div className="flex flex-col">
-                  <span className="font-bold text-sm leading-tight">📱 Telefona İndir</span>
-                  <span className="text-xs opacity-75 font-medium">Hızlı Erişim</span>
+                {/* Pulsing Notification Dot */}
+                <div className="absolute -top-1 -right-1 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                  <div className="absolute w-2 h-2 bg-green-500 rounded-full"></div>
                 </div>
               </div>
               
-              {/* Enhanced Glow Effect */}
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 bg-gradient-to-r from-emerald-400/25 via-teal-400/25 to-cyan-400/25 blur-xl transition-opacity duration-300"></div>
+              {/* Compact Text with Gradient */}
+              <span className="relative z-10 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent group-hover:from-blue-800 group-hover:to-indigo-800 transition-all duration-300">
+                Telefona İndir
+              </span>
               
-              {/* Shimmer Effect */}
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-pulse"></div>
-              </div>
+              {/* Shimmer Animation */}
+              <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 animate-shimmer transition-opacity duration-500"></div>
+              
+              {/* Glow Effect */}
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/20 to-indigo-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+              
+              {/* Progress Bar Effect */}
+              <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-b-lg w-0 group-hover:w-full transition-all duration-700 ease-out"></div>
             </button>
             
             {currentUser && !isAdminSession && (

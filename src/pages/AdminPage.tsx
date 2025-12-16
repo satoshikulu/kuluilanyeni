@@ -504,7 +504,7 @@ function AdminPage() {
     try {
       // PRODUCTION-READY: Direct fetch ile Edge Function çağrısı
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-      const ADMIN_SECRET = 'kulu-admin-2024-secure-key-firebase-fcm' // Production'da env'den alınacak
+      const ADMIN_SECRET = 'kulu-admin-2024-production-key' // Production'da env'den alınacak
       
       const response = await fetch(`${SUPABASE_URL}/functions/v1/send-admin-notification`, {
         method: 'POST',

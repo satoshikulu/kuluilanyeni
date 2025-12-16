@@ -10,6 +10,11 @@ const corsHeaders = {
 
 console.info('🔥 PRODUCTION Admin Notification server - REAL PUSH NOTIFICATIONS')
 
+// Test endpoint for debugging
+if (Deno.env.get('DEBUG_MODE') === 'true') {
+  console.log('🐛 DEBUG MODE ENABLED')
+}
+
 serve(async (req) => {
   // CORS preflight handling
   if (req.method === 'OPTIONS') {
@@ -32,10 +37,17 @@ serve(async (req) => {
     const adminSecret = req.headers.get('x-admin-secret')
     const expectedSecret = Deno.env.get('ADMIN_SECRET')
     
+    console.log('🔐 Admin Secret Debug:', {
+      received: adminSecret ? `${adminSecret.substring(0, 10)}...` : 'null',
+      expected: expectedSecret ? `${expectedSecret.substring(0, 10)}...` : 'null',
+      match: adminSecret === expectedSecret
+    })
+    
     if (!expectedSecret) {
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Admin secret not configured on server' 
+        error: 'Admin secret not configured on server',
+        debug: 'ADMIN_SECRET environment variable not found'
       }), { 
         status: 500, 
         headers: corsHeaders 
@@ -45,7 +57,12 @@ serve(async (req) => {
     if (!adminSecret || adminSecret !== expectedSecret) {
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Unauthorized. Invalid or missing admin secret.' 
+        error: 'Unauthorized. Invalid or missing admin secret.',
+        debug: {
+          received: adminSecret ? 'present' : 'missing',
+          expected_length: expectedSecret.length,
+          received_length: adminSecret ? adminSecret.length : 0
+        }
       }), { 
         status: 401, 
         headers: corsHeaders 

@@ -509,17 +509,10 @@ function AdminPage() {
         throw new Error('Oturum bulunamadı')
       }
 
-      // Get admin secret from environment
-      const ADMIN_SECRET = import.meta.env.VITE_ADMIN_SECRET
-      if (!ADMIN_SECRET) {
-        throw new Error('Admin secret yapılandırılmamış')
-      }
-
       // Debug logging (development only)
       if (import.meta.env.DEV) {
-        console.log('🔍 Sending notification with headers:', {
+        console.log('🔍 Sending notification with JWT only:', {
           authorization: `Bearer ${sessionData.session.access_token.substring(0, 20)}...`,
-          adminSecret: `${ADMIN_SECRET.substring(0, 5)}...`,
           phone: notificationForm.phone || 'all_users'
         })
       }
@@ -528,8 +521,7 @@ function AdminPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.session.access_token}`,
-          'x-admin-secret': ADMIN_SECRET
+          'Authorization': `Bearer ${sessionData.session.access_token}`
         },
         body: JSON.stringify({
           phone: notificationForm.phone.trim() || null,

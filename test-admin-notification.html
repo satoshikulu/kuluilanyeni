@@ -95,7 +95,7 @@
 
     <script>
         const SUPABASE_URL = 'https://tjoivjohhjoedtwzuopr.supabase.co'
-        const ADMIN_SECRET = 'kulu-admin-secret-2024'
+        // ADMIN_SECRET artık kullanılmıyor - sadece JWT + role kontrolü
         
         // Get Supabase session (simulated for test)
         const mockSession = {
@@ -129,7 +129,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${mockSession.access_token}`,
-                        'x-admin-secret': ADMIN_SECRET
+                        // 'x-admin-secret' header artık gerekli değil
                     },
                     body: JSON.stringify({
                         phone: phone || null,

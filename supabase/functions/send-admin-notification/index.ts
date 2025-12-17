@@ -4,12 +4,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-admin-secret",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json"
 }
 
-console.info('🔥 PRODUCTION Admin Notification server - STRICT SECURITY')
+console.info('🔥 PRODUCTION Admin Notification server - JWT + ROLE SECURITY')
 
 serve(async (req) => {
   // CORS preflight handling
@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    // STRICT SECURITY VALIDATION - Check Authorization header first
+    // JWT ONLY SECURITY VALIDATION
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ 
@@ -70,40 +70,19 @@ serve(async (req) => {
       })
     }
 
-    // Check admin secret header
-    const adminSecret = req.headers.get('x-admin-secret')
-    if (!adminSecret) {
+    // Check admin role in user metadata
+    const userRole = user.user_metadata?.role
+    if (userRole !== 'admin') {
+      console.log('🚫 Access denied - user is not admin:', user.email, 'role:', userRole)
       return new Response(JSON.stringify({ 
-        error: "Missing admin secret"
+        error: "Access denied - admin role required"
       }), { 
-        status: 401, 
+        status: 403, 
         headers: corsHeaders 
       })
     }
 
-    // Validate admin secret
-    const expectedSecret = Deno.env.get('ADMIN_SECRET')
-    if (!expectedSecret) {
-      console.error('❌ ADMIN_SECRET not configured in environment')
-      return new Response(JSON.stringify({ 
-        error: "Server configuration error"
-      }), { 
-        status: 500, 
-        headers: corsHeaders 
-      })
-    }
-
-    if (adminSecret !== expectedSecret) {
-      console.log('🚫 Admin secret mismatch')
-      return new Response(JSON.stringify({ 
-        error: "Admin secret invalid"
-      }), { 
-        status: 401, 
-        headers: corsHeaders 
-      })
-    }
-
-    console.log('✅ Security validation passed for user:', user.email)
+    console.log('✅ Admin access granted for user:', user.email)
 
     // Firebase Admin credentials
     const FIREBASE_PROJECT_ID = Deno.env.get('FIREBASE_PROJECT_ID')

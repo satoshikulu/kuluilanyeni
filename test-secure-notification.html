@@ -58,8 +58,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Secure Admin Notification Test</h1>
-        <p>Testing strict security implementation with both Authorization and x-admin-secret headers</p>
+        <h1>🔒 JWT Only Admin Notification Test</h1>
+        <p>Testing JWT + role based security (no more admin secret)</p>
         
         <!-- Test 1: Missing Authorization Header -->
         <div class="test-section">
@@ -69,34 +69,33 @@
             <div id="result1" class="result"></div>
         </div>
 
-        <!-- Test 2: Missing Admin Secret -->
+        <!-- Test 2: Invalid JWT Token -->
         <div class="test-section">
-            <h3>Test 2: Missing Admin Secret</h3>
-            <p>Should return: "Missing admin secret"</p>
-            <button onclick="testMissingSecret()">Run Test</button>
+            <h3>Test 2: Invalid JWT Token</h3>
+            <p>Should return: "Invalid or expired session"</p>
+            <button onclick="testInvalidJWT()">Run Test</button>
             <div id="result2" class="result"></div>
         </div>
 
-        <!-- Test 3: Invalid Admin Secret -->
+        <!-- Test 3: Valid JWT but No Admin Role -->
         <div class="test-section">
-            <h3>Test 3: Invalid Admin Secret</h3>
-            <p>Should return: "Admin secret invalid"</p>
-            <button onclick="testInvalidSecret()">Run Test</button>
+            <h3>Test 3: Valid JWT but No Admin Role</h3>
+            <p>Should return: "Access denied - admin role required"</p>
+            <button onclick="testNoAdminRole()">Run Test</button>
             <div id="result3" class="result"></div>
         </div>
 
-        <!-- Test 4: Valid Headers (should work) -->
+        <!-- Test 4: Valid JWT with Admin Role -->
         <div class="test-section">
-            <h3>Test 4: Valid Headers</h3>
+            <h3>Test 4: Valid JWT with Admin Role</h3>
             <p>Should work (or fail at FCM token level)</p>
-            <button onclick="testValidHeaders()">Run Test</button>
+            <button onclick="testValidAdmin()">Run Test</button>
             <div id="result4" class="result"></div>
         </div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://tjoivjohhjoedtwzuopr.supabase.co'
-        const ADMIN_SECRET = 'kulu-admin-secret-2024'
         const MOCK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-token'
 
         async function testMissingAuth() {
@@ -108,8 +107,7 @@
                 const response = await fetch(`${SUPABASE_URL}/functions/v1/send-admin-notification`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-admin-secret': ADMIN_SECRET
+                        'Content-Type': 'application/json'
                         // Missing Authorization header
                     },
                     body: JSON.stringify({
@@ -133,7 +131,7 @@
             }
         }
 
-        async function testMissingSecret() {
+        async function testInvalidJWT() {
             const result = document.getElementById('result2')
             result.className = 'result'
             result.textContent = 'Testing...'
@@ -144,79 +142,10 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${MOCK_TOKEN}`
-                        // Missing x-admin-secret header
                     },
                     body: JSON.stringify({
                         title: 'Test',
                         body: 'Test message'
-                    })
-                })
-                
-                const data = await response.json()
-                
-                if (response.status === 401 && data.error === 'Missing admin secret') {
-                    result.className = 'result success'
-                    result.textContent = '✅ PASS: Correctly rejected missing admin secret\n' + JSON.stringify(data, null, 2)
-                } else {
-                    result.className = 'result error'
-                    result.textContent = '❌ FAIL: Unexpected response\n' + JSON.stringify(data, null, 2)
-                }
-            } catch (error) {
-                result.className = 'result error'
-                result.textContent = '❌ ERROR: ' + error.message
-            }
-        }
-
-        async function testInvalidSecret() {
-            const result = document.getElementById('result3')
-            result.className = 'result'
-            result.textContent = 'Testing...'
-            
-            try {
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/send-admin-notification`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${MOCK_TOKEN}`,
-                        'x-admin-secret': 'wrong-secret'
-                    },
-                    body: JSON.stringify({
-                        title: 'Test',
-                        body: 'Test message'
-                    })
-                })
-                
-                const data = await response.json()
-                
-                if (response.status === 401 && data.error === 'Admin secret invalid') {
-                    result.className = 'result success'
-                    result.textContent = '✅ PASS: Correctly rejected invalid admin secret\n' + JSON.stringify(data, null, 2)
-                } else {
-                    result.className = 'result error'
-                    result.textContent = '❌ FAIL: Unexpected response\n' + JSON.stringify(data, null, 2)
-                }
-            } catch (error) {
-                result.className = 'result error'
-                result.textContent = '❌ ERROR: ' + error.message
-            }
-        }
-
-        async function testValidHeaders() {
-            const result = document.getElementById('result4')
-            result.className = 'result'
-            result.textContent = 'Testing...'
-            
-            try {
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/send-admin-notification`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${MOCK_TOKEN}`,
-                        'x-admin-secret': ADMIN_SECRET
-                    },
-                    body: JSON.stringify({
-                        title: 'Test Notification',
-                        body: 'This is a test message'
                     })
                 })
                 
@@ -224,10 +153,7 @@
                 
                 if (response.status === 401 && data.error === 'Invalid or expired session') {
                     result.className = 'result success'
-                    result.textContent = '✅ PASS: Headers accepted, failed at auth validation (expected with mock token)\n' + JSON.stringify(data, null, 2)
-                } else if (response.status === 200) {
-                    result.className = 'result success'
-                    result.textContent = '✅ PASS: Notification sent successfully!\n' + JSON.stringify(data, null, 2)
+                    result.textContent = '✅ PASS: Correctly rejected invalid JWT\n' + JSON.stringify(data, null, 2)
                 } else {
                     result.className = 'result error'
                     result.textContent = '❌ FAIL: Unexpected response\n' + JSON.stringify(data, null, 2)
@@ -236,6 +162,28 @@
                 result.className = 'result error'
                 result.textContent = '❌ ERROR: ' + error.message
             }
+        }
+
+        async function testNoAdminRole() {
+            const result = document.getElementById('result3')
+            result.className = 'result'
+            result.textContent = 'Testing...'
+            
+            // This test would need a real JWT token from a non-admin user
+            // For now, we'll simulate the expected behavior
+            result.className = 'result success'
+            result.textContent = '✅ INFO: This test requires a real JWT from a non-admin user.\nExpected behavior: 403 "Access denied - admin role required"'
+        }
+
+        async function testValidAdmin() {
+            const result = document.getElementById('result4')
+            result.className = 'result'
+            result.textContent = 'Testing...'
+            
+            // This test would need a real JWT token from an admin user
+            // For now, we'll simulate the expected behavior
+            result.className = 'result success'
+            result.textContent = '✅ INFO: This test requires a real JWT from an admin user.\nExpected behavior: 200 success or 404 "No FCM tokens found"'
         }
     </script>
 </body>

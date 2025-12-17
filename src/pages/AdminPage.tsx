@@ -502,18 +502,37 @@ function AdminPage() {
     setNotificationStatus({ type: null, message: '' })
 
     try {
-      // PRODUCTION-READY: Direct fetch ile Edge Function çağrısı
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-      const ADMIN_SECRET = 'kulu-admin-2024-production-key' // Production'da env'den alınacak
+      // Get current Supabase session - REQUIRED for auth
+      const { data: sessionData } = await supabase.auth.getSession()
       
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/send-admin-notification`, {
+      if (!sessionData.session) {
+        throw new Error('Oturum bulunamadı')
+      }
+
+      // Get admin secret from environment
+      const ADMIN_SECRET = import.meta.env.VITE_ADMIN_SECRET
+      if (!ADMIN_SECRET) {
+        throw new Error('Admin secret yapılandırılmamış')
+      }
+
+      // Debug logging (development only)
+      if (import.meta.env.DEV) {
+        console.log('🔍 Sending notification with headers:', {
+          authorization: `Bearer ${sessionData.session.access_token.substring(0, 20)}...`,
+          adminSecret: `${ADMIN_SECRET.substring(0, 5)}...`,
+          phone: notificationForm.phone || 'all_users'
+        })
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-admin-notification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
           'x-admin-secret': ADMIN_SECRET
         },
         body: JSON.stringify({
-          phone: notificationForm.phone.trim() || null, // Boşsa null gönder (herkese)
+          phone: notificationForm.phone.trim() || null,
           title: notificationForm.title.trim(),
           body: notificationForm.body.trim()
         })
@@ -521,33 +540,54 @@ function AdminPage() {
 
       const data = await response.json()
 
+      // Debug logging (development only)
+      if (import.meta.env.DEV) {
+        console.log('📡 Response:', { status: response.status, data })
+      }
+
       if (!response.ok) {
-        // HTTP status kodlarına göre hata mesajları
+        // Show exact backend error message for 401 errors
         if (response.status === 401) {
-          throw new Error('❌ Yetki Hatası: Admin secret geçersiz')
+          throw new Error(data.error || 'Yetki hatası')
         } else if (response.status === 404) {
-          throw new Error(`❌ Token Bulunamadı: ${data.error || 'FCM token bulunamadı'}`)
+          throw new Error(data.error || 'FCM token bulunamadı')
         } else if (response.status === 500) {
-          throw new Error(`❌ Sunucu Hatası: ${data.error || 'Internal server error'}`)
+          throw new Error(data.error || 'Sunucu hatası')
         } else {
-          throw new Error(`❌ HTTP ${response.status}: ${data.error || 'Bilinmeyen hata'}`)
+          throw new Error(data.error || `HTTP ${response.status} hatası`)
         }
       }
 
       if (data.success) {
         setNotificationStatus({
           type: 'success',
-          message: `✅ Bildirim başarıyla gönderildi! ${data.sent_count || 1} kişiye ulaştı.`
+          message: `Bildirim başarıyla gönderildi! ${data.sent_count || 1} kişiye ulaştı.`
         })
         
-        // Formu temizle
+        // Clear form
         setNotificationForm({ phone: '', title: '', body: '' })
       } else {
         throw new Error(data.error || 'Bildirim gönderilemedi')
       }
     } catch (error: any) {
-      console.error('Bildirim gönderme hatası:', error)
-      setNotificationStatus({
+      console.error('❌ Notification error:', error)
+      
+      // Handle network errors
+      if (error.message.includes('fetch')) {
+        setNotificationStatus({
+          type: 'error',
+          message: 'Edge Function erişilemedi'
+        })
+      } else {
+        setNotificationStatus({
+          type: 'error',
+          message: error.message || 'Bildirim gönderilemedi'
+        })
+      }
+    } finally {
+      setIsNotificationSending(false)
+    }
+  }
         type: 'error',
         message: error.message || '❌ Hata: Bildirim gönderilemedi'
       })

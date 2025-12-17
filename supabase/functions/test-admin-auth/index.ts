@@ -14,23 +14,32 @@ serve(async (req) => {
 
   try {
     const adminSecret = req.headers.get('x-admin-secret')
-    const expectedSecret = Deno.env.get('ADMIN_SECRET')
+    const expectedSecret = Deno.env.get('ADMIN_SECRET') || 'kulu-admin-secret-2024' // Fallback
     
     console.log('🔐 Test Admin Auth:', {
       received: adminSecret,
       expected: expectedSecret,
       match: adminSecret === expectedSecret,
-      env_vars: Object.keys(Deno.env.toObject()).filter(k => k.includes('ADMIN'))
+      env_vars: Object.keys(Deno.env.toObject()).filter(k => k.includes('ADMIN')),
+      env_admin_secret_exists: !!Deno.env.get('ADMIN_SECRET'),
+      // TEMPORARY DEBUG - gerçek değerleri göster
+      received_full: adminSecret,
+      expected_full: expectedSecret
     })
     
     return new Response(JSON.stringify({
       success: true,
       message: 'Admin auth test successful',
+      auth_result: adminSecret === expectedSecret ? 'VALID' : 'INVALID',
       debug: {
         received_secret: adminSecret ? `${adminSecret.substring(0, 5)}...` : 'null',
         expected_secret: expectedSecret ? `${expectedSecret.substring(0, 5)}...` : 'null',
         match: adminSecret === expectedSecret,
-        all_env_keys: Object.keys(Deno.env.toObject())
+        env_admin_secret: Deno.env.get('ADMIN_SECRET') ? 'found' : 'using_fallback',
+        all_env_keys: Object.keys(Deno.env.toObject()),
+        // TEMPORARY DEBUG - tam değerleri göster
+        received_full: adminSecret,
+        expected_full: expectedSecret
       }
     }), { 
       status: 200, 

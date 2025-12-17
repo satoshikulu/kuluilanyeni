@@ -1,19 +1,15 @@
 // PRODUCTION Admin Notification Edge Function - REAL FCM
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-secret",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-admin-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json"
 }
 
-console.info('🔥 PRODUCTION Admin Notification server - REAL PUSH NOTIFICATIONS')
-
-// Test endpoint for debugging
-if (Deno.env.get('DEBUG_MODE') === 'true') {
-  console.log('🐛 DEBUG MODE ENABLED')
-}
+console.info('🔥 PRODUCTION Admin Notification server - STRICT SECURITY')
 
 serve(async (req) => {
   // CORS preflight handling
@@ -24,7 +20,6 @@ serve(async (req) => {
   // Only allow POST method
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ 
-      success: false,
       error: 'Method not allowed. Only POST requests are supported.' 
     }), { 
       status: 405, 
@@ -33,41 +28,82 @@ serve(async (req) => {
   }
 
   try {
-    // Admin secret validation
-    const adminSecret = req.headers.get('x-admin-secret')
-    const expectedSecret = Deno.env.get('ADMIN_SECRET')
-    
-    console.log('🔐 Admin Secret Debug:', {
-      received: adminSecret ? `${adminSecret.substring(0, 10)}...` : 'null',
-      expected: expectedSecret ? `${expectedSecret.substring(0, 10)}...` : 'null',
-      match: adminSecret === expectedSecret
-    })
-    
-    if (!expectedSecret) {
+    // STRICT SECURITY VALIDATION - Check Authorization header first
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
       return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Admin secret not configured on server',
-        debug: 'ADMIN_SECRET environment variable not found'
-      }), { 
-        status: 500, 
-        headers: corsHeaders 
-      })
-    }
-    
-    if (!adminSecret || adminSecret !== expectedSecret) {
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Unauthorized. Invalid or missing admin secret.',
-        debug: {
-          received: adminSecret ? 'present' : 'missing',
-          expected_length: expectedSecret.length,
-          received_length: adminSecret ? adminSecret.length : 0
-        }
+        error: "Missing authorization header"
       }), { 
         status: 401, 
         headers: corsHeaders 
       })
     }
+
+    // Extract Bearer token
+    const token = authHeader.replace('Bearer ', '')
+    if (!token || token === authHeader) {
+      return new Response(JSON.stringify({ 
+        error: "Invalid authorization header format"
+      }), { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    // Validate Supabase session
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    })
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      console.log('🚫 Auth validation failed:', authError?.message)
+      return new Response(JSON.stringify({ 
+        error: "Invalid or expired session"
+      }), { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    // Check admin secret header
+    const adminSecret = req.headers.get('x-admin-secret')
+    if (!adminSecret) {
+      return new Response(JSON.stringify({ 
+        error: "Missing admin secret"
+      }), { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    // Validate admin secret
+    const expectedSecret = Deno.env.get('ADMIN_SECRET')
+    if (!expectedSecret) {
+      console.error('❌ ADMIN_SECRET not configured in environment')
+      return new Response(JSON.stringify({ 
+        error: "Server configuration error"
+      }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
+    }
+
+    if (adminSecret !== expectedSecret) {
+      console.log('🚫 Admin secret mismatch')
+      return new Response(JSON.stringify({ 
+        error: "Admin secret invalid"
+      }), { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    console.log('✅ Security validation passed for user:', user.email)
 
     // Firebase Admin credentials
     const FIREBASE_PROJECT_ID = Deno.env.get('FIREBASE_PROJECT_ID')
@@ -76,7 +112,6 @@ serve(async (req) => {
 
     if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
       return new Response(JSON.stringify({ 
-        success: false,
         error: 'Firebase Admin credentials not configured' 
       }), { 
         status: 500, 
@@ -91,39 +126,33 @@ serve(async (req) => {
 
     if (!title || !body) {
       return new Response(JSON.stringify({ 
-        success: false,
         error: 'Missing required fields: title, body' 
       }), { status: 400, headers: corsHeaders })
     }
 
-    // Get FCM tokens from Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    
-    let tokenQuery = `${supabaseUrl}/rest/v1/fcm_tokens?select=token,phone`
+    // Get FCM tokens from Supabase using authenticated client
+    let query = supabase.from('fcm_tokens').select('token,phone')
     
     // If phone is provided, filter by phone, otherwise get all tokens
     if (phone) {
-      tokenQuery += `&phone=eq.${phone}`
+      query = query.eq('phone', phone)
     }
     
-    const tokenResponse = await fetch(tokenQuery, {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    const tokens = await tokenResponse.json()
+    const { data: tokens, error: tokenError } = await query
+    
+    if (tokenError) {
+      console.error('❌ Database error:', tokenError)
+      return new Response(JSON.stringify({ 
+        error: 'Database query failed'
+      }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
+    }
     
     if (!tokens || tokens.length === 0) {
       return new Response(JSON.stringify({ 
-        success: false,
-        error: phone ? `No FCM token found for phone: ${phone}` : 'No FCM tokens found in database',
-        details: 'Users must login and grant notification permission first',
-        phone: phone || 'all_users',
-        searched_tokens: 0
+        error: phone ? `No FCM token found for phone: ${phone}` : 'No FCM tokens found in database'
       }), { 
         status: 404, 
         headers: corsHeaders 
@@ -275,27 +304,21 @@ serve(async (req) => {
         message: `Admin notification sent successfully to ${successCount} users`,
         sent_count: successCount,
         failed_count: failureCount,
-        total_tokens: tokens.length,
-        results: results
+        total_tokens: tokens.length
       }), { status: 200, headers: corsHeaders })
     } else {
       return new Response(JSON.stringify({ 
-        success: false,
         error: 'Failed to send notifications to any users',
         sent_count: successCount,
         failed_count: failureCount,
-        total_tokens: tokens.length,
-        results: results
+        total_tokens: tokens.length
       }), { status: 500, headers: corsHeaders })
     }
 
   } catch (error) {
     console.error('❌ Admin notification error:', error)
     return new Response(JSON.stringify({ 
-      success: false,
-      error: error.message || 'Internal server error',
-      details: 'Check server logs for more information',
-      timestamp: new Date().toISOString()
+      error: error.message || 'Internal server error'
     }), { 
       status: 500, 
       headers: corsHeaders 

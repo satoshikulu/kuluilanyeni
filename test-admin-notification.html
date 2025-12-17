@@ -95,7 +95,12 @@
 
     <script>
         const SUPABASE_URL = 'https://tjoivjohhjoedtwzuopr.supabase.co'
-        const ADMIN_SECRET = 'kulu-admin-2024-production-key'
+        const ADMIN_SECRET = 'kulu-admin-secret-2024'
+        
+        // Get Supabase session (simulated for test)
+        const mockSession = {
+          access_token: 'test-token-for-debugging'
+        }
         
         document.getElementById('notificationForm').addEventListener('submit', async (e) => {
             e.preventDefault()
@@ -123,6 +128,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${mockSession.access_token}`,
                         'x-admin-secret': ADMIN_SECRET
                     },
                     body: JSON.stringify({

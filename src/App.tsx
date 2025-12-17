@@ -23,43 +23,23 @@ function App() {
             Kulu İlan <span className="text-gray-500">·</span> <span className="text-gray-600">Kulu Emlak Pazarı</span>
           </Link>
           <nav className="flex items-center gap-4 text-sm">
-            {/* Modern PWA Install Button - Compact & Interactive */}
+            {/* Compact PWA Install Button - Same size as login button */}
             <button
               onClick={() => (window as any).installPWA?.()}
-              className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 font-medium transition-all duration-300 overflow-hidden group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/50 hover:border-blue-300/60 shadow-sm hover:shadow-lg hover:shadow-blue-200/25 transform hover:scale-105 animate-download-pulse"
+              className="relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 overflow-hidden group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/50 hover:border-blue-300/60 shadow-sm hover:shadow-md transform hover:scale-105 animate-download-cycle"
               title="Uygulamayı Telefonuna İndir"
             >
-              {/* Animated Background Waves */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/5 to-indigo-400/5 rounded-lg"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-indigo-400/10 rounded-lg animate-pulse"></div>
-              
-              {/* Download Icon Container */}
-              <div className="relative z-10 flex items-center justify-center w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 group-hover:scale-110 animate-glow">
-                {/* Modern Download Icon */}
-                <svg className="w-3 h-3 text-white transform group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Download Icon - Smaller */}
+              <div className="relative z-10 flex items-center justify-center w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded shadow-sm group-hover:shadow-md transition-all duration-300">
+                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
-                
-                {/* Pulsing Notification Dot */}
-                <div className="absolute -top-1 -right-1 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75"></div>
-                  <div className="absolute w-2 h-2 bg-green-500 rounded-full"></div>
-                </div>
               </div>
               
-              {/* Compact Text with Gradient */}
-              <span className="relative z-10 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent group-hover:from-blue-800 group-hover:to-indigo-800 transition-all duration-300">
+              {/* Compact Text */}
+              <span className="relative z-10 text-sm font-medium text-blue-700 group-hover:text-blue-800 transition-colors duration-300">
                 Telefona İndir
               </span>
-              
-              {/* Shimmer Animation */}
-              <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 animate-shimmer transition-opacity duration-500"></div>
-              
-              {/* Glow Effect */}
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/20 to-indigo-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
-              
-              {/* Progress Bar Effect */}
-              <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-b-lg w-0 group-hover:w-full transition-all duration-700 ease-out"></div>
             </button>
             
             {currentUser && !isAdminSession && (

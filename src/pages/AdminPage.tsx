@@ -527,11 +527,25 @@ function AdminPage() {
         })
       })
 
-      const data = await response.json()
+      // Debug logging (development only)
+      if (import.meta.env.DEV) {
+        console.log('📡 Response status:', response.status)
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
+      }
+
+      let data
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        // HTML response geldi, muhtemelen 404 veya 500 hatası
+        const textResponse = await response.text()
+        console.error('❌ Non-JSON response:', textResponse.substring(0, 200))
+        throw new Error(`Edge Function hatası (${response.status}): JSON olmayan response`)
+      }
 
       // Debug logging (development only)
       if (import.meta.env.DEV) {
-        console.log('📡 Response:', { status: response.status, data })
+        console.log('📡 Response data:', data)
       }
 
       if (!response.ok) {
@@ -539,7 +553,7 @@ function AdminPage() {
         if (response.status === 401) {
           throw new Error(data.error || 'Yetki hatası')
         } else if (response.status === 404) {
-          throw new Error(data.error || 'FCM token bulunamadı')
+          throw new Error(data.error || 'Edge Function bulunamadı')
         } else if (response.status === 500) {
           throw new Error(data.error || 'Sunucu hatası')
         } else {

@@ -524,7 +524,7 @@ function AdminPage() {
           'Authorization': `Bearer ${sessionData.session.access_token}`
         },
         body: JSON.stringify({
-          phone: notificationForm.phone.trim() || null,
+          phone: notificationForm.phone.trim() || null, // Boşsa null gönder (herkese)
           title: notificationForm.title.trim(),
           body: notificationForm.body.trim()
         })
@@ -576,13 +576,6 @@ function AdminPage() {
           message: error.message || 'Bildirim gönderilemedi'
         })
       }
-    } finally {
-      setIsNotificationSending(false)
-    }
-  }
-        type: 'error',
-        message: error.message || '❌ Hata: Bildirim gönderilemedi'
-      })
     } finally {
       setIsNotificationSending(false)
     }

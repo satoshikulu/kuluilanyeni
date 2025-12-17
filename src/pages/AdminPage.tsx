@@ -482,10 +482,7 @@ function AdminPage() {
     }
   }
 
-  function handleLogout() {
-    sessionStorage.removeItem('isAdmin')
-    window.location.href = '/'
-  }
+
 
   async function handleNotificationSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -701,13 +698,7 @@ function AdminPage() {
                 </div>
               </div>
 
-              <button
-                onClick={handleLogout}
-                className="group flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-red-500 backdrop-blur-md rounded-xl transition-all duration-300 border border-white/20 hover:border-red-400 shadow-lg hover:shadow-red-500/50"
-              >
-                <span className="text-lg sm:text-xl group-hover:rotate-12 transition-transform duration-300">🚪</span>
-                <span className="font-bold text-white text-sm sm:text-base">Çıkış</span>
-              </button>
+
             </div>
           </div>
         </div>

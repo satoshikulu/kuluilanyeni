@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
 import { subscribeUserToFCM } from '../lib/firebaseMessaging'
+import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 
 function LoginPage() {
@@ -12,14 +13,34 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [isAdminSession, setIsAdminSession] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Admin session kontrolü
-    const adminFlag = sessionStorage.getItem('isAdmin') === 'true'
-    if (adminFlag) {
-      setIsAdminSession(true)
-    }
+    checkCurrentSession()
   }, [])
+
+  async function checkCurrentSession() {
+    try {
+      // Admin session kontrolü
+      const adminFlag = sessionStorage.getItem('isAdmin') === 'true'
+      if (adminFlag) {
+        setIsAdminSession(true)
+        setLoading(false)
+        return
+      }
+
+      // Supabase session kontrolü
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setCurrentUser(session.user)
+      }
+    } catch (error) {
+      console.error('Session check error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -61,6 +82,77 @@ function LoginPage() {
   function handleAdminLogout() {
     sessionStorage.removeItem('isAdmin')
     setIsAdminSession(false)
+  }
+
+  async function handleSupabaseLogout() {
+    try {
+      await supabase.auth.signOut()
+      setCurrentUser(null)
+      // Sayfayı yenile
+      window.location.reload()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Oturum kontrol ediliyor...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Supabase kullanıcı oturumu varsa uyarı göster
+  if (currentUser) {
+    const isAdmin = currentUser.user_metadata?.role === 'admin'
+    
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-8 border-2 border-blue-200">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">{isAdmin ? '👑' : '👤'}</span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {isAdmin ? 'Admin Oturumu Aktif' : 'Kullanıcı Oturumu Aktif'}
+            </h2>
+            <p className="text-gray-700 mb-2">
+              <strong>{currentUser.email || currentUser.phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
+            </p>
+            <p className="text-gray-600 text-sm">
+              Farklı bir hesapla giriş yapmak için önce mevcut oturumunuzu kapatmanız gerekiyor.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleSupabaseLogout}
+              className="w-full rounded-lg bg-gradient-to-r from-red-500 to-rose-600 text-white py-3 font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all"
+            >
+              🚪 Oturumu Kapat
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="w-full rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 font-semibold hover:from-purple-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
+              >
+                👑 Admin Paneline Git
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/')}
+              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-semibold hover:bg-gray-200 transition-all"
+            >
+              🏠 Ana Sayfaya Git
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (isAdminSession) {

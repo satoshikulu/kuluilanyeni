@@ -28,9 +28,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Admin notification request started')
+    
     // JWT ONLY SECURITY VALIDATION
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.log('❌ Missing authorization header')
       return new Response(JSON.stringify({ 
         error: "Missing authorization header"
       }), { 
@@ -89,9 +92,21 @@ serve(async (req) => {
     const FIREBASE_CLIENT_EMAIL = Deno.env.get('FIREBASE_CLIENT_EMAIL')
     const FIREBASE_PRIVATE_KEY = Deno.env.get('FIREBASE_PRIVATE_KEY')
 
+    console.log('🔍 Firebase env check:', {
+      project_id: !!FIREBASE_PROJECT_ID,
+      client_email: !!FIREBASE_CLIENT_EMAIL,
+      private_key: !!FIREBASE_PRIVATE_KEY
+    })
+
     if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
+      console.error('❌ Missing Firebase credentials')
       return new Response(JSON.stringify({ 
-        error: 'Firebase Admin credentials not configured' 
+        error: 'Firebase Admin credentials not configured',
+        missing: {
+          project_id: !FIREBASE_PROJECT_ID,
+          client_email: !FIREBASE_CLIENT_EMAIL,
+          private_key: !FIREBASE_PRIVATE_KEY
+        }
       }), { 
         status: 500, 
         headers: corsHeaders 
@@ -296,8 +311,13 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Admin notification error:', error)
+    console.error('❌ Error stack:', error.stack)
+    
+    // Always return JSON, never HTML
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error'
+      error: error.message || 'Internal server error',
+      type: 'catch_block_error',
+      timestamp: new Date().toISOString()
     }), { 
       status: 500, 
       headers: corsHeaders 

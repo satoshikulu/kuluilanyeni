@@ -514,6 +514,18 @@ function AdminPage() {
         })
       }
       
+      // Test simple function first
+      const testResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-simple`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`
+        },
+        body: JSON.stringify({ test: true })
+      })
+      
+      console.log('🧪 Test function response:', testResponse.status, await testResponse.text())
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-admin-notification`, {
         method: 'POST',
         headers: {

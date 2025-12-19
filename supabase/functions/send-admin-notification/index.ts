@@ -11,6 +11,11 @@ const corsHeaders = {
 
 console.info('🔥 PRODUCTION Admin Notification server - JWT + ROLE SECURITY')
 
+// Phone normalize function - Frontend ile AYNI
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, "").slice(-10);
+}
+
 serve(async (req) => {
   // CORS preflight handling
   if (req.method === 'OPTIONS') {
@@ -130,11 +135,13 @@ serve(async (req) => {
     }
 
     // Get FCM tokens from Supabase using authenticated client
-    let query = supabase.from('fcm_tokens').select('token,phone')
+    let query = supabase.from('fcm_tokens').select('token,phone,user_id')
     
-    // If phone is provided, filter by phone, otherwise get all tokens
+    // If phone is provided, filter by normalized phone, otherwise get all tokens
     if (phone) {
-      query = query.eq('phone', phone)
+      const normalizedPhone = normalizePhone(phone)
+      console.log('🔍 Searching for normalized phone:', normalizedPhone)
+      query = query.eq('phone', normalizedPhone)
     }
     
     const { data: tokens, error: tokenError } = await query

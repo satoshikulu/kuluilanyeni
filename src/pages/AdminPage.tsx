@@ -8,7 +8,7 @@ import {
   sendUserApprovedNotification,
   sendUserRejectedNotification 
 } from '../lib/firebaseAPI'
-import { testFCM } from '../lib/firebaseMessaging'
+import { saveTokenAfterLogin } from '../lib/firebaseMessaging'
 
 type Listing = {
   id: string
@@ -184,13 +184,24 @@ function AdminPage() {
 
   useEffect(() => { void load() }, [])
 
-  // FCM Test useEffect
+  // FCM Token Kaydet - Login Sonrası
   useEffect(() => {
+    console.log('🚀 AdminPage useEffect çalışıyor...');
+    console.log('📱 Notification permission:', Notification.permission);
+    
     if (Notification.permission === "granted") {
-      console.log('🎯 Notification permission granted, testing FCM...');
-      testFCM();
+      console.log('🎯 Notification permission granted, saving FCM token after login...');
+      saveTokenAfterLogin();
     } else {
-      console.log('⚠️ Notification permission not granted:', Notification.permission);
+      console.log('⚠️ Notification permission not granted, requesting...');
+      // Permission iste
+      Notification.requestPermission().then(permission => {
+        console.log('📱 Permission result:', permission);
+        if (permission === 'granted') {
+          console.log('✅ Permission granted, saving FCM token...');
+          saveTokenAfterLogin();
+        }
+      });
     }
   }, [])
 
@@ -544,13 +555,15 @@ function AdminPage() {
         console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
       }
 
+      // Get response text first, then parse
+      const responseText = await response.text()
+      
       let data
       try {
-        data = await response.json()
+        data = JSON.parse(responseText)
       } catch (jsonError) {
         // HTML response geldi, muhtemelen 404 veya 500 hatası
-        const textResponse = await response.text()
-        console.error('❌ Non-JSON response:', textResponse.substring(0, 200))
+        console.error('❌ Non-JSON response:', responseText.substring(0, 200))
         throw new Error(`Edge Function hatası (${response.status}): JSON olmayan response`)
       }
 
@@ -1228,6 +1241,21 @@ function AdminPage() {
                 <h3 className="text-xl font-bold text-gray-900">Push Bildirim Gönder</h3>
                 <p className="text-sm text-gray-600">Kullanıcılara anlık Firebase FCM bildirimi gönder</p>
               </div>
+            </div>
+
+            {/* FCM Test Butonu */}
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h4 className="font-semibold text-yellow-800 mb-2">🧪 FCM Token Test</h4>
+              <button
+                type="button"
+                onClick={() => {
+                  console.log('🔧 Manuel FCM token test başlıyor...');
+                  saveTokenAfterLogin();
+                }}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+              >
+                🔧 FCM Token Kaydet (Test)
+              </button>
             </div>
 
             <form onSubmit={handleNotificationSubmit} className="space-y-4">

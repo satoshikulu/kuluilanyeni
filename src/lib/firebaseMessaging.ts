@@ -2,6 +2,66 @@
 import { messaging, getToken, onMessage } from './firebase';
 import { supabase } from './supabaseClient';
 
+// Phone normalize function - SÜPER ÖNEMLİ
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, "").slice(-10);
+}
+
+// LOGIN SONRASI FCM TOKEN KAYDET
+export async function saveTokenAfterLogin() {
+  try {
+    console.log('🔐 Login sonrası FCM token kaydı başlıyor...');
+    
+    // Session kontrolü
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('❌ Session bulunamadı, token kaydedilmedi');
+      return false;
+    }
+    
+    console.log('✅ Session mevcut:', session.user.email);
+    
+    // FCM Token al
+    const token = await testFCM(); // Test fonksiyonunu kullan
+    if (!token) {
+      console.log('❌ FCM Token alınamadı');
+      return false;
+    }
+    
+    // User phone bilgisini al (user_metadata'dan veya başka yerden)
+    const userPhone = session.user.phone || session.user.user_metadata?.phone || 'unknown';
+    const normalizedPhone = normalizePhone(userPhone);
+    
+    console.log('💾 FCM Token kaydediliyor:', {
+      user_id: session.user.id,
+      phone: normalizedPhone,
+      token_preview: token.substring(0, 20) + '...'
+    });
+    
+    // Token'ı kaydet
+    const { error } = await supabase.from("fcm_tokens").upsert({
+      user_id: session.user.id,
+      phone: normalizedPhone,
+      token,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id'
+    });
+    
+    if (error) {
+      console.error('❌ FCM token kayıt hatası:', error);
+      return false;
+    }
+    
+    console.log('✅ FCM Token başarıyla kaydedildi!');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ saveTokenAfterLogin hatası:', error);
+    return false;
+  }
+}
+
 // TEST FCM TOKEN FUNCTION
 export async function testFCM() {
   try {

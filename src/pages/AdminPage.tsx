@@ -8,6 +8,7 @@ import {
   sendUserApprovedNotification,
   sendUserRejectedNotification 
 } from '../lib/firebaseAPI'
+import { testFCM } from '../lib/firebaseMessaging'
 
 type Listing = {
   id: string
@@ -182,6 +183,16 @@ function AdminPage() {
   }
 
   useEffect(() => { void load() }, [])
+
+  // FCM Test useEffect
+  useEffect(() => {
+    if (Notification.permission === "granted") {
+      console.log('🎯 Notification permission granted, testing FCM...');
+      testFCM();
+    } else {
+      console.log('⚠️ Notification permission not granted:', Notification.permission);
+    }
+  }, [])
 
   async function decide(id: string, decision: 'approved' | 'rejected') {
     try {
@@ -513,18 +524,6 @@ function AdminPage() {
           phone: notificationForm.phone || 'all_users'
         })
       }
-      
-      // Test simple function first
-      const testResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-simple`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.session.access_token}`
-        },
-        body: JSON.stringify({ test: true })
-      })
-      
-      console.log('🧪 Test function response:', testResponse.status, await testResponse.text())
       
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-admin-notification`, {
         method: 'POST',

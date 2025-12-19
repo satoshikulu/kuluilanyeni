@@ -2,6 +2,39 @@
 import { messaging, getToken, onMessage } from './firebase';
 import { supabase } from './supabaseClient';
 
+// TEST FCM TOKEN FUNCTION
+export async function testFCM() {
+  try {
+    console.log('🔥 FCM Test başlıyor...');
+    
+    // Service worker'ı kaydet
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    console.log('✅ Service Worker registered:', registration);
+    
+    // Token al
+    const token = await getToken(messaging, {
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+    });
+    
+    console.log("🔥 FCM TOKEN:", token);
+    
+    if (token) {
+      console.log("✅ FCM Token başarıyla alındı!");
+      console.log("📱 Token uzunluğu:", token.length);
+      console.log("🔑 VAPID Key mevcut:", !!import.meta.env.VITE_FIREBASE_VAPID_KEY);
+    } else {
+      console.log("❌ FCM Token alınamadı!");
+      console.log("🔍 Notification permission:", Notification.permission);
+      console.log("🔑 VAPID Key:", import.meta.env.VITE_FIREBASE_VAPID_KEY ? 'Mevcut' : 'Eksik');
+    }
+    
+    return token;
+  } catch (error) {
+    console.error("❌ FCM Test hatası:", error);
+    return null;
+  }
+}
+
 // VAPID Key - Environment variable'dan al
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 

@@ -95,18 +95,23 @@ serve(async (req) => {
     console.log('🔍 Firebase env check:', {
       project_id: !!FIREBASE_PROJECT_ID,
       client_email: !!FIREBASE_CLIENT_EMAIL,
-      private_key: !!FIREBASE_PRIVATE_KEY
+      private_key: !!FIREBASE_PRIVATE_KEY,
+      project_id_value: FIREBASE_PROJECT_ID ? `${FIREBASE_PROJECT_ID.substring(0, 10)}...` : 'missing',
+      client_email_value: FIREBASE_CLIENT_EMAIL ? `${FIREBASE_CLIENT_EMAIL.substring(0, 20)}...` : 'missing'
     })
 
+    // Return detailed error for missing Firebase credentials
     if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
       console.error('❌ Missing Firebase credentials')
       return new Response(JSON.stringify({ 
-        error: 'Firebase Admin credentials not configured',
+        error: 'Firebase Admin credentials not configured in Supabase Dashboard',
+        details: 'Go to Supabase Dashboard > Settings > Edge Functions > Environment Variables',
         missing: {
-          project_id: !FIREBASE_PROJECT_ID,
-          client_email: !FIREBASE_CLIENT_EMAIL,
-          private_key: !FIREBASE_PRIVATE_KEY
-        }
+          FIREBASE_PROJECT_ID: !FIREBASE_PROJECT_ID,
+          FIREBASE_CLIENT_EMAIL: !FIREBASE_CLIENT_EMAIL,
+          FIREBASE_PRIVATE_KEY: !FIREBASE_PRIVATE_KEY
+        },
+        help: 'Add these environment variables in Supabase Dashboard'
       }), { 
         status: 500, 
         headers: corsHeaders 
@@ -184,8 +189,16 @@ serve(async (req) => {
       })
       
       if (authResponse.ok) {
-        const authResult = await authResponse.json()
-        accessToken = authResult.access_token
+        const authText = await authResponse.text()
+        try {
+          const authResult = JSON.parse(authText)
+          accessToken = authResult.access_token
+        } catch (parseError) {
+          console.error("🔥 OAuth2 non-JSON response:", authText.slice(0, 200))
+        }
+      } else {
+        const errorText = await authResponse.text()
+        console.error("🔥 OAuth2 error:", errorText.slice(0, 200))
       }
     } catch (authError) {
       console.warn('OAuth2 failed, using Legacy API')
@@ -238,13 +251,22 @@ serve(async (req) => {
           body: JSON.stringify(fcmMessage)
         })
         
-        result = await fcmResponse.json()
+        const responseText = await fcmResponse.text()
         
-        if (fcmResponse.ok) {
-          console.log(`✅ FCM v1 API success for ${tokenData.phone}:`, result.name)
-          successCount++
-          results.push({ phone: tokenData.phone, success: true, messageId: result.name })
-          continue
+        if (!fcmResponse.ok) {
+          console.error("🔥 FCM v1 API error:", responseText)
+          result = { error: responseText.slice(0, 500) }
+        } else {
+          try {
+            result = JSON.parse(responseText)
+            console.log(`✅ FCM v1 API success for ${tokenData.phone}:`, result.name)
+            successCount++
+            results.push({ phone: tokenData.phone, success: true, messageId: result.name })
+            continue
+          } catch (parseError) {
+            console.error("🔥 FCM v1 API non-JSON response:", responseText.slice(0, 200))
+            result = { error: "Non-JSON response: " + responseText.slice(0, 200) }
+          }
         }
       }
 
@@ -275,13 +297,24 @@ serve(async (req) => {
           body: JSON.stringify(legacyMessage)
         })
         
-        result = await fcmResponse.json()
+        const legacyResponseText = await fcmResponse.text()
         
-        if (fcmResponse.ok && result.success > 0) {
-          console.log(`✅ FCM Legacy API success for ${tokenData.phone}:`, result.results[0].message_id)
-          successCount++
-          results.push({ phone: tokenData.phone, success: true, messageId: result.results[0].message_id })
-          continue
+        if (!fcmResponse.ok) {
+          console.error("🔥 FCM Legacy API error:", legacyResponseText)
+          result = { error: legacyResponseText.slice(0, 500) }
+        } else {
+          try {
+            result = JSON.parse(legacyResponseText)
+            if (result.success > 0) {
+              console.log(`✅ FCM Legacy API success for ${tokenData.phone}:`, result.results[0].message_id)
+              successCount++
+              results.push({ phone: tokenData.phone, success: true, messageId: result.results[0].message_id })
+              continue
+            }
+          } catch (parseError) {
+            console.error("🔥 FCM Legacy API non-JSON response:", legacyResponseText.slice(0, 200))
+            result = { error: "Non-JSON response: " + legacyResponseText.slice(0, 200) }
+          }
         }
       }
 

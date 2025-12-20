@@ -9,6 +9,12 @@ const corsHeaders = {
 
 console.info('🔥 PRODUCTION Firebase FCM server - REAL PUSH NOTIFICATIONS')
 
+// Phone normalize helper - keep consistent with frontend logic
+function normalizePhone(phone: string): string {
+  // Remove all non-digits and keep last 10 digits (e.g. 0545..., +90..., spaces)
+  return phone.replace(/\D/g, '').slice(-10)
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -39,11 +45,17 @@ serve(async (req) => {
       }), { status: 400, headers: corsHeaders })
     }
 
+    // Normalize phone number before querying Supabase
+    const normalizedPhone = normalizePhone(phone)
+    console.log('🔍 Incoming phone:', phone, '➡ normalized:', normalizedPhone)
+
     // Get FCM token from Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
     
-    const tokenResponse = await fetch(`${supabaseUrl}/rest/v1/fcm_tokens?phone=eq.${phone}&select=token`, {
+    console.log('🔍 Querying FCM token for phone:', normalizedPhone);
+    
+    const tokenResponse = await fetch(`${supabaseUrl}/rest/v1/fcm_tokens?phone=eq.${normalizedPhone}&select=token`, {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`,
@@ -52,12 +64,27 @@ serve(async (req) => {
     })
 
     const tokens = await tokenResponse.json()
+    console.log('🔍 FCM tokens query result:', tokens);
     
     if (!tokens || tokens.length === 0) {
+      // Detaylı hata mesajı için tüm token'ları sorgula
+      console.log('🔍 No token found, querying all tokens...');
+      const allTokensResponse = await fetch(`${supabaseUrl}/rest/v1/fcm_tokens?select=*`, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const allTokens = await allTokensResponse.json();
+      console.log('🔍 All FCM tokens:', allTokens);
+      
       return new Response(JSON.stringify({ 
         success: false,
         error: `No FCM token found for phone: ${phone}`,
-        details: 'User must login and grant notification permission first'
+        details: 'User must login and grant notification permission first',
+        allTokens: allTokens // Debug için tüm token'ları döndür
       }), { status: 404, headers: corsHeaders })
     }
 

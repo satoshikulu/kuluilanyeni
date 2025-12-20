@@ -21,6 +21,8 @@ import ListingDetailPage from './pages/ListingDetailPage.tsx'
 import FavoritesPage from './pages/FavoritesPage.tsx'
 import DebugAuthPage from './pages/DebugAuthPage.tsx'
 import MyListingsPage from './pages/MyListingsPage.tsx'
+import TestFCMPage from './pages/TestFCMPage.tsx'
+import DebugFCMPage from './pages/DebugFCMPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -42,21 +44,28 @@ const router = createBrowserRouter([
       { path: 'debug/storage', element: <DebugStoragePage /> },
       { path: 'debug/auth', element: <DebugAuthPage /> },
       { path: 'admin-dashboard', element: <AdminDashboard /> },
+      { path: 'test/fcm', element: <TestFCMPage /> },
+      { path: 'debug/fcm', element: <DebugFCMPage /> },
     ],
   },
 ])
 
 // Firebase FCM foreground message listener
-listenForMessages((payload) => {
+listenForMessages((payload: unknown) => {
   console.log('📱 Foreground notification received:', payload);
   
-  // Tarayıcı bildirimi göster
-  if (Notification.permission === 'granted') {
-    new Notification(payload.notification.title, {
-      body: payload.notification.body,
-      icon: '/icon-192x192.png',
-      tag: 'kulu-ilan-notification'
-    });
+  // Type guard for payload
+  if (typeof payload === 'object' && payload !== null && 'notification' in payload) {
+    const typedPayload = payload as { notification: { title: string; body: string } };
+    
+    // Tarayıcı bildirimi göster
+    if (Notification.permission === 'granted') {
+      new Notification(typedPayload.notification.title, {
+        body: typedPayload.notification.body,
+        icon: '/icon-192x192.png',
+        tag: 'kulu-ilan-notification'
+      });
+    }
   }
 });
 
@@ -70,7 +79,7 @@ createRoot(document.getElementById('root')!).render(
 // Manuel kayıt yapmaya gerek yok
 
 // Global PWA Install Prompt Handler
-let deferredPrompt: any = null;
+let deferredPrompt: unknown = null;
 
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
@@ -79,11 +88,14 @@ window.addEventListener("beforeinstallprompt", (e) => {
 });
 
 // Global PWA install function for buttons
-(window as any).installPWA = async () => {
+(window as { installPWA?: () => Promise<void> }).installPWA = async () => {
   if (!deferredPrompt) return;
   
-  deferredPrompt.prompt();
-  const choice = await deferredPrompt.userChoice;
+  // Type assertion for deferredPrompt
+  const promptEvent = deferredPrompt as { prompt: () => void; userChoice: Promise<{ outcome: string }> };
+  
+  promptEvent.prompt();
+  const choice = await promptEvent.userChoice;
   
   console.log("User choice:", choice.outcome);
   

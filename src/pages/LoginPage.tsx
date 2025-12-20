@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { subscribeUserToFCM } from '../lib/firebaseMessaging'
+import { subscribeUserToFCM, checkUserHasFCMToken } from '../lib/firebaseMessaging'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -13,7 +13,7 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [isAdminSession, setIsAdminSession] = useState(false)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<{ email?: string; phone?: string; user_metadata?: { role?: string } } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -60,8 +60,14 @@ function LoginPage() {
         
         // Firebase FCM'e kullanıcıyı kaydet
         try {
-          await subscribeUserToFCM(result.user.id, result.user.phone);
-          console.log("🎉 Firebase FCM entegrasyonu tamamlandı");
+          const subscribed = await subscribeUserToFCM(result.user.id, result.user.phone);
+          console.log("🎉 Firebase FCM entegrasyonu tamamlandı:", subscribed);
+          
+          // FCM token'ının kaydedilip kaydedilmediğini kontrol edelim
+          if (subscribed) {
+            const hasToken = await checkUserHasFCMToken(result.user.phone);
+            console.log("🔍 FCM token kontrolü:", hasToken ? "Token mevcut" : "Token yok");
+          }
         } catch (fcmError) {
           console.warn("⚠️ Firebase FCM entegrasyonu başarısız:", fcmError);
         }
@@ -72,8 +78,8 @@ function LoginPage() {
       } else {
         setError(result.error || 'Giriş başarısız')
       }
-    } catch (e: any) {
-      setError(e?.message || 'Giriş başarısız')
+    } catch (e) {
+      setError((e as Error)?.message || 'Giriş başarısız')
     } finally {
       setSubmitting(false)
     }
@@ -108,7 +114,8 @@ function LoginPage() {
 
   // Supabase kullanıcı oturumu varsa uyarı göster
   if (currentUser) {
-    const isAdmin = currentUser.user_metadata?.role === 'admin'
+    const typedCurrentUser = currentUser as { email?: string; phone?: string; user_metadata?: { role?: string } };
+    const isAdmin = typedCurrentUser.user_metadata?.role === 'admin'
     
     return (
       <div className="max-w-md mx-auto">
@@ -121,7 +128,7 @@ function LoginPage() {
               {isAdmin ? 'Admin Oturumu Aktif' : 'Kullanıcı Oturumu Aktif'}
             </h2>
             <p className="text-gray-700 mb-2">
-              <strong>{currentUser.email || currentUser.phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
+              <strong>{typedCurrentUser.email || typedCurrentUser.phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
             </p>
             <p className="text-gray-600 text-sm">
               Farklı bir hesapla giriş yapmak için önce mevcut oturumunuzu kapatmanız gerekiyor.

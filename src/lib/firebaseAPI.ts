@@ -7,6 +7,11 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // FCM Edge Function URL
 const FCM_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-fcm-notification`;
 
+// Telefon numarasını normalize et (Edge function ile tutarlı)
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '').slice(-10);
+}
+
 // İlan onaylandı bildirimi gönder - Güvenli fetch
 export async function sendListingApprovedNotification(
   phone: string,
@@ -14,7 +19,14 @@ export async function sendListingApprovedNotification(
   listingId: string
 ): Promise<boolean> {
   try {
-    console.log('📱 İlan onay bildirimi gönderiliyor:', { phone, listingTitle, listingId });
+    // Telefon numarasını normalize et
+    const normalizedPhone = normalizePhone(phone);
+    console.log('📱 İlan onay bildirimi gönderiliyor:', { 
+      originalPhone: phone, 
+      normalizedPhone, 
+      listingTitle, 
+      listingId 
+    });
 
     const response = await fetch(FCM_FUNCTION_URL, {
       method: 'POST',
@@ -23,7 +35,7 @@ export async function sendListingApprovedNotification(
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        phone: phone,
+        phone: normalizedPhone, // Normalize edilmiş telefon gönder
         title: '🎉 İlanınız Onaylandı!',
         body: `"${listingTitle}" ilanınız yayınlandı ve artık görülebilir.`,
         data: {
@@ -66,7 +78,13 @@ export async function sendListingRejectedNotification(
   listingTitle: string
 ): Promise<boolean> {
   try {
-    console.log('📱 İlan red bildirimi gönderiliyor:', { phone, listingTitle });
+    // Telefon numarasını normalize et
+    const normalizedPhone = normalizePhone(phone);
+    console.log('📱 İlan red bildirimi gönderiliyor:', { 
+      originalPhone: phone, 
+      normalizedPhone, 
+      listingTitle 
+    });
 
     const response = await fetch(FCM_FUNCTION_URL, {
       method: 'POST',
@@ -75,7 +93,7 @@ export async function sendListingRejectedNotification(
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        phone: phone,
+        phone: normalizedPhone, // Normalize edilmiş telefon gönder
         title: '❌ İlan Reddedildi',
         body: `"${listingTitle}" ilanınız onaylanmadı. Lütfen bilgileri kontrol edip tekrar deneyin.`,
         data: {
@@ -117,7 +135,13 @@ export async function sendUserApprovedNotification(
   userName: string
 ): Promise<boolean> {
   try {
-    console.log('📱 Kullanıcı onay bildirimi gönderiliyor:', { phone, userName });
+    // Telefon numarasını normalize et
+    const normalizedPhone = normalizePhone(phone);
+    console.log('📱 Kullanıcı onay bildirimi gönderiliyor:', { 
+      originalPhone: phone, 
+      normalizedPhone, 
+      userName 
+    });
 
     const response = await fetch(FCM_FUNCTION_URL, {
       method: 'POST',
@@ -126,7 +150,7 @@ export async function sendUserApprovedNotification(
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        phone: phone,
+        phone: normalizedPhone, // Normalize edilmiş telefon gönder
         title: '🎉 Hesabınız Onaylandı!',
         body: `Merhaba ${userName}, hesabınız onaylandı. Artık ilan verebilirsiniz.`,
         data: {
@@ -168,7 +192,13 @@ export async function sendUserRejectedNotification(
   userName: string
 ): Promise<boolean> {
   try {
-    console.log('📱 Kullanıcı red bildirimi gönderiliyor:', { phone, userName });
+    // Telefon numarasını normalize et
+    const normalizedPhone = normalizePhone(phone);
+    console.log('📱 Kullanıcı red bildirimi gönderiliyor:', { 
+      originalPhone: phone, 
+      normalizedPhone, 
+      userName 
+    });
 
     const response = await fetch(FCM_FUNCTION_URL, {
       method: 'POST',
@@ -177,7 +207,7 @@ export async function sendUserRejectedNotification(
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        phone: phone,
+        phone: normalizedPhone, // Normalize edilmiş telefon gönder
         title: '❌ Hesap Onaylanmadı',
         body: `Merhaba ${userName}, hesabınız onaylanmadı. Lütfen bilgilerinizi kontrol edin.`,
         data: {

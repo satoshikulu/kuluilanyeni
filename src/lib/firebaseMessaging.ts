@@ -3,7 +3,7 @@ import { messaging, getToken, onMessage } from './firebase';
 import { supabase } from './supabaseClient';
 
 // Phone normalize function - SÜPER ÖNEMLİ
-function normalizePhone(phone: string): string {
+export function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "").slice(-10);
 }
 
@@ -101,20 +101,26 @@ const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 // FCM token'ı al
 export async function getFCMToken(): Promise<string | null> {
   try {
+    console.log('🔐 FCM token alma işlemi başlıyor...');
+    
     // Service worker'ı kaydet
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    console.log('✅ Service Worker registered:', registration);
     
     // Token al
     const token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: registration
     });
     
     if (token) {
-      console.log('✅ FCM Token alındı:', token);
+      console.log('✅ FCM Token alındı:', token.substring(0, 20) + '...');
+      console.log('📱 Token uzunluğu:', token.length);
       return token;
     } else {
       console.log('❌ FCM Token alınamadı - izin verilmedi');
+      console.log('🔍 Notification permission:', Notification.permission);
+      console.log('🔑 VAPID Key mevcut:', !!import.meta.env.VITE_FIREBASE_VAPID_KEY);
       return null;
     }
   } catch (error) {
@@ -126,7 +132,9 @@ export async function getFCMToken(): Promise<string | null> {
 // Push notification izni iste
 export async function requestNotificationPermission(): Promise<boolean> {
   try {
+    console.log('🔐 Notification permission isteniyor...');
     const permission = await Notification.requestPermission();
+    console.log('🔐 Notification permission result:', permission);
     
     if (permission === 'granted') {
       console.log('✅ Notification permission granted');
@@ -142,7 +150,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 // Foreground mesajları dinle
-export function listenForMessages(callback: (payload: any) => void) {
+export function listenForMessages(callback: (payload: unknown) => void) {
   onMessage(messaging, (payload) => {
     console.log('📱 Foreground message received:', payload);
     callback(payload);
@@ -152,22 +160,30 @@ export function listenForMessages(callback: (payload: any) => void) {
 // Kullanıcıyı FCM'e kaydet
 export async function subscribeUserToFCM(userId: string, phone: string): Promise<boolean> {
   try {
+    console.log('🔐 FCM subscription başlatılıyor...', { userId, phone });
+    
     // İzin iste
     const hasPermission = await requestNotificationPermission();
     if (!hasPermission) {
+      console.warn('❌ Notification permission not granted');
       return false;
     }
     
     // Token al
     const token = await getFCMToken();
     if (!token) {
+      console.warn('❌ Could not get FCM token');
       return false;
     }
     
-    // Token'ı Supabase'e kaydet
-    await saveFCMTokenToDatabase(userId, phone, token);
+    // Telefon numarasını normalize et
+    const normalizedPhone = normalizePhone(phone);
+    console.log('📱 Normalized phone:', normalizedPhone);
     
-    console.log('🔗 User subscribed to FCM:', { userId, phone, token });
+    // Token'ı Supabase'e kaydet
+    await saveFCMTokenToDatabase(userId, normalizedPhone, token);
+    
+    console.log('✅ User subscribed to FCM:', { userId, phone: normalizedPhone, token });
     
     return true;
   } catch (error) {
@@ -202,6 +218,19 @@ async function saveFCMTokenToDatabase(userId: string, phone: string, token: stri
       throw error;
     } else {
       console.log('✅ FCM token başarıyla kaydedildi/güncellendi');
+      
+      // Kaydın gerçekten gerçekleştiğini doğrulamak için tekrar sorgula
+      const { data, error: queryError } = await supabase
+        .from('fcm_tokens')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+        
+      if (queryError) {
+        console.error('❌ FCM token doğrulama hatası:', queryError);
+      } else {
+        console.log('🔍 FCM token doğrulama:', data);
+      }
     }
   } catch (error) {
     console.error('❌ FCM token kayıt hatası:', error);
@@ -224,5 +253,56 @@ export async function removeFCMTokenFromDatabase(userId: string): Promise<void> 
     }
   } catch (error) {
     console.error('❌ Database delete operation error:', error);
+  }
+}
+
+// Kullanıcının FCM token'ı olup olmadığını kontrol eden fonksiyon
+export async function checkUserHasFCMToken(phone: string): Promise<boolean> {
+  try {
+    const normalizedPhone = normalizePhone(phone);
+    console.log('🔍 Checking FCM token for phone:', normalizedPhone);
+    
+    const { data, error } = await supabase
+      .from('fcm_tokens')
+      .select('token')
+      .eq('phone', normalizedPhone)
+      .single();
+
+    if (error) {
+      console.error('❌ Error checking FCM token:', error);
+      return false;
+    }
+
+    const hasToken = !!data?.token;
+    console.log('🔍 FCM token found:', hasToken);
+    return hasToken;
+  } catch (error) {
+    console.error('❌ Error checking FCM token:', error);
+    return false;
+  }
+}
+
+// Belirli bir kullanıcının FCM token'ını getiren fonksiyon
+export async function getUserFCMToken(phone: string): Promise<string | null> {
+  try {
+    const normalizedPhone = normalizePhone(phone);
+    console.log('🔍 Getting FCM token for phone:', normalizedPhone);
+    
+    const { data, error } = await supabase
+      .from('fcm_tokens')
+      .select('token')
+      .eq('phone', normalizedPhone)
+      .single();
+
+    if (error) {
+      console.error('❌ Error getting FCM token:', error);
+      return null;
+    }
+
+    console.log('🔍 FCM token retrieved:', data?.token ? 'Found' : 'Not found');
+    return data?.token || null;
+  } catch (error) {
+    console.error('❌ Error getting FCM token:', error);
+    return null;
   }
 }

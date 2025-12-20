@@ -95,13 +95,13 @@ export async function testFCM() {
   }
 }
 
-// VAPID Key - Environment variable'dan al
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-
 // FCM token'ı al
 export async function getFCMToken(): Promise<string | null> {
   try {
     console.log('🔐 FCM token alma işlemi başlıyor...');
+    
+    // VAPID Key - Environment variable'dan al
+    const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
     
     // Service worker'ı kaydet
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
@@ -109,7 +109,7 @@ export async function getFCMToken(): Promise<string | null> {
     
     // Token al
     const token = await getToken(messaging, {
-      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration
     });
     
@@ -120,7 +120,7 @@ export async function getFCMToken(): Promise<string | null> {
     } else {
       console.log('❌ FCM Token alınamadı - izin verilmedi');
       console.log('🔍 Notification permission:', Notification.permission);
-      console.log('🔑 VAPID Key mevcut:', !!import.meta.env.VITE_FIREBASE_VAPID_KEY);
+      console.log('🔑 VAPID Key mevcut:', !!VAPID_KEY);
       return null;
     }
   } catch (error) {

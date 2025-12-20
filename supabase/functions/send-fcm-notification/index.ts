@@ -102,30 +102,14 @@ serve(async (req) => {
       scope: 'https://www.googleapis.com/auth/firebase.messaging'
     }
 
-    // Simple JWT creation (for Deno compatibility)
-    const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).replace(/=/g, '')
-    const payload = btoa(JSON.stringify(jwtPayload)).replace(/=/g, '')
+    // Simple JWT creation (for Deno compatibility) - SKIP OAuth2, use Legacy API directly
+    // OAuth2 JWT signing is complex in Deno, so we'll use Legacy API with server key
     
-    // Get OAuth2 access token
+    // Get OAuth2 access token - SKIP for now, use Legacy API
     let accessToken = null
     
-    try {
-      const authResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          assertion: `${header}.${payload}.signature_placeholder`
-        })
-      })
-      
-      if (authResponse.ok) {
-        const authResult = await authResponse.json()
-        accessToken = authResult.access_token
-      }
-    } catch (authError) {
-      console.warn('OAuth2 failed, using Legacy API')
-    }
+    // Skip OAuth2 attempt, go directly to Legacy API
+    console.log('🔄 Using Firebase Legacy API directly');
 
     // Prepare FCM message
     const fcmMessage = {
@@ -193,6 +177,9 @@ serve(async (req) => {
     // Use server key for Legacy API (if available)
     const serverKey = Deno.env.get('FIREBASE_SERVER_KEY')
     
+    console.log('🔑 Server key available:', !!serverKey);
+    console.log('🔑 Server key length:', serverKey ? serverKey.length : 0);
+    
     if (serverKey) {
       fcmResponse = await fetch('https://fcm.googleapis.com/fcm/send', {
         method: 'POST',
@@ -214,6 +201,13 @@ serve(async (req) => {
           messageId: result.results[0].message_id
         }), { status: 200, headers: corsHeaders })
       }
+    } else {
+      console.error('❌ FIREBASE_SERVER_KEY not found in environment');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'FIREBASE_SERVER_KEY not configured',
+        details: 'Legacy FCM API requires server key'
+      }), { status: 500, headers: corsHeaders })
     }
 
     // If all APIs fail

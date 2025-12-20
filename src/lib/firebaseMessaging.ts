@@ -22,19 +22,49 @@ export async function saveTokenAfterLogin() {
     console.log('✅ Session mevcut:', session.user.email);
     
     // FCM Token al
-    const token = await testFCM(); // Test fonksiyonunu kullan
+    const token = await getFCMToken(); // Test fonksiyonunu kullan
     if (!token) {
       console.log('❌ FCM Token alınamadı');
       return false;
     }
     
-    // User phone bilgisini al (user_metadata'dan veya başka yerden)
-    const userPhone = session.user.phone || session.user.user_metadata?.phone || 'unknown';
+    // User phone bilgisini al - öncelik users tablosu (authoritative)
+    let userPhone: string | undefined = session.user.phone || session.user.user_metadata?.phone;
+
+    if (!userPhone) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('phone')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (userError) {
+        console.error('❌ Users tablosundan telefon alınamadı:', userError);
+      } else {
+        userPhone = userData?.phone;
+        console.log('✅ Users tablosundan telefon alındı:', userPhone);
+      }
+    }
+    
+    // Hala telefon yoksa kaydetme
+    if (!userPhone || userPhone === 'unknown') {
+      console.warn('❌ Telefon numarası bulunamadı, FCM token kaydedilmedi');
+      console.warn('💡 Kullanıcı telefon numarasını güncellemeli');
+      return false;
+    }
+    
     const normalizedPhone = normalizePhone(userPhone);
+    
+    // Normalize edilmiş telefon boşsa kaydetme
+    if (!normalizedPhone || normalizedPhone.length < 10) {
+      console.warn('❌ Geçersiz telefon numarası:', userPhone, '→', normalizedPhone);
+      return false;
+    }
     
     console.log('💾 FCM Token kaydediliyor:', {
       user_id: session.user.id,
-      phone: normalizedPhone,
+      originalPhone: userPhone,
+      normalizedPhone: normalizedPhone,
       token_preview: token.substring(0, 20) + '...'
     });
     
@@ -100,16 +130,13 @@ export async function getFCMToken(): Promise<string | null> {
   try {
     console.log('🔐 FCM token alma işlemi başlıyor...');
     
-    // VAPID Key - Environment variable'dan al
-    const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-    
     // Service worker'ı kaydet
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     console.log('✅ Service Worker registered:', registration);
     
     // Token al
     const token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: registration
     });
     
@@ -120,7 +147,7 @@ export async function getFCMToken(): Promise<string | null> {
     } else {
       console.log('❌ FCM Token alınamadı - izin verilmedi');
       console.log('🔍 Notification permission:', Notification.permission);
-      console.log('🔑 VAPID Key mevcut:', !!VAPID_KEY);
+      console.log('🔑 VAPID Key mevcut:', !!import.meta.env.VITE_FIREBASE_VAPID_KEY);
       return null;
     }
   } catch (error) {

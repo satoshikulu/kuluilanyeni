@@ -25,7 +25,7 @@
 ### Environment Variables:
 ```env
 ✅ VITE_SUPABASE_URL=https://tjoivjohhjoedtwzuopr.supabase.co
-✅ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs... (mevcut)
+✅ VITE_SUPABASE_ANON_KEY=<redacted>
 ✅ VITE_ONESIGNAL_APP_ID=b6fe2840-fc48-4fe3-90fa-0de6ee5274e9
 ✅ VITE_ONESIGNAL_REST_API_KEY=os_v2_app_... (mevcut)
 ```

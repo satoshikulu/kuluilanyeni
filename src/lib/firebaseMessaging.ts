@@ -28,21 +28,35 @@ export async function saveTokenAfterLogin() {
       return false;
     }
     
-    // User phone bilgisini al - öncelik users tablosu (authoritative)
-    let userPhone: string | undefined = session.user.phone || session.user.user_metadata?.phone;
-
+    // User phone bilgisini al - ÖNCE users tablosundan kontrol et
+    let userPhone = session.user.phone || session.user.user_metadata?.phone;
+    
+    // Admin kullanıcısı için özel durum
+    if (session.user.email === 'satoshinakamototokyo42@gmail.com' && !userPhone) {
+      console.log('🔧 Admin kullanıcısı tespit edildi, varsayılan telefon atanıyor');
+      userPhone = '5556874803'; // Admin telefon numarası (DÜZELTME)
+    }
+    
+    // Eğer session'da telefon yoksa, users_min tablosundan al
     if (!userPhone) {
+      console.log('🔍 Session\'da telefon yok, users_min tablosundan alınıyor...');
       const { data: userData, error: userError } = await supabase
-        .from('users')
+        .from('users_min')
         .select('phone')
         .eq('id', session.user.id)
         .single();
         
       if (userError) {
-        console.error('❌ Users tablosundan telefon alınamadı:', userError);
+        console.error('❌ Users_min tablosundan telefon alınamadı:', userError);
+        
+        // Admin kullanıcısı için fallback
+        if (session.user.email === 'satoshinakamototokyo42@gmail.com') {
+          console.log('🔧 Admin kullanıcısı için fallback telefon kullanılıyor');
+          userPhone = '5556874803'; // Admin telefon numarası (DÜZELTME)
+        }
       } else {
         userPhone = userData?.phone;
-        console.log('✅ Users tablosundan telefon alındı:', userPhone);
+        console.log('✅ Users_min tablosundan telefon alındı:', userPhone);
       }
     }
     

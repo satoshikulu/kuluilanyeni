@@ -9,7 +9,7 @@ import {
   sendUserRejectedNotification 
 } from '../lib/firebaseAPI'
 import { saveTokenAfterLogin } from '../lib/firebaseMessaging'
-import { enforceAdminAccess, setupAdminRoleWatcher, getUserProfile } from '../lib/adminSecurity'
+import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
 
 type Listing = {
   id: string

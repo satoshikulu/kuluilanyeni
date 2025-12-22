@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { subscribeUserToFCM, checkUserHasFCMToken } from '../lib/firebaseMessaging'
+import { setupPushNotificationsForUser, checkUserHasPushSubscription } from '../lib/webPushMessaging'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -58,18 +58,18 @@ function LoginPage() {
       if (result.success && result.user) {
         console.log("✅ Login başarılı, Firebase FCM entegrasyonu başlıyor...");
         
-        // Firebase FCM'e kullanıcıyı kaydet
+        // Web Push'a kullanıcıyı kaydet
         try {
-          const subscribed = await subscribeUserToFCM(result.user.id, result.user.phone);
-          console.log("🎉 Firebase FCM entegrasyonu tamamlandı:", subscribed);
+          const subscribed = await setupPushNotificationsForUser();
+          console.log("🎉 Web Push entegrasyonu tamamlandı:", subscribed);
           
-          // FCM token'ının kaydedilip kaydedilmediğini kontrol edelim
+          // Push subscription'ının kaydedilip kaydedilmediğini kontrol edelim
           if (subscribed) {
-            const hasToken = await checkUserHasFCMToken(result.user.phone);
-            console.log("🔍 FCM token kontrolü:", hasToken ? "Token mevcut" : "Token yok");
+            const hasSubscription = await checkUserHasPushSubscription(result.user.phone);
+            console.log("🔍 Push subscription kontrolü:", hasSubscription ? "Subscription mevcut" : "Subscription yok");
           }
-        } catch (fcmError) {
-          console.warn("⚠️ Firebase FCM entegrasyonu başarısız:", fcmError);
+        } catch (pushError) {
+          console.warn("⚠️ Web Push entegrasyonu başarısız:", pushError);
         }
         
         // Ana sayfaya yönlendir

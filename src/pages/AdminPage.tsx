@@ -7,8 +7,8 @@ import {
   sendListingRejectedNotification,
   sendUserApprovedNotification,
   sendUserRejectedNotification 
-} from '../lib/firebaseAPI'
-import { saveTokenAfterLogin } from '../lib/firebaseMessaging'
+} from '../lib/webPushAPI'
+import { setupPushNotificationsForUser } from '../lib/webPushMessaging'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
 
 type Listing = {
@@ -209,16 +209,16 @@ function AdminPage() {
     console.log('📱 Notification permission:', Notification.permission);
     
     if (Notification.permission === "granted") {
-      console.log('🎯 Notification permission granted, saving FCM token after login...');
-      saveTokenAfterLogin();
+      console.log('🎯 Notification permission granted, setting up Web Push...');
+      setupPushNotificationsForUser();
     } else {
       console.log('⚠️ Notification permission not granted, requesting...');
       // Permission iste
       Notification.requestPermission().then(permission => {
         console.log('📱 Permission result:', permission);
         if (permission === 'granted') {
-          console.log('✅ Permission granted, saving FCM token...');
-          saveTokenAfterLogin();
+          console.log('✅ Permission granted, setting up Web Push...');
+          setupPushNotificationsForUser();
         }
       });
     }
@@ -1268,12 +1268,12 @@ function AdminPage() {
               <button
                 type="button"
                 onClick={() => {
-                  console.log('🔧 Manuel FCM token test başlıyor...');
-                  saveTokenAfterLogin();
+                  console.log('🔧 Manuel Web Push test başlıyor...');
+                  setupPushNotificationsForUser();
                 }}
                 className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
               >
-                🔧 FCM Token Kaydet (Test)
+                🔧 Web Push Kurulum (Test)
               </button>
             </div>
 

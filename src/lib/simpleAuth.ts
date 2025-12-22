@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { removeFCMTokenFromDatabase } from './firebaseMessaging'
+import { removePushSubscriptionFromDatabase } from './webPushMessaging'
 
 // Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
 function simpleHash(password: string): string {
@@ -117,10 +117,10 @@ export async function logoutUser(): Promise<void> {
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      await removeFCMTokenFromDatabase(currentUser.id);
-      console.log('✅ FCM token removed during logout');
+      await removePushSubscriptionFromDatabase(currentUser.id);
+      console.log('✅ Push subscription removed during logout');
     } catch (error) {
-      console.warn('⚠️ FCM token removal failed during logout:', error);
+      console.warn('⚠️ Push subscription removal failed during logout:', error);
     }
   }
   

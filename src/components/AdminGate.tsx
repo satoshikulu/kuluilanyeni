@@ -20,12 +20,24 @@ function AdminGate({ children }: Props) {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (session?.user) {
-        // Check if user has admin role
-        const userRole = session.user.user_metadata?.role
-        if (userRole === 'admin') {
+        // Check if user has admin role from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (profileError || !profile) {
+          console.log('🚫 Profile not found or error:', profileError?.message)
+          setError('Kullanıcı profili bulunamadı')
+          await supabase.auth.signOut()
+          return
+        }
+
+        if (profile.role === 'admin') {
           setAuthenticated(true)
         } else {
-          console.log('🚫 User is not admin:', session.user.email, 'role:', userRole)
+          console.log('🚫 User is not admin:', session.user.email, 'role:', profile.role)
           setError('Bu hesap admin yetkisine sahip değil')
           await supabase.auth.signOut()
         }
@@ -54,9 +66,21 @@ function AdminGate({ children }: Props) {
       }
 
       if (data.user) {
-        // Check admin role
-        const userRole = data.user.user_metadata?.role
-        if (userRole === 'admin') {
+        // Check admin role from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single()
+
+        if (profileError || !profile) {
+          console.error('Profile fetch error:', profileError?.message)
+          setError('Kullanıcı profili bulunamadı')
+          await supabase.auth.signOut()
+          return
+        }
+
+        if (profile.role === 'admin') {
           setAuthenticated(true)
           setError('')
         } else {
@@ -170,7 +194,7 @@ function AdminGate({ children }: Props) {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              Admin hesabınızın <code className="bg-gray-100 px-1 rounded">user_metadata.role = "admin"</code> olması gerekir
+              Admin hesabınızın <code className="bg-gray-100 px-1 rounded">profiles.role = "admin"</code> olarak tanımlanmış olması gerekir
             </p>
           </div>
         </div>

@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
-import { listenForMessages } from './lib/firebaseMessaging'
 
 import App from './App.tsx'
 import HomePage from './pages/HomePage.tsx'
@@ -22,8 +21,7 @@ import ListingDetailPage from './pages/ListingDetailPage.tsx'
 import FavoritesPage from './pages/FavoritesPage.tsx'
 import DebugAuthPage from './pages/DebugAuthPage.tsx'
 import MyListingsPage from './pages/MyListingsPage.tsx'
-import TestFCMPage from './pages/TestFCMPage.tsx'
-import DebugFCMPage from './pages/DebugFCMPage.tsx'
+import TestWebPushPage from './pages/TestFCMPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -46,30 +44,13 @@ const router = createBrowserRouter([
       { path: 'debug/storage', element: <DebugStoragePage /> },
       { path: 'debug/auth', element: <DebugAuthPage /> },
       { path: 'admin-dashboard', element: <AdminDashboard /> },
-      { path: 'test/fcm', element: <TestFCMPage /> },
-      { path: 'debug/fcm', element: <DebugFCMPage /> },
+      { path: 'test/fcm', element: <TestWebPushPage /> },
     ],
   },
 ])
 
-// Firebase FCM foreground message listener
-listenForMessages((payload: unknown) => {
-  console.log('📱 Foreground notification received:', payload);
-  
-  // Type guard for payload
-  if (typeof payload === 'object' && payload !== null && 'notification' in payload) {
-    const typedPayload = payload as { notification: { title: string; body: string } };
-    
-    // Tarayıcı bildirimi göster
-    if (Notification.permission === 'granted') {
-      new Notification(typedPayload.notification.title, {
-        body: typedPayload.notification.body,
-        icon: '/icon-192x192.png',
-        tag: 'kulu-ilan-notification'
-      });
-    }
-  }
-});
+// Web Push notifications are handled by the service worker
+// No need for foreground message listener as service worker handles all notifications);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

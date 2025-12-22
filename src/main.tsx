@@ -13,6 +13,7 @@ import RegisterPage from './pages/RegisterPage.tsx'
 import SellPage from './pages/SellPage.tsx'
 import RentPage from './pages/RentPage.tsx'
 import AdminPage from './pages/AdminPage.tsx'
+import AdminLoginPage from './pages/AdminLoginPage.tsx'
 import DebugSupabasePage from './pages/DebugSupabasePage.tsx'
 import DebugStoragePage from './pages/DebugStoragePage.tsx'
 import AdminDashboard from './pages/admin-dashboard.tsx'
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
       { path: 'ilan/:id', element: <ListingDetailPage /> },
       { path: 'favoriler', element: <FavoritesPage /> },
       { path: 'admin', element: <AdminPage /> },
+      { path: 'admin/login', element: <AdminLoginPage /> },
       { path: 'debug/supabase', element: <DebugSupabasePage /> },
       { path: 'debug/storage', element: <DebugStoragePage /> },
       { path: 'debug/auth', element: <DebugAuthPage /> },

@@ -9,6 +9,7 @@ import {
   sendUserRejectedNotification 
 } from '../lib/firebaseAPI'
 import { saveTokenAfterLogin } from '../lib/firebaseMessaging'
+import { enforceAdminAccess, setupAdminRoleWatcher, getUserProfile } from '../lib/adminSecurity'
 
 type Listing = {
   id: string
@@ -183,6 +184,24 @@ function AdminPage() {
   }
 
   useEffect(() => { void load() }, [])
+
+  // 🔐 GÜVENLİK KONTROLÜ - EN ÖNEMLİ!
+  useEffect(() => {
+    console.log('🔐 Admin güvenlik kontrolü başlatılıyor...')
+    
+    // Admin erişim kontrolü
+    enforceAdminAccess('/')
+    
+    // Real-time role watcher
+    const cleanup = setupAdminRoleWatcher((role) => {
+      console.log('👤 User role changed:', role)
+      if (role !== 'admin') {
+        console.warn('⚠️ Admin rolü kaldırıldı!')
+      }
+    })
+    
+    return cleanup
+  }, [])
 
   // FCM Token Kaydet - Login Sonrası
   useEffect(() => {

@@ -1,5 +1,4 @@
 // Web Push API Integration - Browser Native Implementation
-import { normalizePhone } from './webPushMessaging';
 
 // Send notification via Browser Native Push API (no Edge Function)
 async function sendBrowserPushNotification(
@@ -26,24 +25,24 @@ async function sendBrowserPushNotification(
       badge: '/icon-96x96.png',
       tag: 'kulu-ilan-notification',
       requireInteraction: true,
-      actions: [
-        {
-          action: 'open',
-          title: 'Aç',
-          icon: '/icon-96x96.png'
-        },
-        {
-          action: 'close',
-          title: 'Kapat'
-        }
-      ],
+      // actions: [ // TypeScript build hatası için kaldırıldı
+      //   {
+      //     action: 'open',
+      //     title: 'Aç',
+      //     icon: '/icon-96x96.png'
+      //   },
+      //   {
+      //     action: 'close',
+      //     title: 'Kapat'
+      //   }
+      // ],
       data: {
         url: url || '/',
         phone,
         ...data,
         timestamp: Date.now()
       }
-    });
+    } as any); // Type assertion for build compatibility
 
     console.log('✅ Browser Native Push notification sent successfully');
     return true;

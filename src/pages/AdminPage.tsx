@@ -1249,7 +1249,7 @@ function AdminPage() {
                     const success = await sendCustomNotification(
                       '5556874803', // Admin phone
                       '🧪 Test Bildirimi',
-                      'Web Push Protocol test bildirimi - Sistem çalışıyor!',
+                      'Browser Native Push test bildirimi - Sistem çalışıyor!',
                       '/',
                       { type: 'test', timestamp: Date.now() }
                     );
@@ -1264,7 +1264,7 @@ function AdminPage() {
                     alert('❌ Test hatası: ' + errorMessage);
                   }
                 }}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mr-2"
               >
                 🧪 Test Bildirimi Gönder
               </button>

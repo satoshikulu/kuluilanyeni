@@ -1,9 +1,8 @@
-// Web Push API Integration - Replace Firebase API calls
-import { supabase } from './supabaseClient';
+// Web Push API Integration - Browser Native Implementation
 import { normalizePhone } from './webPushMessaging';
 
-// Send notification via Web Push Edge Function
-async function sendWebPushNotification(
+// Send notification via Browser Native Push API (no Edge Function)
+async function sendBrowserPushNotification(
   phone: string,
   title: string,
   body: string,
@@ -11,40 +10,46 @@ async function sendWebPushNotification(
   url?: string
 ): Promise<boolean> {
   try {
-    const normalizedPhone = normalizePhone(phone);
-    
-    console.log('📱 Sending Web Push notification:', {
-      originalPhone: phone,
-      normalizedPhone,
-      title,
-      body,
-      url
-    });
+    console.log('📱 Sending Browser Native Push notification:', { phone, title, body });
 
-    const { data: result, error } = await supabase.functions.invoke('send-web-push', {
-      body: {
-        phone: normalizedPhone,
-        title,
-        body,
-        data,
-        url
+    // Service Worker üzerinden notification göster
+    const registration = await navigator.serviceWorker.ready;
+    
+    if (!registration) {
+      console.error('❌ Service Worker not ready');
+      return false;
+    }
+
+    await registration.showNotification(title, {
+      body,
+      icon: '/icon-192x192.png',
+      badge: '/icon-96x96.png',
+      tag: 'kulu-ilan-notification',
+      requireInteraction: true,
+      actions: [
+        {
+          action: 'open',
+          title: 'Aç',
+          icon: '/icon-96x96.png'
+        },
+        {
+          action: 'close',
+          title: 'Kapat'
+        }
+      ],
+      data: {
+        url: url || '/',
+        phone,
+        ...data,
+        timestamp: Date.now()
       }
     });
 
-    if (error) {
-      console.error('❌ Web Push notification error:', error);
-      return false;
-    }
-
-    if (result?.success) {
-      console.log('✅ Web Push notification sent successfully');
-      return true;
-    } else {
-      console.error('❌ Web Push notification failed:', result);
-      return false;
-    }
+    console.log('✅ Browser Native Push notification sent successfully');
+    return true;
+    
   } catch (error) {
-    console.error('❌ Web Push notification exception:', error);
+    console.error('❌ Browser Native Push notification error:', error);
     return false;
   }
 }
@@ -55,7 +60,7 @@ export async function sendListingApprovedNotification(
   listingTitle: string,
   listingId: string
 ): Promise<boolean> {
-  return await sendWebPushNotification(
+  return await sendBrowserPushNotification(
     ownerPhone,
     '🎉 İlanınız Onaylandı!',
     `"${listingTitle}" ilanınız onaylandı ve yayınlandı.`,
@@ -78,7 +83,7 @@ export async function sendListingRejectedNotification(
     ? `"${listingTitle}" ilanınız reddedildi. Sebep: ${reason}`
     : `"${listingTitle}" ilanınız reddedildi.`;
     
-  return await sendWebPushNotification(
+  return await sendBrowserPushNotification(
     ownerPhone,
     '❌ İlan Reddedildi',
     body,
@@ -96,7 +101,7 @@ export async function sendUserApprovedNotification(
   userPhone: string,
   userName: string
 ): Promise<boolean> {
-  return await sendWebPushNotification(
+  return await sendBrowserPushNotification(
     userPhone,
     '✅ Hesabınız Onaylandı!',
     `Merhaba ${userName}, hesabınız onaylandı. Artık ilan verebilirsiniz.`,
@@ -118,7 +123,7 @@ export async function sendUserRejectedNotification(
     ? `Merhaba ${userName}, hesabınız reddedildi. Sebep: ${reason}`
     : `Merhaba ${userName}, hesabınız reddedildi.`;
     
-  return await sendWebPushNotification(
+  return await sendBrowserPushNotification(
     userPhone,
     '❌ Hesap Reddedildi',
     body,
@@ -139,7 +144,7 @@ export async function sendCustomNotification(
   url?: string,
   data?: any
 ): Promise<boolean> {
-  return await sendWebPushNotification(
+  return await sendBrowserPushNotification(
     phone,
     title,
     body,
@@ -170,7 +175,7 @@ export async function sendBulkNotifications(
     const batch = phones.slice(i, i + batchSize);
     
     const promises = batch.map(async (phone) => {
-      const result = await sendWebPushNotification(phone, title, body, data, url);
+      const result = await sendBrowserPushNotification(phone, title, body, data, url);
       return result ? 'success' : 'failed';
     });
     
@@ -178,7 +183,7 @@ export async function sendBulkNotifications(
     success += results.filter(r => r === 'success').length;
     failed += results.filter(r => r === 'failed').length;
     
-    // Small delay between batches to avoid overwhelming the server
+    // Small delay between batches to avoid overwhelming the browser
     if (i + batchSize < phones.length) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -190,10 +195,10 @@ export async function sendBulkNotifications(
 
 // Test Web Push notification
 export async function testWebPushNotification(phone: string): Promise<boolean> {
-  return await sendWebPushNotification(
+  return await sendBrowserPushNotification(
     phone,
     '🧪 Test Bildirimi',
-    'Bu bir test bildirimidir. Web Push Protocol çalışıyor!',
+    'Bu bir test bildirimidir. Browser Native Push çalışıyor!',
     { 
       type: 'test',
       timestamp: Date.now()

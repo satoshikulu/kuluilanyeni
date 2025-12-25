@@ -1264,9 +1264,52 @@ function AdminPage() {
                     alert('❌ Test hatası: ' + errorMessage);
                   }
                 }}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mr-2"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
               >
                 🧪 Test Bildirimi Gönder
+              </button>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  console.log('🔍 Push subscriptions kontrol ediliyor...');
+                  try {
+                    const { data, error } = await supabase
+                      .from('push_subscriptions')
+                      .select('*')
+                      .order('updated_at', { ascending: false });
+                    
+                    if (error) {
+                      console.error('Database error:', error);
+                      alert('❌ Database hatası: ' + error.message);
+                      return;
+                    }
+                    
+                    console.log('📊 Push subscriptions:', data);
+                    
+                    if (!data || data.length === 0) {
+                      alert('❌ Hiç push subscription bulunamadı! Kullanıcılar bildirim izni vermemiş.');
+                    } else {
+                      const subscriptionInfo = data.map(sub => ({
+                        phone: sub.phone,
+                        user_id: sub.user_id,
+                        endpoint: sub.endpoint?.substring(0, 50) + '...',
+                        updated_at: sub.updated_at
+                      }));
+                      
+                      console.table(subscriptionInfo);
+                      alert(`✅ ${data.length} push subscription bulundu!\n\n` + 
+                            subscriptionInfo.map(sub => `📱 ${sub.phone} (${sub.updated_at})`).join('\n'));
+                    }
+                  } catch (error: unknown) {
+                    console.error('Check error:', error);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    alert('❌ Kontrol hatası: ' + errorMessage);
+                  }
+                }}
+                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+              >
+                📊 Push Subscriptions Kontrol Et
               </button>
             </div>
 

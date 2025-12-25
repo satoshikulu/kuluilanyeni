@@ -9,14 +9,49 @@ export function normalizePhone(phone: string): string {
 // VAPID Public Key - Add to your .env
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
+// Debug VAPID key loading
+console.log('🔑 VAPID Key Debug:', {
+  keyExists: !!VAPID_PUBLIC_KEY,
+  keyLength: VAPID_PUBLIC_KEY?.length,
+  keyPreview: VAPID_PUBLIC_KEY?.substring(0, 20) + '...'
+});
+
 // Service Worker Registration
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   try {
     if ('serviceWorker' in navigator) {
       console.log('🔧 Registering Web Push Service Worker...');
       
-      const registration = await navigator.serviceWorker.register('/web-push-sw.js');
+      const registration = await navigator.serviceWorker.register('/web-push-sw.js', {
+        scope: '/'
+      });
       console.log('✅ Service Worker registered:', registration);
+      
+      // Wait for service worker to be ready and active
+      if (registration.installing) {
+        console.log('⏳ Service Worker installing...');
+        await new Promise((resolve) => {
+          registration.installing!.addEventListener('statechange', function() {
+            if (this.state === 'activated') {
+              console.log('✅ Service Worker activated');
+              resolve(void 0);
+            }
+          });
+        });
+      } else if (registration.waiting) {
+        console.log('⏳ Service Worker waiting...');
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        await new Promise((resolve) => {
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('✅ Service Worker controller changed');
+            resolve(void 0);
+          });
+        });
+      }
+      
+      // Ensure service worker is ready
+      await navigator.serviceWorker.ready;
+      console.log('✅ Service Worker is ready and active');
       
       return registration;
     } else {
@@ -73,10 +108,36 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
       return null;
     }
     
-    // Convert VAPID key to Uint8Array
-    const vapidKeyUint8Array = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    // Check for existing subscription and unsubscribe if different VAPID key
+    try {
+      const existingSubscription = await registration.pushManager.getSubscription();
+      if (existingSubscription) {
+        console.log('🔍 Found existing push subscription, checking VAPID key...');
+        
+        // Always unsubscribe from old subscription to ensure clean state
+        const unsubscribed = await existingSubscription.unsubscribe();
+        console.log('🗑️ Old subscription unsubscribed:', unsubscribed);
+        
+        // Small delay to ensure cleanup
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch (error) {
+      console.warn('⚠️ Error checking/removing existing subscription:', error);
+    }
     
-    // Subscribe to push manager
+    // Convert VAPID key to Uint8Array
+    console.log('🔑 Converting VAPID key:', {
+      originalKey: VAPID_PUBLIC_KEY,
+      keyLength: VAPID_PUBLIC_KEY.length
+    });
+    
+    const vapidKeyUint8Array = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    console.log('🔑 VAPID key converted to Uint8Array:', {
+      arrayLength: vapidKeyUint8Array.length,
+      firstBytes: Array.from(vapidKeyUint8Array.slice(0, 10))
+    });
+    
+    // Subscribe to push manager with new VAPID key
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: vapidKeyUint8Array
@@ -91,20 +152,47 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
   }
 }
 
-// Convert VAPID key from base64url to Uint8Array
+// Convert VAPID key from base64url to Uint8Array (for web-push generated keys)
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
+  // Web-push library generates keys in base64 format (not base64url)
+  // Handle both base64 and base64url formats
+  let base64 = base64String;
+  
+  // If it looks like base64url, convert to base64
+  if (base64String.includes('-') || base64String.includes('_')) {
+    base64 = base64String
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
   }
-  return outputArray;
+  
+  // Add padding if needed
+  const padding = '='.repeat((4 - base64.length % 4) % 4);
+  base64 = base64 + padding;
+
+  try {
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    
+    console.log('🔑 VAPID key conversion successful:', {
+      inputLength: base64String.length,
+      outputLength: outputArray.length,
+      expectedLength: 65, // Standard VAPID key length
+      isValidLength: outputArray.length === 65
+    });
+    
+    if (outputArray.length !== 65) {
+      throw new Error(`Invalid VAPID key length: ${outputArray.length}, expected 65`);
+    }
+    
+    return outputArray;
+  } catch (error) {
+    console.error('❌ VAPID key conversion failed:', error);
+    throw new Error('Invalid VAPID key format: ' + error.message);
+  }
 }
 
 // Save Push Subscription to Database
@@ -295,5 +383,33 @@ export async function removePushSubscriptionFromDatabase(userId: string): Promis
     }
   } catch (error) {
     console.error('❌ Database delete operation error:', error);
+  }
+}
+
+// Clear all push subscriptions (for debugging/reset)
+export async function clearAllPushSubscriptions(): Promise<void> {
+  try {
+    console.log('🧹 Clearing all push subscriptions...');
+    
+    // Unregister all service workers
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        // Get existing subscription
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+          console.log('🗑️ Unsubscribed from:', subscription.endpoint.substring(0, 50) + '...');
+        }
+        
+        // Unregister service worker
+        await registration.unregister();
+        console.log('🗑️ Service worker unregistered');
+      }
+    }
+    
+    console.log('✅ All push subscriptions cleared');
+  } catch (error) {
+    console.error('❌ Error clearing push subscriptions:', error);
   }
 }

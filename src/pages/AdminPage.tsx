@@ -6,9 +6,10 @@ import {
   sendListingApprovedNotification, 
   sendListingRejectedNotification,
   sendUserApprovedNotification,
-  sendUserRejectedNotification 
+  sendUserRejectedNotification,
+  sendCustomNotification
 } from '../lib/webPushAPI'
-import { setupPushNotificationsForUser } from '../lib/webPushMessaging'
+import { setupPushNotificationsForUser, clearAllPushSubscriptions } from '../lib/webPushMessaging'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
 
 type Listing = {
@@ -208,20 +209,32 @@ function AdminPage() {
     console.log('🚀 AdminPage useEffect çalışıyor...');
     console.log('📱 Notification permission:', Notification.permission);
     
-    if (Notification.permission === "granted") {
-      console.log('🎯 Notification permission granted, setting up Web Push...');
-      setupPushNotificationsForUser();
-    } else {
-      console.log('⚠️ Notification permission not granted, requesting...');
-      // Permission iste
-      Notification.requestPermission().then(permission => {
-        console.log('📱 Permission result:', permission);
-        if (permission === 'granted') {
-          console.log('✅ Permission granted, setting up Web Push...');
-          setupPushNotificationsForUser();
+    // Her zaman permission iste ve setup yap
+    const setupNotifications = async () => {
+      try {
+        // Önce permission iste
+        if (Notification.permission === 'default') {
+          console.log('⚠️ Requesting notification permission...');
+          const permission = await Notification.requestPermission();
+          console.log('📱 Permission result:', permission);
         }
-      });
-    }
+        
+        // Permission varsa setup yap
+        if (Notification.permission === 'granted') {
+          console.log('✅ Permission granted, setting up Web Push...');
+          const success = await setupPushNotificationsForUser();
+          console.log('🎯 Web Push setup result:', success);
+        } else {
+          console.log('❌ Notification permission denied');
+          alert('🔔 Bildirim izni gerekli! Lütfen tarayıcı ayarlarından bildirimleri etkinleştirin.');
+        }
+      } catch (error) {
+        console.error('❌ Notification setup error:', error);
+      }
+    };
+    
+    // Kısa bir delay ile setup yap (DOM hazır olsun diye)
+    setTimeout(setupNotifications, 1000);
   }, [])
 
   async function decide(id: string, decision: 'approved' | 'rejected') {
@@ -251,7 +264,7 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
-      // Firebase FCM bildirimi gönder
+      // Web Push bildirimi gönder
       if (listing) {
         if (decision === 'approved') {
           await sendListingApprovedNotification(
@@ -345,7 +358,7 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
-      // Firebase FCM bildirimi gönder
+      // Web Push bildirimi gönder
       if (user) {
         if (decision === 'approved') {
           await sendUserApprovedNotification(
@@ -540,96 +553,36 @@ function AdminPage() {
     setNotificationStatus({ type: null, message: '' })
 
     try {
-      // Get current Supabase session - REQUIRED for auth
-      const { data: sessionData } = await supabase.auth.getSession()
+      console.log('📡 Sending notification via webPushAPI...');
       
-      if (!sessionData.session) {
-        throw new Error('Oturum bulunamadı')
-      }
+      // webPushAPI.ts'deki fonksiyonu kullan
+      const phone = notificationForm.phone.trim() || '5556874803'; // Default admin phone
+      const success = await sendCustomNotification(
+        phone,
+        notificationForm.title.trim(),
+        notificationForm.body.trim(),
+        '/', // URL
+        { type: 'admin_broadcast' } // Data
+      );
 
-      // Debug logging (development only)
-      if (import.meta.env.DEV) {
-        console.log('🔍 Sending notification with JWT only:', {
-          authorization: `Bearer ${sessionData.session.access_token.substring(0, 20)}...`,
-          phone: notificationForm.phone || 'all_users'
-        })
-      }
-      
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-fcm-notification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          phone: notificationForm.phone.trim() || null, // Boşsa null gönder (herkese)
-          title: notificationForm.title.trim(),
-          body: notificationForm.body.trim()
-        })
-      })
-
-      // Debug logging (development only)
-      if (import.meta.env.DEV) {
-        console.log('📡 Response status:', response.status)
-        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
-      }
-
-      // Get response text first, then parse
-      const responseText = await response.text()
-      
-      let data
-      try {
-        data = JSON.parse(responseText)
-      } catch (jsonError) {
-        // HTML response geldi, muhtemelen 404 veya 500 hatası
-        console.error('❌ Non-JSON response:', responseText.substring(0, 200))
-        throw new Error(`Edge Function hatası (${response.status}): JSON olmayan response`)
-      }
-
-      // Debug logging (development only)
-      if (import.meta.env.DEV) {
-        console.log('📡 Response data:', data)
-      }
-
-      if (!response.ok) {
-        // Show exact backend error message for 401 errors
-        if (response.status === 401) {
-          throw new Error(data.error || 'Yetki hatası')
-        } else if (response.status === 404) {
-          throw new Error(data.error || 'Edge Function bulunamadı')
-        } else if (response.status === 500) {
-          throw new Error(data.error || 'Sunucu hatası')
-        } else {
-          throw new Error(data.error || `HTTP ${response.status} hatası`)
-        }
-      }
-
-      if (data.success) {
+      if (success) {
         setNotificationStatus({
           type: 'success',
-          message: `Bildirim başarıyla gönderildi! ${data.sent_count || 1} kişiye ulaştı.`
+          message: `Bildirim başarıyla gönderildi!`
         })
         
         // Clear form
         setNotificationForm({ phone: '', title: '', body: '' })
       } else {
-        throw new Error(data.error || 'Bildirim gönderilemedi')
+        throw new Error('Bildirim gönderilemedi')
       }
     } catch (error: any) {
       console.error('❌ Notification error:', error)
       
-      // Handle network errors
-      if (error.message.includes('fetch')) {
-        setNotificationStatus({
-          type: 'error',
-          message: 'Edge Function erişilemedi'
-        })
-      } else {
-        setNotificationStatus({
-          type: 'error',
-          message: error.message || 'Bildirim gönderilemedi'
-        })
-      }
+      setNotificationStatus({
+        type: 'error',
+        message: error.message || 'Bildirim gönderilemedi'
+      })
     } finally {
       setIsNotificationSending(false)
     }
@@ -1258,7 +1211,7 @@ function AdminPage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Push Bildirim Gönder</h3>
-                <p className="text-sm text-gray-600">Kullanıcılara anlık Firebase FCM bildirimi gönder</p>
+                <p className="text-sm text-gray-600">Kullanıcılara anlık Web Push bildirimi gönder</p>
               </div>
             </div>
 
@@ -1274,6 +1227,45 @@ function AdminPage() {
                 className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
               >
                 🔧 Web Push Kurulum (Test)
+              </button>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  console.log('🧹 Push subscriptions temizleniyor...');
+                  await clearAllPushSubscriptions();
+                  alert('Push subscriptions temizlendi! Şimdi tekrar kurulum yapabilirsin.');
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors mr-2"
+              >
+                🧹 Push Subscriptions Temizle
+              </button>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  console.log('🧪 Test bildirimi gönderiliyor...');
+                  try {
+                    const success = await sendCustomNotification(
+                      '5556874803', // Admin phone
+                      '🧪 Test Bildirimi',
+                      'Web Push Protocol test bildirimi - Sistem çalışıyor!',
+                      '/',
+                      { type: 'test', timestamp: Date.now() }
+                    );
+                    if (success) {
+                      alert('✅ Test bildirimi başarıyla gönderildi!');
+                    } else {
+                      alert('❌ Test bildirimi gönderilemedi!');
+                    }
+                  } catch (error) {
+                    console.error('Test error:', error);
+                    alert('❌ Test hatası: ' + error.message);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                🧪 Test Bildirimi Gönder
               </button>
             </div>
 

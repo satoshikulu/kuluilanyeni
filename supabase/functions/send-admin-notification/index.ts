@@ -1,6 +1,7 @@
-// PRODUCTION Admin Notification Edge Function - REAL FCM
+// Admin Notification Edge Function - Web Push Protocol
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as webpush from "jsr:@negrel/webpush@0.5.0"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,14 +10,40 @@ const corsHeaders = {
   "Content-Type": "application/json"
 }
 
-console.info('🔥 PRODUCTION Admin Notification server - JWT + ROLE SECURITY')
+console.info('🔔 Admin Notification server - Web Push Protocol')
+
+let appServerPromise: Promise<webpush.ApplicationServer> | null = null
+
+function getAppServer(): Promise<webpush.ApplicationServer> {
+  if (appServerPromise) return appServerPromise
+
+  const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')
+  const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')
+  const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') || 'mailto:satoshinakamototokyo42@gmail.com'
+
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error('VAPID not configured')
+  }
+
+  const vapidKeys = {
+    publicKey: VAPID_PUBLIC_KEY,
+    privateKey: VAPID_PRIVATE_KEY,
+  }
+
+  appServerPromise = webpush.ApplicationServer.new({
+    contactInformation: VAPID_SUBJECT,
+    vapidKeys,
+  })
+
+  return appServerPromise!
+}
 
 // Phone normalize function - Frontend ile AYNI
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "").slice(-10);
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // CORS preflight handling
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -92,41 +119,10 @@ serve(async (req) => {
 
     console.log('✅ Admin access granted for user:', user.email)
 
-    // Firebase Admin credentials
-    const FIREBASE_PROJECT_ID = Deno.env.get('FIREBASE_PROJECT_ID')
-    const FIREBASE_CLIENT_EMAIL = Deno.env.get('FIREBASE_CLIENT_EMAIL')
-    const FIREBASE_PRIVATE_KEY = Deno.env.get('FIREBASE_PRIVATE_KEY')
-
-    console.log('🔍 Firebase env check:', {
-      project_id: !!FIREBASE_PROJECT_ID,
-      client_email: !!FIREBASE_CLIENT_EMAIL,
-      private_key: !!FIREBASE_PRIVATE_KEY,
-      project_id_value: FIREBASE_PROJECT_ID ? `${FIREBASE_PROJECT_ID.substring(0, 10)}...` : 'missing',
-      client_email_value: FIREBASE_CLIENT_EMAIL ? `${FIREBASE_CLIENT_EMAIL.substring(0, 20)}...` : 'missing'
-    })
-
-    // Return detailed error for missing Firebase credentials
-    if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
-      console.error('❌ Missing Firebase credentials')
-      return new Response(JSON.stringify({ 
-        error: 'Firebase Admin credentials not configured in Supabase Dashboard',
-        details: 'Go to Supabase Dashboard > Settings > Edge Functions > Environment Variables',
-        missing: {
-          FIREBASE_PROJECT_ID: !FIREBASE_PROJECT_ID,
-          FIREBASE_CLIENT_EMAIL: !FIREBASE_CLIENT_EMAIL,
-          FIREBASE_PRIVATE_KEY: !FIREBASE_PRIVATE_KEY
-        },
-        help: 'Add these environment variables in Supabase Dashboard'
-      }), { 
-        status: 500, 
-        headers: corsHeaders 
-      })
-    }
-
-    const privateKey = FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    const appServer = await getAppServer()
     
     // Parse request
-    const { phone, title, body } = await req.json()
+    const { phone, title, body, data, url } = await req.json()
 
     if (!title || !body) {
       return new Response(JSON.stringify({ 
@@ -134,20 +130,20 @@ serve(async (req) => {
       }), { status: 400, headers: corsHeaders })
     }
 
-    // Get FCM tokens from Supabase using authenticated client
-    let query = supabase.from('fcm_tokens').select('token,phone,user_id')
+    // Get push subscriptions from Supabase using authenticated client
+    let query = supabase.from('push_subscriptions').select('subscription,phone,user_id')
     
-    // If phone is provided, filter by normalized phone, otherwise get all tokens
+    // If phone is provided, filter by normalized phone, otherwise get all subscriptions
     if (phone) {
       const normalizedPhone = normalizePhone(phone)
       console.log('🔍 Searching for normalized phone:', normalizedPhone)
       query = query.eq('phone', normalizedPhone)
     }
     
-    const { data: tokens, error: tokenError } = await query
+    const { data: subscriptions, error: subError } = await query
     
-    if (tokenError) {
-      console.error('❌ Database error:', tokenError)
+    if (subError) {
+      console.error('❌ Database error:', subError)
       return new Response(JSON.stringify({ 
         error: 'Database query failed'
       }), { 
@@ -156,179 +152,49 @@ serve(async (req) => {
       })
     }
     
-    if (!tokens || tokens.length === 0) {
+    if (!subscriptions || subscriptions.length === 0) {
       return new Response(JSON.stringify({ 
-        error: phone ? `No FCM token found for phone: ${phone}` : 'No FCM tokens found in database'
+        error: phone ? `No push subscription found for phone: ${phone}` : 'No push subscriptions found in database'
       }), { 
         status: 404, 
         headers: corsHeaders 
       })
     }
 
-    console.log(`📡 Found ${tokens.length} FCM tokens to send notifications`)
+    console.log(`📡 Found ${subscriptions.length} push subscriptions to send notifications`)
 
-    // Create JWT for Google OAuth2
-    const now = Math.floor(Date.now() / 1000)
-    const jwtPayload = {
-      iss: FIREBASE_CLIENT_EMAIL,
-      sub: FIREBASE_CLIENT_EMAIL,
-      aud: 'https://oauth2.googleapis.com/token',
-      iat: now,
-      exp: now + 3600,
-      scope: 'https://www.googleapis.com/auth/firebase.messaging'
-    }
+    // Prepare notification payload
+    const payload = JSON.stringify({
+      title: title,
+      body: body,
+      icon: '/icon-192x192.png',
+      badge: '/icon-96x96.png',
+      tag: 'admin-notification',
+      url: url || '/',
+      data: data || {},
+      timestamp: Date.now()
+    })
 
-    // Simple JWT creation (for Deno compatibility)
-    const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).replace(/=/g, '')
-    const payload = btoa(JSON.stringify(jwtPayload)).replace(/=/g, '')
-    
-    // Get OAuth2 access token
-    let accessToken = null
-    
-    try {
-      const authResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          assertion: `${header}.${payload}.signature_placeholder`
-        })
-      })
-      
-      if (authResponse.ok) {
-        const authText = await authResponse.text()
-        try {
-          const authResult = JSON.parse(authText)
-          accessToken = authResult.access_token
-        } catch (parseError) {
-          console.error("🔥 OAuth2 non-JSON response:", authText.slice(0, 200))
-        }
-      } else {
-        const errorText = await authResponse.text()
-        console.error("🔥 OAuth2 error:", errorText.slice(0, 200))
-      }
-    } catch (authError) {
-      console.warn('OAuth2 failed, using Legacy API')
-    }
-
-    // Send notifications to all tokens
+    // Send notifications to all subscriptions
     let successCount = 0
     let failureCount = 0
     const results = []
 
-    for (const tokenData of tokens) {
-      const fcmToken = tokenData.token
-      
-      // Prepare FCM message
-      const fcmMessage = {
-        message: {
-          token: fcmToken,
-          notification: {
-            title: title,
-            body: body
-          },
-          data: {
-            type: 'admin_notification',
-            timestamp: new Date().toISOString()
-          },
-          webpush: {
-            notification: {
-              title: title,
-              body: body,
-              icon: '/icon-192x192.png',
-              badge: '/icon-96x96.png',
-              tag: 'admin-notification',
-              requireInteraction: true
-            }
-          }
-        }
+    for (const subData of subscriptions) {
+      try {
+        const subscription = JSON.parse(subData.subscription)
+        console.log('📤 Sending notification to endpoint:', subscription.endpoint.substring(0, 50) + '...')
+
+        const subscriber = appServer.subscribe(subscription)
+        await subscriber.pushTextMessage(payload, {})
+        console.log(`✅ Web Push success for ${subData.phone}`)
+        successCount++
+        results.push({ phone: subData.phone, success: true })
+      } catch (error) {
+        console.error(`❌ Web Push failed for ${subData.phone}:`, error)
+        failureCount++
+        results.push({ phone: subData.phone, success: false, error: (error as any)?.message || String(error) })
       }
-
-      let fcmResponse
-      let result
-
-      // Try Firebase HTTP v1 API first
-      if (accessToken) {
-        fcmResponse = await fetch(`https://fcm.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/messages:send`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: JSON.stringify(fcmMessage)
-        })
-        
-        const responseText = await fcmResponse.text()
-        
-        if (!fcmResponse.ok) {
-          console.error("🔥 FCM v1 API error:", responseText)
-          result = { error: responseText.slice(0, 500) }
-        } else {
-          try {
-            result = JSON.parse(responseText)
-            console.log(`✅ FCM v1 API success for ${tokenData.phone}:`, result.name)
-            successCount++
-            results.push({ phone: tokenData.phone, success: true, messageId: result.name })
-            continue
-          } catch (parseError) {
-            console.error("🔥 FCM v1 API non-JSON response:", responseText.slice(0, 200))
-            result = { error: "Non-JSON response: " + responseText.slice(0, 200) }
-          }
-        }
-      }
-
-      // Fallback to Legacy API
-      const legacyMessage = {
-        to: fcmToken,
-        notification: {
-          title: title,
-          body: body,
-          icon: '/icon-192x192.png'
-        },
-        data: {
-          type: 'admin_notification',
-          timestamp: new Date().toISOString()
-        }
-      }
-
-      // Use server key for Legacy API (if available)
-      const serverKey = Deno.env.get('FIREBASE_SERVER_KEY')
-      
-      if (serverKey) {
-        fcmResponse = await fetch('https://fcm.googleapis.com/fcm/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `key=${serverKey}`
-          },
-          body: JSON.stringify(legacyMessage)
-        })
-        
-        const legacyResponseText = await fcmResponse.text()
-        
-        if (!fcmResponse.ok) {
-          console.error("🔥 FCM Legacy API error:", legacyResponseText)
-          result = { error: legacyResponseText.slice(0, 500) }
-        } else {
-          try {
-            result = JSON.parse(legacyResponseText)
-            if (result.success > 0) {
-              console.log(`✅ FCM Legacy API success for ${tokenData.phone}:`, result.results[0].message_id)
-              successCount++
-              results.push({ phone: tokenData.phone, success: true, messageId: result.results[0].message_id })
-              continue
-            }
-          } catch (parseError) {
-            console.error("🔥 FCM Legacy API non-JSON response:", legacyResponseText.slice(0, 200))
-            result = { error: "Non-JSON response: " + legacyResponseText.slice(0, 200) }
-          }
-        }
-      }
-
-      // If both APIs fail for this token
-      console.error(`❌ FCM failed for ${tokenData.phone}:`, result)
-      failureCount++
-      results.push({ phone: tokenData.phone, success: false, error: result })
     }
 
     // Return summary
@@ -338,24 +204,26 @@ serve(async (req) => {
         message: `Admin notification sent successfully to ${successCount} users`,
         sent_count: successCount,
         failed_count: failureCount,
-        total_tokens: tokens.length
+        total_subscriptions: subscriptions.length
       }), { status: 200, headers: corsHeaders })
     } else {
       return new Response(JSON.stringify({ 
         error: 'Failed to send notifications to any users',
         sent_count: successCount,
         failed_count: failureCount,
-        total_tokens: tokens.length
+        total_subscriptions: subscriptions.length
       }), { status: 500, headers: corsHeaders })
     }
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Admin notification error:', error)
-    console.error('❌ Error stack:', error.stack)
+    const message = error instanceof Error ? error.message : String(error)
+    const stack = error instanceof Error ? error.stack : undefined
+    console.error('❌ Error stack:', stack)
     
     // Always return JSON, never HTML
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error',
+      error: message || 'Internal server error',
       type: 'catch_block_error',
       timestamp: new Date().toISOString()
     }), { 

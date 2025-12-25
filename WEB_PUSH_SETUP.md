@@ -56,14 +56,10 @@ supabase functions deploy send-web-push
 
 ### 5. Frontend Kodu Güncelle
 
-Artık Firebase yerine Web Push kullanıyoruz:
+Web Push Protocol kullanıyoruz:
 
 ```typescript
-// Eski (Firebase)
-import { saveTokenAfterLogin } from '../lib/firebaseMessaging'
-import { sendListingApprovedNotification } from '../lib/firebaseAPI'
-
-// Yeni (Web Push)
+// Web Push
 import { setupPushNotificationsForUser } from '../lib/webPushMessaging'
 import { sendListingApprovedNotification } from '../lib/webPushAPI'
 ```
@@ -180,10 +176,10 @@ console.log(`${result.success} başarılı, ${result.failed} başarısız`)
 
 ## 🔄 Migration from Firebase
 
-### 1. Eski Firebase Kodunu Kaldır
-- `firebase-messaging-sw.js` → `web-push-sw.js`
-- `firebaseMessaging.ts` → `webPushMessaging.ts`
-- `firebaseAPI.ts` → `webPushAPI.ts`
+### 1. Migration Completed
+- `firebase-messaging-sw.js` → Removed completely
+- `firebaseMessaging.ts` → Replaced with `webPushMessaging.ts`
+- `firebaseAPI.ts` → Replaced with `webPushAPI.ts`
 
 ### 2. Database Migration
 ```sql

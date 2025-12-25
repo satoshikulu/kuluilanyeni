@@ -21,7 +21,7 @@ import ListingDetailPage from './pages/ListingDetailPage.tsx'
 import FavoritesPage from './pages/FavoritesPage.tsx'
 import DebugAuthPage from './pages/DebugAuthPage.tsx'
 import MyListingsPage from './pages/MyListingsPage.tsx'
-import TestWebPushPage from './pages/TestFCMPage.tsx'
+import TestWebPushPage from './pages/TestWebPushPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -44,7 +44,7 @@ const router = createBrowserRouter([
       { path: 'debug/storage', element: <DebugStoragePage /> },
       { path: 'debug/auth', element: <DebugAuthPage /> },
       { path: 'admin-dashboard', element: <AdminDashboard /> },
-      { path: 'test/fcm', element: <TestWebPushPage /> },
+      { path: 'test/push', element: <TestWebPushPage /> },
     ],
   },
 ])

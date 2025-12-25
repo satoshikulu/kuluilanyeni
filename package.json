@@ -48,6 +48,7 @@
     "vite": "^7.1.2",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^3.2.4",
+    "web-push": "^3.6.7",
     "workbox-window": "^7.4.0"
   }
 }

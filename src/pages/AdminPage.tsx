@@ -1258,9 +1258,10 @@ function AdminPage() {
                     } else {
                       alert('❌ Test bildirimi gönderilemedi!');
                     }
-                  } catch (error) {
+                  } catch (error: unknown) {
                     console.error('Test error:', error);
-                    alert('❌ Test hatası: ' + error.message);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    alert('❌ Test hatası: ' + errorMessage);
                   }
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"

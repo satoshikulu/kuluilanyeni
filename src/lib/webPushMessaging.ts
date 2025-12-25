@@ -189,9 +189,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     }
     
     return outputArray;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ VAPID key conversion failed:', error);
-    throw new Error('Invalid VAPID key format: ' + error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error('Invalid VAPID key format: ' + errorMessage);
   }
 }
 

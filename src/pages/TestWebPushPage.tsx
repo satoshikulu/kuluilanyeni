@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { testWebPushNotification } from '../lib/webPushAPI';
-import { checkUserHasPushSubscription, setupPushNotificationsForUser } from '../lib/webPushMessaging';
+import { checkUserHasPushSubscription } from '../lib/webPushMessaging';
 
 function TestWebPushPage() {
   const [phone, setPhone] = useState('5453526056');

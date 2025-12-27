@@ -32,20 +32,65 @@ function getAppServer(): Promise<webpush.ApplicationServer> {
     privateKeyLength: VAPID_PRIVATE_KEY.length
   })
 
-  const vapidKeys = {
-    publicKey: VAPID_PUBLIC_KEY,
-    privateKey: VAPID_PRIVATE_KEY,
+  // Convert base64url public key to raw x/y and construct JWKs for import
+  function base64UrlToUint8Array(base64Url: string) {
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = base64.length % 4;
+    if (pad) base64 += '='.repeat(4 - pad);
+    const binary = atob(base64);
+    const arr = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; ++i) arr[i] = binary.charCodeAt(i);
+    return arr;
+  }
+
+  function uint8ArrayToBase64Url(bytes: Uint8Array) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; ++i) binary += String.fromCharCode(bytes[i]);
+    let base64 = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return base64;
   }
 
   try {
+    const pubRaw = base64UrlToUint8Array(VAPID_PUBLIC_KEY);
+    // pubRaw is expected to be 65 bytes (0x04 + x(32) + y(32))
+    if (pubRaw.length !== 65 || pubRaw[0] !== 4) {
+      console.warn('⚠️ Unexpected public key format', { length: pubRaw.length, firstByte: pubRaw[0] });
+    }
+
+    const xBytes = pubRaw.slice(1, 33);
+    const yBytes = pubRaw.slice(33, 65);
+    const xB64 = uint8ArrayToBase64Url(xBytes);
+    const yB64 = uint8ArrayToBase64Url(yBytes);
+
+    const jwkPriv: any = {
+      kty: 'EC',
+      crv: 'P-256',
+      x: xB64,
+      y: yB64,
+      d: VAPID_PRIVATE_KEY,
+    };
+
+    const jwkPub: any = {
+      kty: 'EC',
+      crv: 'P-256',
+      x: xB64,
+      y: yB64,
+    };
+
+    // Import keys as CryptoKey
+    const privKey = await crypto.subtle.importKey('jwk', jwkPriv, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+    const pubKey = await crypto.subtle.importKey('jwk', jwkPub, { name: 'ECDSA', namedCurve: 'P-256' }, false, []);
+
+    const vapidKeyPair = { publicKey: pubKey, privateKey: privKey };
+
     appServerPromise = webpush.ApplicationServer.new({
       contactInformation: VAPID_SUBJECT,
-      vapidKeys,
-    })
+      vapidKeys: vapidKeyPair as any,
+    });
 
-    console.log('✅ ApplicationServer created')
+    console.log('✅ ApplicationServer created with imported VAPID keys')
   } catch (err) {
-    console.error('❌ Failed creating ApplicationServer:', err)
+    console.error('❌ Failed creating ApplicationServer or importing VAPID keys:', err)
     throw err
   }
 

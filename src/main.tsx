@@ -4,9 +4,6 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
 
-// WonderPush initialize
-import { initWonderPush } from './lib/wonderpush'
-
 import App from './App.tsx'
 import HomePage from './pages/HomePage.tsx'
 import ListingsPage from './pages/ListingsPage.tsx'

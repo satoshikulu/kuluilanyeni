@@ -14,16 +14,6 @@ function TestWonderPushPage() {
     setStatus(prev => prev + '\n' + new Date().toLocaleTimeString() + ': ' + message);
   };
 
-  const handleManualInit = async () => {
-    try {
-      updateStatus('Manuel WonderPush initialization başlatılıyor...');
-      await initWonderPush();
-      updateStatus('✅ Manuel initialization tamamlandı!');
-    } catch (error) {
-      updateStatus('❌ Manuel initialization hatası: ' + (error as any)?.message);
-    }
-  };
-
   const handleSubscribe = async () => {
     try {
       updateStatus('WonderPush initialization başlatılıyor...');
@@ -221,8 +211,8 @@ function TestWonderPushPage() {
           <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
             <h3 className="font-semibold text-yellow-900 mb-2">⚙️ Environment Bilgileri</h3>
             <div className="text-sm text-yellow-800 space-y-1">
-              <div>WonderPush Web Key: <code>{'01jdfpm569k5kug2' ? '✅ Tanımlı' : '❌ Tanımsız'}</code></div>
-              <div>WonderPush App ID: <code>{'01jdfpm569k5kug2' ? '✅ Tanımlı' : '❌ Tanımsız'}</code></div>
+              <div>WonderPush Web Key: <code>✅ Tanımlı</code></div>
+              <div>WonderPush App ID: <code>✅ Tanımlı</code></div>
               <div>Supabase URL: <code>{import.meta.env.VITE_SUPABASE_URL ? '✅ Tanımlı' : '❌ Tanımsız'}</code></div>
               <div>WonderPush Global: <code>{typeof window.WonderPush !== 'undefined' ? '✅ Yüklendi' : '❌ Yüklenmedi'}</code></div>
             </div>

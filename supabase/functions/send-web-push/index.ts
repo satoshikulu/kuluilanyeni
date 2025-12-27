@@ -1,5 +1,6 @@
 // Web Push Protocol Edge Function - Working Implementation with VAPID
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import * as webpush from "jsr:@negrel/webpush@0.5.0"
 
 // CORS headers
 const corsHeaders = {
@@ -10,6 +11,32 @@ const corsHeaders = {
 }
 
 console.info('🔔 Web Push Protocol server - VAPID implementation')
+
+let appServerPromise: Promise<webpush.ApplicationServer> | null = null
+
+function getAppServer(): Promise<webpush.ApplicationServer> {
+  if (appServerPromise) return appServerPromise
+
+  const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')
+  const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')
+  const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') || 'mailto:satoshinakamototokyo42@gmail.com'
+
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error('VAPID not configured')
+  }
+
+  const vapidKeys = {
+    publicKey: VAPID_PUBLIC_KEY,
+    privateKey: VAPID_PRIVATE_KEY,
+  }
+
+  appServerPromise = webpush.ApplicationServer.new({
+    contactInformation: VAPID_SUBJECT,
+    vapidKeys,
+  })
+
+  return appServerPromise!
+}
 
 // Phone normalize helper
 function normalizePhone(phone: string): string {
@@ -166,37 +193,25 @@ serve(async (req) => {
     console.log('📱 Forwarding to managed send-notification function')
 
     try {
-      // Call the existing `send-notification` function which uses a maintained web-push library
-      const sendNotificationUrl = `${supabaseUrl}/functions/v1/send-notification`
-      const sendResp = await fetch(sendNotificationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Use apikey header for service auth (avoids JWT validation errors when passing anon key as Bearer)
-          'apikey': supabaseKey
-        },
-        body: JSON.stringify({
-          subscription: subscriptionData,
-          title,
-          body,
-          data
-        })
+      // Use local web-push implementation directly to avoid cross-function auth issues
+      const appServer = await getAppServer()
+
+      const subscriber = appServer.subscribe(subscriptionData)
+      await subscriber.pushTextMessage(pushPayload, {})
+
+      console.log('✅ Push notification sent successfully via local webpush')
+
+      return new Response(JSON.stringify({ success: true, message: 'Push notification sent successfully' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (pushError: any) {
+      console.error('❌ Push delivery error:', pushError)
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Push delivery failed',
+        details: (pushError as any)?.message || String(pushError)
+      }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
-
-      const sendText = await sendResp.text();
-      console.log('📱 send-notification response:', { status: sendResp.status, body: sendText });
-
-      if (sendResp.ok) {
-        return new Response(JSON.stringify({ success: true, message: 'Push forwarded to send-notification', status: sendResp.status }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      } else {
-        console.error('❌ send-notification failed:', sendResp.status, sendText);
-        // Propagate the original function's status and body for better debugging
-        const statusToReturn = sendResp.status >= 400 && sendResp.status < 600 ? sendResp.status : 500
-        return new Response(JSON.stringify({ success: false, error: 'send-notification failed', details: sendText, status: sendResp.status }), { status: statusToReturn, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-    } catch (err) {
-      console.error('❌ Error forwarding to send-notification:', err);
-      return new Response(JSON.stringify({ success: false, error: 'Forwarding failed', details: String(err) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
   } catch (error: any) {

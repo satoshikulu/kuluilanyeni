@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { removePushSubscriptionFromDatabase } from './webPushMessaging'
+import { unsubscribeFromNotifications } from './wonderpush'
 
 // Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
 function simpleHash(password: string): string {
@@ -113,14 +113,14 @@ export async function loginUser(
  * Çıkış yap
  */
 export async function logoutUser(): Promise<void> {
-  // FCM token'ı temizle
+  // WonderPush subscription'ı temizle
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      await removePushSubscriptionFromDatabase(currentUser.id);
-      console.log('✅ Push subscription removed during logout');
+      await unsubscribeFromNotifications();
+      console.log('✅ WonderPush subscription removed during logout');
     } catch (error) {
-      console.warn('⚠️ Push subscription removal failed during logout:', error);
+      console.warn('⚠️ WonderPush unsubscribe failed during logout:', error);
     }
   }
   

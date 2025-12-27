@@ -1,9 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
-import { setupPushNotificationsForUser, checkUserHasPushSubscription } from '../lib/webPushMessaging'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
+import { subscribeToNotifications } from '../lib/wonderpush'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -20,49 +20,19 @@ function LoginPage() {
     checkCurrentSession()
   }, [])
 
-  // Web Push Setup - Supabase Session için
+  // WonderPush Setup - Supabase Session için
   useEffect(() => {
-    const setupNotificationsForSupabaseUser = async () => {
-      try {
-        // Sadece Supabase session varsa çalıştır
-        if (!currentUser) return;
-        
-        console.log('🚀 LoginPage: Supabase user için Web Push setup...');
-        console.log('📱 Current permission:', Notification.permission);
-        
-        // Permission iste
-        if (Notification.permission === 'default') {
-          console.log('⚠️ Requesting notification permission...');
-          const permission = await Notification.requestPermission();
-          console.log('📱 Permission result:', permission);
-          
-          if (permission !== 'granted') {
-            console.warn('⚠️ Notification permission denied');
-            return;
-          }
-        }
-        
-        // Permission varsa setup yap
-        if (Notification.permission === 'granted') {
-          console.log('✅ Permission granted, setting up Web Push...');
-          const success = await setupPushNotificationsForUser();
-          console.log('🎯 Web Push setup result:', success);
-          
-          if (success) {
-            // Kullanıcıya bildir
-            setTimeout(() => {
-              alert("✅ Push bildirimler aktif! Artık önemli güncellemeler hakkında bildirim alacaksınız.");
-            }, 1000);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Notification setup error:', error);
-      }
-    };
-    
-    // Supabase user varsa setup yap
     if (currentUser) {
-      setTimeout(setupNotificationsForSupabaseUser, 1000);
+      // Kullanıcı giriş yaptığında WonderPush'a subscribe et
+      subscribeToNotifications({
+        userId: currentUser.email || currentUser.phone,
+        phone: currentUser.phone,
+        name: currentUser.user_metadata?.role || 'Kullanıcı',
+        properties: {
+          role: currentUser.user_metadata?.role || 'user',
+          loginDate: new Date().toISOString()
+        }
+      }).catch(console.error);
     }
   }, [currentUser])
 
@@ -102,50 +72,28 @@ function LoginPage() {
       const result = await loginUser(phone, password)
       
       if (result.success && result.user) {
-        console.log("✅ Login başarılı, Firebase FCM entegrasyonu başlıyor...");
+        console.log("✅ Login başarılı");
         
-        // Web Push'a kullanıcıyı kaydet
+        // WonderPush'a kullanıcıyı subscribe et
         try {
-          console.log("🔔 Web Push kurulumu başlatılıyor...");
-          
-          // Önce notification permission iste
-          if (Notification.permission === 'default') {
-            console.log("📱 Notification permission isteniyor...");
-            const permission = await Notification.requestPermission();
-            console.log("📱 Permission sonucu:", permission);
-            
-            if (permission !== 'granted') {
-              console.warn("⚠️ Notification permission reddedildi");
-              // Permission reddedilse bile devam et, ama kullanıcıyı bilgilendir
-              alert("🔔 Bildirim izni verilmedi. Bildirimler çalışmayacak. Tarayıcı ayarlarından izin verebilirsiniz.");
+          await subscribeToNotifications({
+            userId: result.user.id,
+            phone: result.user.phone,
+            name: result.user.full_name || 'Kullanıcı',
+            properties: {
+              role: 'user',
+              loginDate: new Date().toISOString(),
+              status: result.user.status
             }
-          }
-          
-          // Permission varsa subscription oluştur
-          if (Notification.permission === 'granted') {
-            const subscribed = await setupPushNotificationsForUser();
-            console.log("🎉 Web Push entegrasyonu tamamlandı:", subscribed);
-            
-            // Push subscription'ının kaydedilip kaydedilmediğini kontrol edelim
-            if (subscribed) {
-              const hasSubscription = await checkUserHasPushSubscription(result.user.phone);
-              console.log("🔍 Push subscription kontrolü:", hasSubscription ? "Subscription mevcut" : "Subscription yok");
-              
-              if (hasSubscription) {
-                // Kullanıcıya bildir
-                setTimeout(() => {
-                  alert("✅ Push bildirimler aktif! Artık önemli güncellemeler hakkında bildirim alacaksınız.");
-                }, 1000);
-              }
-            }
-          } else {
-            console.log("⚠️ Notification permission yok, push subscription oluşturulmadı");
-          }
+          });
+          console.log("🔔 WonderPush subscription completed");
         } catch (pushError) {
-          console.warn("⚠️ Web Push entegrasyonu başarısız:", pushError);
+          console.warn("⚠️ WonderPush subscription failed:", pushError);
+          // Push notification hatası login'i engellemez
         }
         
         // Ana sayfaya yönlendir
+        console.log("🔄 Ana sayfaya yönlendiriliyor...");
         navigate('/')
         window.location.reload() // Header'ı güncellemek için
       } else {

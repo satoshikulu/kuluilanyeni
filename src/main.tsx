@@ -4,6 +4,9 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
 
+// WonderPush initialize
+import { initWonderPush } from './lib/wonderpush'
+
 import App from './App.tsx'
 import HomePage from './pages/HomePage.tsx'
 import ListingsPage from './pages/ListingsPage.tsx'
@@ -21,7 +24,7 @@ import ListingDetailPage from './pages/ListingDetailPage.tsx'
 import FavoritesPage from './pages/FavoritesPage.tsx'
 import DebugAuthPage from './pages/DebugAuthPage.tsx'
 import MyListingsPage from './pages/MyListingsPage.tsx'
-import TestWebPushPage from './pages/TestWebPushPage.tsx'
+import TestWonderPushPage from './pages/TestWonderPushPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -44,19 +47,13 @@ const router = createBrowserRouter([
       { path: 'debug/storage', element: <DebugStoragePage /> },
       { path: 'debug/auth', element: <DebugAuthPage /> },
       { path: 'admin-dashboard', element: <AdminDashboard /> },
-      { path: 'test/push', element: <TestWebPushPage /> },
+      { path: 'test/wonderpush', element: <TestWonderPushPage /> },
     ],
   },
 ])
 
 // Web Push notifications are handled by the service worker
 // No need for foreground message listener as service worker handles all notifications);
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
-)
 
 // PWA Service Worker otomatik olarak vite-plugin-pwa tarafından yönetiliyor
 // Manuel kayıt yapmaya gerek yok
@@ -84,3 +81,12 @@ window.addEventListener("beforeinstallprompt", (e) => {
   
   deferredPrompt = null;
 };
+
+// WonderPush'ı lazy loading yap - sadece gerektiğinde yükle
+// Login sayfası veya test sayfası açıldığında otomatik yüklenecek
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <RouterProvider router={router} />
+  </StrictMode>,
+)

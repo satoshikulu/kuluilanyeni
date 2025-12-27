@@ -218,10 +218,13 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true, message: 'Push notification sent successfully' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     } catch (pushError: any) {
       console.error('❌ Push delivery error:', pushError)
+      const details = (pushError as any)?.message || String(pushError)
+      const stack = (pushError && pushError.stack) ? pushError.stack : null
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Push delivery failed',
-        details: (pushError as any)?.message || String(pushError)
+        details,
+        stack
       }), { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

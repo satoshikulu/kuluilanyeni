@@ -170,7 +170,8 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`
+          // Use apikey header for service auth (avoids JWT validation errors when passing anon key as Bearer)
+          'apikey': supabaseKey
         },
         body: JSON.stringify({
           subscription: subscriptionData,

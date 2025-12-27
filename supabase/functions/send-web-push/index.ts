@@ -161,65 +161,39 @@ serve(async (req) => {
       timestamp: Date.now()
     })
 
-    console.log('📱 Sending push notification with VAPID...')
+    console.log('📱 Forwarding to managed send-notification function')
 
     try {
-      // Generate VAPID JWT
-      const vapidJWT = await generateVAPIDJWT(subscriptionData.endpoint)
-      const vapidPublicKey = Deno.env.get('VITE_VAPID_PUBLIC_KEY')
-      
-      // Send notification with VAPID headers
-      const pushResponse = await fetch(subscriptionData.endpoint, {
+      // Call the existing `send-notification` function which uses a maintained web-push library
+      const sendNotificationUrl = `${supabaseUrl}/functions/v1/send-notification`
+      const sendResp = await fetch(sendNotificationUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'TTL': '86400',
-          'Authorization': `vapid t=${vapidJWT}, k=${vapidPublicKey}`
+          'Authorization': `Bearer ${supabaseKey}`
         },
-        body: pushPayload
-      });
-
-      console.log('📱 Push response:', {
-        status: pushResponse.status,
-        statusText: pushResponse.statusText
-      });
-
-      const responseText = await pushResponse.text();
-      console.log('📱 Response body:', responseText);
-
-      if (pushResponse.ok) {
-        console.log('✅ Push notification sent successfully');
-        return new Response(JSON.stringify({ 
-          success: true, 
-          message: 'Push notification sent successfully',
-          status: pushResponse.status
-        }), { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        body: JSON.stringify({
+          subscription: subscriptionData,
+          title,
+          body,
+          data
         })
-      } else {
-        console.error('❌ Push delivery failed:', pushResponse.status, responseText);
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Push delivery failed',
-          details: responseText,
-          status: pushResponse.status
-        }), { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-    } catch (pushError: any) {
-      console.error('❌ Push delivery error:', pushError)
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Push delivery failed',
-        details: pushError.message
-      }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
+
+      const sendText = await sendResp.text();
+      console.log('📱 send-notification response:', { status: sendResp.status, body: sendText });
+
+      if (sendResp.ok) {
+        return new Response(JSON.stringify({ success: true, message: 'Push forwarded to send-notification', status: sendResp.status }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } else {
+        console.error('❌ send-notification failed:', sendResp.status, sendText);
+        // Propagate the original function's status and body for better debugging
+        const statusToReturn = sendResp.status >= 400 && sendResp.status < 600 ? sendResp.status : 500
+        return new Response(JSON.stringify({ success: false, error: 'send-notification failed', details: sendText, status: sendResp.status }), { status: statusToReturn, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    } catch (err) {
+      console.error('❌ Error forwarding to send-notification:', err);
+      return new Response(JSON.stringify({ success: false, error: 'Forwarding failed', details: String(err) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
   } catch (error: any) {

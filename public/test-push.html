@@ -6,6 +6,9 @@
 </head>
 <body>
     <h1>🧪 Web Push Test</h1>
+    <p><strong>Uyarı:</strong> Bu test sayfasını düzgün çalıştırmak için lütfen sayfayı <code>http://localhost</code> üzerinden açın (ör. `npx serve public`) — ServiceWorker çalışması için güvenli bağlam gereklidir.</p>
+    <label>Supabase URL: <input id="supabaseUrl" placeholder="https://your-project.supabase.co" style="width:60%"></label><br>
+    <label>Supabase Anon Key (test amaçlı): <input id="supabaseAnonKey" placeholder="anon-key" style="width:60%"></label><br>
     <button id="subscribe">📱 Subscribe to Push</button>
     <button id="send">📤 Send Test Notification</button>
     <div id="status"></div>
@@ -55,13 +58,16 @@
 
                 status.innerHTML = '💾 Saving to database...';
                 
-                // Save to database
-                const response = await fetch('https://tjoivjohhjoedtwzuopr.supabase.co/rest/v1/push_subscriptions', {
+                // Save to database (uses Supabase REST endpoint)
+                const supabaseUrl = document.getElementById('supabaseUrl').value || window.location.origin
+                const anonKey = document.getElementById('supabaseAnonKey').value
+
+                const response = await fetch(`${supabaseUrl}/rest/v1/push_subscriptions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqb2l2am9oaGpvZWR0d3p1b3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0NTM5NTksImV4cCI6MjA3NTAyOTk1OX0.S-eAwtJaP8sxhK7lFRQ2Bvf8JduufHaOQuaTkEku5G0',
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqb2l2am9oaGpvZWR0d3p1b3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0NTM5NTksImV4cCI6MjA3NTAyOTk1OX0.S-eAwtJaP8sxhK7lFRQ2Bvf8JduufHaOQuaTkEku5G0'
+                        'apikey': anonKey || '',
+                        'Authorization': anonKey ? `Bearer ${anonKey}` : ''
                     },
                     body: JSON.stringify({
                         user_id: 'test-user-123',
@@ -74,7 +80,8 @@
                 if (response.ok) {
                     status.innerHTML = '✅ Subscription successful!';
                 } else {
-                    status.innerHTML = '❌ Database save failed';
+                    const text = await response.text();
+                    status.innerHTML = '❌ Database save failed: ' + text;
                 }
             } catch (error) {
                 status.innerHTML = '❌ Error: ' + error.message;
@@ -87,11 +94,14 @@
             try {
                 status.innerHTML = '📤 Sending notification...';
                 
-                const response = await fetch('https://tjoivjohhjoedtwzuopr.supabase.co/functions/v1/send-web-push', {
+                const supabaseUrl = document.getElementById('supabaseUrl').value || window.location.origin
+                const anonKey = document.getElementById('supabaseAnonKey').value
+
+                const response = await fetch(`${supabaseUrl}/functions/v1/send-web-push`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqb2l2am9oaGpvZWR0d3p1b3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0NTM5NTksImV4cCI6MjA3NTAyOTk1OX0.S-eAwtJaP8sxhK7lFRQ2Bvf8JduufHaOQuaTkEku5G0'
+                        'Authorization': anonKey ? `Bearer ${anonKey}` : ''
                     },
                     body: JSON.stringify({
                         phone: '5556874803',
@@ -100,12 +110,14 @@
                     })
                 });
 
-                const result = await response.json();
-                
+                const text = await response.text();
+                let result
+                try { result = JSON.parse(text) } catch { result = { success: false, error: text } }
+
                 if (result.success) {
                     status.innerHTML = '✅ Notification sent!';
                 } else {
-                    status.innerHTML = '❌ Send failed: ' + result.error;
+                    status.innerHTML = `❌ Send failed (status ${response.status}): ` + (result.error || text);
                 }
             } catch (error) {
                 status.innerHTML = '❌ Error: ' + error.message;

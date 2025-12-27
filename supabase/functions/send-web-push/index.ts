@@ -25,15 +25,29 @@ function getAppServer(): Promise<webpush.ApplicationServer> {
     throw new Error('VAPID not configured')
   }
 
+  console.log('🔑 VAPID key debug:', {
+    publicKeyPreview: VAPID_PUBLIC_KEY.substring(0, 10) + '...',
+    publicKeyLength: VAPID_PUBLIC_KEY.length,
+    privateKeyPreview: VAPID_PRIVATE_KEY.substring(0, 10) + '...',
+    privateKeyLength: VAPID_PRIVATE_KEY.length
+  })
+
   const vapidKeys = {
     publicKey: VAPID_PUBLIC_KEY,
     privateKey: VAPID_PRIVATE_KEY,
   }
 
-  appServerPromise = webpush.ApplicationServer.new({
-    contactInformation: VAPID_SUBJECT,
-    vapidKeys,
-  })
+  try {
+    appServerPromise = webpush.ApplicationServer.new({
+      contactInformation: VAPID_SUBJECT,
+      vapidKeys,
+    })
+
+    console.log('✅ ApplicationServer created')
+  } catch (err) {
+    console.error('❌ Failed creating ApplicationServer:', err)
+    throw err
+  }
 
   return appServerPromise!
 }

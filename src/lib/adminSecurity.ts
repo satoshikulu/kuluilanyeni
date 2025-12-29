@@ -1,7 +1,7 @@
 // ============================================
-// ADMIN GÜVENLİK SİSTEMİ (EMAIL/SUPABASE AUTH)
+// ADMIN GÜVENLİK SİSTEMİ (BASIT YAKLAŞIM)
 // ============================================
-// Supabase Auth ile email/şifre admin kontrolü
+// profiles tablosundaki role alanını kullanır
 // ============================================
 
 import { supabase } from './supabaseClient'
@@ -10,8 +10,8 @@ export interface UserProfile {
   id: string
   full_name: string
   role: 'user' | 'admin'
-  created_at: string
-  updated_at: string
+  phone: string
+  status: string
 }
 
 /**
@@ -28,21 +28,21 @@ export async function isUserAdmin(): Promise<boolean> {
       return false
     }
 
-    // 2. Kullanıcının profilini al
-    const { data: profile, error: profileError } = await supabase
+    // 2. profiles tablosundan kullanıcı bilgilerini al
+    const { data: userRecord, error: userError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile) {
-      console.warn('❌ Profile error or no profile:', profileError?.message)
+    if (userError || !userRecord) {
+      console.warn('❌ User record error or no user:', userError?.message)
       return false
     }
 
     // 3. Role kontrolü
-    const isAdmin = profile.role === 'admin'
-    console.log(`🔍 User role check: ${profile.role} → Admin: ${isAdmin}`)
+    const isAdmin = userRecord.role === 'admin'
+    console.log(`🔍 User role check: ${userRecord.role} → Admin: ${isAdmin}`)
     
     return isAdmin
 
@@ -64,18 +64,24 @@ export async function getUserProfile(): Promise<UserProfile | null> {
       return null
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: userRecord, error: userError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile) {
-      console.warn('❌ Profile fetch error:', profileError?.message)
+    if (userError || !userRecord) {
+      console.warn('❌ User record fetch error:', userError?.message)
       return null
     }
 
-    return profile as UserProfile
+    return {
+      id: userRecord.id,
+      full_name: userRecord.full_name,
+      role: userRecord.role || 'user',
+      phone: userRecord.phone,
+      status: userRecord.status
+    } as UserProfile
 
   } catch (error) {
     console.error('❌ Profile fetch error:', error)

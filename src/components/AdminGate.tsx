@@ -21,23 +21,23 @@ function AdminGate({ children }: Props) {
       
       if (session?.user) {
         // Check if user has admin role from profiles table
-        const { data: profile, error: profileError } = await supabase
+        const { data: userRecord, error: userError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
           .single()
 
-        if (profileError || !profile) {
-          console.log('🚫 Profile not found or error:', profileError?.message)
-          setError('Kullanıcı profili bulunamadı')
+        if (userError || !userRecord) {
+          console.log('🚫 User record not found or error:', userError?.message)
+          setError('Kullanıcı kaydı bulunamadı')
           await supabase.auth.signOut()
           return
         }
 
-        if (profile.role === 'admin') {
+        if (userRecord.role === 'admin') {
           setAuthenticated(true)
         } else {
-          console.log('🚫 User is not admin:', session.user.email, 'role:', profile.role)
+          console.log('🚫 User is not admin:', session.user.email, 'role:', userRecord.role)
           setError('Bu hesap admin yetkisine sahip değil')
           await supabase.auth.signOut()
         }
@@ -67,20 +67,20 @@ function AdminGate({ children }: Props) {
 
       if (data.user) {
         // Check admin role from profiles table
-        const { data: profile, error: profileError } = await supabase
+        const { data: userRecord, error: userError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)
           .single()
 
-        if (profileError || !profile) {
-          console.error('Profile fetch error:', profileError?.message)
-          setError('Kullanıcı profili bulunamadı')
+        if (userError || !userRecord) {
+          console.error('User record fetch error:', userError?.message)
+          setError('Kullanıcı kaydı bulunamadı')
           await supabase.auth.signOut()
           return
         }
 
-        if (profile.role === 'admin') {
+        if (userRecord.role === 'admin') {
           setAuthenticated(true)
           setError('')
         } else {

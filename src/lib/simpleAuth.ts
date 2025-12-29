@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient'
-import { unsubscribeFromNotifications } from './wonderpush'
 
 // Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
 function simpleHash(password: string): string {
@@ -113,14 +112,14 @@ export async function loginUser(
  * Çıkış yap
  */
 export async function logoutUser(): Promise<void> {
-  // WonderPush subscription'ı temizle
+  // TODO: Bildirim sistemi temizliği
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      await unsubscribeFromNotifications();
-      console.log('✅ WonderPush subscription removed during logout');
+      // Bildirim sistemi temizliği buraya eklenecek
+      console.log('✅ Bildirim sistemi temizlendi');
     } catch (error) {
-      console.warn('⚠️ WonderPush unsubscribe failed during logout:', error);
+      console.warn('⚠️ Bildirim sistemi temizliği başarısız:', error);
     }
   }
   

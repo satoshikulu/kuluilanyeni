@@ -4,6 +4,7 @@ import { registerUser } from '../lib/simpleAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import { toTitleCase } from '../lib/textUtils'
+import { subscribeToNotifications } from '../lib/oneSignal'
 
 function RegisterPage() {
   const navigate = useNavigate()
@@ -137,6 +138,24 @@ function RegisterPage() {
       const result = await registerUser(fullName, phone, password)
       
       if (result.success) {
+        // Kayıt başarılı olduğunda OneSignal'a kaydet (onay bekliyor durumunda)
+        try {
+          await subscribeToNotifications({
+            userId: phone, // Telefon numarasını user ID olarak kullan
+            phone: phone,
+            name: fullName,
+            properties: {
+              role: 'user',
+              status: 'pending', // Henüz onaylanmamış
+              registerDate: new Date().toISOString()
+            }
+          });
+          console.log('OneSignal subscription başarılı (pending user)');
+        } catch (notificationError) {
+          console.error('OneSignal subscription hatası:', notificationError);
+          // Bildirim hatası kayıt işlemini etkilemesin
+        }
+        
         setMessage(result.message || 'Kayıt başarılı! Admin onayından sonra giriş yapabilirsiniz.')
         setFullName('')
         setPhone('')

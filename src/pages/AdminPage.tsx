@@ -4,12 +4,11 @@ import AdminGate from '../components/AdminGate'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
 import { 
-  notifyUserApproved, 
-  notifyListingApproved, 
-  notifyOpportunityListing, 
-  notifyFeaturedListing,
-  sendCustomAnnouncement 
-} from '../lib/wonderpushNotifications'
+  sendOpportunityListingNotification, 
+  sendFeaturedListingNotification,
+  sendMembershipApprovedNotification,
+  sendListingApprovedNotification
+} from '../lib/oneSignalNotifications'
 
 type Listing = {
   id: string
@@ -77,21 +76,13 @@ function AdminPage() {
   const [page, setPage] = useState<number>(1)
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'notifications'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'users'>('listings')
   
   // User listings modal state
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [userListings, setUserListings] = useState<Listing[]>([])
   const [userListingsLoading, setUserListingsLoading] = useState(false)
   const [userListingsCounts, setUserListingsCounts] = useState<Record<string, { pending: number; approved: number; rejected: number }>>({})
-
-  // WonderPush notification form state
-  const [notificationForm, setNotificationForm] = useState({
-    title: '',
-    message: '',
-    deepLink: ''
-  })
-  const [sendingNotification, setSendingNotification] = useState(false)
 
   // Helpers
   function formatDate(ts?: string) {
@@ -112,7 +103,7 @@ function AdminPage() {
     try {
       // Initial load for users (static on mount)
       const { data: usersData, error: usersError } = await supabase
-        .from('users')
+        .from('users_min')
         .select('*')
         .order('created_at', { ascending: false })
       if (usersError) throw usersError
@@ -226,16 +217,18 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
-      // WonderPush bildirim gönder (sadece onaylanan ilanlar için)
-      if (decision === 'approved') {
-        const notificationSent = await notifyListingApproved(
-          listing?.title || 'İlan',
-          listing?.price_tl || 0,
-          listing?.owner_phone || ''
-        );
-        
-        if (!notificationSent) {
-          console.warn('⚠️ WonderPush bildirimi gönderilemedi');
+      // OneSignal bildirimi gönder (sadece onaylanan ilanlar için)
+      if (decision === 'approved' && listing) {
+        try {
+          await sendListingApprovedNotification(
+            listing.owner_phone,
+            listing.title,
+            listing.id
+          );
+          console.log('İlan onayı bildirimi gönderildi');
+        } catch (notificationError) {
+          console.error('Bildirim gönderme hatası:', notificationError);
+          // Bildirim hatası ana işlemi etkilemesin
         }
       }
       
@@ -243,7 +236,7 @@ function AdminPage() {
       setListings((prev) => prev.filter((l) => l.id !== id))
       
       // Başarı mesajı göster
-      alert(`✅ İlan ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}! Bildirim gönderildi.`)
+      alert(`✅ İlan ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}! ${decision === 'approved' ? 'Bildirim gönderildi.' : ''}`)
     } catch (e: any) {
       console.error('decide error:', e)
       // Hata mesajını göster
@@ -317,16 +310,17 @@ function AdminPage() {
         throw new Error(result.error || 'İşlem başarısız')
       }
       
-      // WonderPush bildirim gönder (sadece onaylanan kullanıcılar için)
+      // OneSignal bildirimi gönder (sadece onaylanan kullanıcılar için)
       if (decision === 'approved' && user) {
-        const notificationSent = await notifyUserApproved(
-          user.full_name || 'Kullanıcı',
-          user.phone,
-          user.id
-        );
-        
-        if (!notificationSent) {
-          console.warn('⚠️ WonderPush bildirimi gönderilemedi');
+        try {
+          await sendMembershipApprovedNotification(
+            user.phone,
+            user.full_name
+          );
+          console.log('Üyelik onayı bildirimi gönderildi');
+        } catch (notificationError) {
+          console.error('Bildirim gönderme hatası:', notificationError);
+          // Bildirim hatası ana işlemi etkilemesin
         }
       }
       
@@ -344,7 +338,7 @@ function AdminPage() {
         }
       }
       
-      alert(`✅ Kullanıcı ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}! Bildirim gönderildi.`)
+      alert(`✅ Kullanıcı ${decision === 'approved' ? 'onaylandı' : 'reddedildi'}! ${decision === 'approved' ? 'Bildirim gönderildi.' : ''}`)
     } catch (e: any) {
       console.error('decideUser error:', e)
       alert('Hata: ' + (e.message || 'Kullanıcı durumu güncellenemedi'))
@@ -395,7 +389,12 @@ function AdminPage() {
     }
   }
 
+  // TODO: Update this function to work with Supabase Auth password reset
   async function resetPassword(userId: string, phone: string) {
+    alert('⚠️ Şifre sıfırlama özelliği şu anda devre dışı.\nSupabase Auth entegrasyonu tamamlandıktan sonra aktif olacak.')
+    return
+    
+    /* OLD CODE - DISABLED
     const newPassword = prompt(`${phone} için yeni şifre girin:`)
     if (!newPassword) return
     
@@ -419,6 +418,7 @@ function AdminPage() {
     } catch (e: any) {
       alert('Hata: ' + (e.message || 'Şifre değiştirilemedi'))
     }
+    */
   }
 
   async function toggleFeatured(id: string, currentFeatured: boolean) {
@@ -431,20 +431,27 @@ function AdminPage() {
         .eq('id', id)
       if (error) throw error
       
-      // Eğer öne çıkarılıyorsa bildirim gönder
+      // OneSignal bildirimi gönder (sadece öne çıkarma işlemi için)
       if (!currentFeatured && listing) {
-        const notificationSent = await notifyFeaturedListing(
-          listing.title,
-          listing.price_tl || 0,
-          listing.neighborhood || 'Bilinmeyen'
-        );
-        
-        if (!notificationSent) {
-          console.warn('⚠️ WonderPush bildirimi gönderilemedi');
+        try {
+          await sendFeaturedListingNotification(
+            listing.title,
+            listing.price_tl || 0,
+            listing.neighborhood || 'Bilinmiyor',
+            listing.id
+          );
+          console.log('Öne çıkan ilan bildirimi gönderildi');
+        } catch (notificationError) {
+          console.error('Bildirim gönderme hatası:', notificationError);
+          // Bildirim hatası ana işlemi etkilemesin
         }
       }
       
       setListings((prev) => prev.map((l) => l.id === id ? { ...l, is_featured: !currentFeatured } : l))
+      
+      if (!currentFeatured) {
+        alert('✅ İlan öne çıkarıldı! Tüm kullanıcılara bildirim gönderildi.');
+      }
     } catch (e: any) {
       alert(e.message || 'Öne çıkarma durumu güncellenemedi')
     }
@@ -473,20 +480,27 @@ function AdminPage() {
         .eq('id', id)
       if (error) throw error
       
-      // Eğer fırsat ilanı yapılıyorsa bildirim gönder
+      // OneSignal bildirimi gönder (sadece fırsat yapma işlemi için)
       if (!currentOpportunity && listing) {
-        const notificationSent = await notifyOpportunityListing(
-          listing.title,
-          listing.price_tl || 0,
-          listing.neighborhood || 'Bilinmeyen'
-        );
-        
-        if (!notificationSent) {
-          console.warn('⚠️ WonderPush bildirimi gönderilemedi');
+        try {
+          await sendOpportunityListingNotification(
+            listing.title,
+            listing.price_tl || 0,
+            listing.neighborhood || 'Bilinmiyor',
+            listing.id
+          );
+          console.log('Fırsat ilanı bildirimi gönderildi');
+        } catch (notificationError) {
+          console.error('Bildirim gönderme hatası:', notificationError);
+          // Bildirim hatası ana işlemi etkilemesin
         }
       }
       
       setListings((prev) => prev.map((l) => l.id === id ? { ...l, is_opportunity: !currentOpportunity } : l))
+      
+      if (!currentOpportunity) {
+        alert('✅ İlan fırsat ilanı yapıldı! Tüm kullanıcılara bildirim gönderildi.');
+      }
     } catch (e: any) {
       alert(e.message || 'Fırsat ilan durumu güncellenemedi')
     }
@@ -526,38 +540,6 @@ function AdminPage() {
   }
 
 
-
-  // WonderPush notification submit handler
-  async function handleNotificationSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    
-    if (!notificationForm.title.trim() || !notificationForm.message.trim()) {
-      alert('Başlık ve mesaj alanları zorunludur');
-      return;
-    }
-    
-    setSendingNotification(true);
-    
-    try {
-      const success = await sendCustomAnnouncement(
-        notificationForm.title.trim(),
-        notificationForm.message.trim(),
-        notificationForm.deepLink.trim() || undefined
-      );
-      
-      if (success) {
-        alert('✅ Bildirim başarıyla gönderildi!');
-        setNotificationForm({ title: '', message: '', deepLink: '' });
-      } else {
-        alert('❌ Bildirim gönderilemedi. Lütfen tekrar deneyin.');
-      }
-    } catch (error) {
-      console.error('Notification send error:', error);
-      alert('❌ Bildirim gönderilirken hata oluştu: ' + (error as any)?.message);
-    } finally {
-      setSendingNotification(false);
-    }
-  }
 
   async function loadUserListings(userId: string, phone: string) {
     setSelectedUserId(userId)
@@ -728,18 +710,6 @@ function AdminPage() {
                   {pendingUsers.length}
                 </span>
               )}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
-              activeTab === 'notifications'
-                ? 'bg-white text-blue-600 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              🔔 Bildirimler
             </span>
           </button>
         </div>
@@ -1167,115 +1137,6 @@ function AdminPage() {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Bildirimler Tab */}
-      {activeTab === 'notifications' && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Bildirim Yönetimi</h2>
-          
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">🔔 Genel Duyuru Gönder</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Tüm kullanıcılara WonderPush üzerinden bildirim gönderin. Bildirim anında tüm aktif kullanıcılara ulaşacaktır.
-              </p>
-            </div>
-
-            <form onSubmit={handleNotificationSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Başlık *
-                </label>
-                <input
-                  type="text"
-                  value={notificationForm.title}
-                  onChange={(e) => setNotificationForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors"
-                  placeholder="Örn: Yeni Fırsat İlanları!"
-                  maxLength={50}
-                  required
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {notificationForm.title.length}/50 karakter
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mesaj *
-                </label>
-                <textarea
-                  value={notificationForm.message}
-                  onChange={(e) => setNotificationForm(prev => ({ ...prev, message: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors"
-                  placeholder="Örn: Kulu'da yeni fırsat ilanları yayında! Hemen inceleyin ve kaçırmayın."
-                  rows={4}
-                  maxLength={200}
-                  required
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {notificationForm.message.length}/200 karakter
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Yönlendirme Linki (İsteğe Bağlı)
-                </label>
-                <input
-                  type="text"
-                  value={notificationForm.deepLink}
-                  onChange={(e) => setNotificationForm(prev => ({ ...prev, deepLink: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors"
-                  placeholder="Örn: /firsatlar veya /ilanlar"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  Kullanıcılar bildirime tıkladığında yönlendirilecek sayfa
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
-                <button
-                  type="submit"
-                  disabled={sendingNotification || !notificationForm.title.trim() || !notificationForm.message.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
-                >
-                  {sendingNotification ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                      </svg>
-                      Gönderiliyor...
-                    </span>
-                  ) : (
-                    '🚀 Bildirimi Gönder'
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setNotificationForm({ title: '', message: '', deepLink: '' })}
-                  className="px-4 py-3 text-gray-600 font-medium rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  🗑️ Temizle
-                </button>
-              </div>
-            </form>
-
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2">💡 Bildirim İpuçları</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Başlık kısa ve dikkat çekici olmalı (max 50 karakter)</li>
-                <li>• Mesaj net ve anlaşılır olmalı (max 200 karakter)</li>
-                <li>• Yönlendirme linki "/" ile başlamalı (örn: /firsatlar)</li>
-                <li>• Bildirimler anında tüm aktif kullanıcılara gönderilir</li>
-                <li>• Otomatik bildirimler: İlan onayı, üye onayı, fırsat ilanları</li>
-              </ul>
-            </div>
-          </div>
         </div>
       )}
       </div>

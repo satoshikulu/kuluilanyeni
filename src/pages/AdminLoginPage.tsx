@@ -22,14 +22,14 @@ function AdminLoginPage() {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        // Admin kontrolü yap
-        const { data: profile } = await supabase
+        // Admin kontrolü yap - profiles tablosundan
+        const { data: userRecord } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single()
         
-        if (profile?.role === 'admin') {
+        if (userRecord?.role === 'admin') {
           navigate('/admin')
         }
       }
@@ -60,20 +60,20 @@ function AdminLoginPage() {
         return
       }
 
-      // 2. Admin kontrolü yap
-      const { data: profile, error: profileError } = await supabase
+      // 2. Admin kontrolü yap - profiles tablosundan
+      const { data: userRecord, error: userError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single()
 
-      if (profileError || !profile) {
-        setError('Kullanıcı profili bulunamadı')
+      if (userError || !userRecord) {
+        setError('Kullanıcı kaydı bulunamadı')
         await supabase.auth.signOut()
         return
       }
 
-      if (profile.role !== 'admin') {
+      if (userRecord.role !== 'admin') {
         setError('Bu sayfaya erişim yetkiniz yok')
         await supabase.auth.signOut()
         return

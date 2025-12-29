@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { loginUser } from '../lib/simpleAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
-import { subscribeToNotifications } from '../lib/wonderpush'
+import { subscribeToNotifications } from '../lib/oneSignal'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -20,19 +20,26 @@ function LoginPage() {
     checkCurrentSession()
   }, [])
 
-  // WonderPush Setup - Supabase Session için
+  // OneSignal bildirim entegrasyonu
   useEffect(() => {
     if (currentUser) {
-      // Kullanıcı giriş yaptığında WonderPush'a subscribe et
+      // Kullanıcı giriş yaptığında OneSignal'a kaydet
       subscribeToNotifications({
-        userId: currentUser.email || currentUser.phone,
-        phone: currentUser.phone,
-        name: currentUser.user_metadata?.role || 'Kullanıcı',
+        userId: currentUser.email || currentUser.phone || '',
+        phone: currentUser.phone || '',
+        email: currentUser.email || '',
+        name: currentUser.user_metadata?.full_name || 'Kullanıcı',
         properties: {
           role: currentUser.user_metadata?.role || 'user',
           loginDate: new Date().toISOString()
         }
-      }).catch(console.error);
+      }).then(success => {
+        if (success) {
+          console.log('OneSignal subscription başarılı');
+        }
+      }).catch(error => {
+        console.error('OneSignal subscription hatası:', error);
+      });
     }
   }, [currentUser])
 
@@ -74,23 +81,7 @@ function LoginPage() {
       if (result.success && result.user) {
         console.log("✅ Login başarılı");
         
-        // WonderPush'a kullanıcıyı subscribe et
-        try {
-          await subscribeToNotifications({
-            userId: result.user.id,
-            phone: result.user.phone,
-            name: result.user.full_name || 'Kullanıcı',
-            properties: {
-              role: 'user',
-              loginDate: new Date().toISOString(),
-              status: result.user.status
-            }
-          });
-          console.log("🔔 WonderPush subscription completed");
-        } catch (pushError) {
-          console.warn("⚠️ WonderPush subscription failed:", pushError);
-          // Push notification hatası login'i engellemez
-        }
+        // TODO: Bildirim sistemi entegrasyonu
         
         // Ana sayfaya yönlendir
         console.log("🔄 Ana sayfaya yönlendiriliyor...");

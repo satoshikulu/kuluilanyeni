@@ -391,6 +391,7 @@ function AdminPage() {
 
   // TODO: Update this function to work with Supabase Auth password reset
   async function resetPassword(userId: string, phone: string) {
+    console.log('Reset password for user:', userId, phone);
     alert('⚠️ Şifre sıfırlama özelliği şu anda devre dışı.\nSupabase Auth entegrasyonu tamamlandıktan sonra aktif olacak.')
     return
     

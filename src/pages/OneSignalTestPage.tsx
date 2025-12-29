@@ -13,8 +13,7 @@ import {
   sendNotificationToUser,
   sendMembershipApprovedNotification,
   sendOpportunityListingNotification,
-  sendFeaturedListingNotification,
-  sendListingApprovedNotification
+  sendFeaturedListingNotification
 } from '../lib/oneSignalNotifications';
 
 function OneSignalTestPage() {

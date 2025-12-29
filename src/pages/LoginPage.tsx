@@ -28,7 +28,7 @@ function LoginPage() {
         userId: currentUser.email || currentUser.phone || '',
         phone: currentUser.phone || '',
         email: currentUser.email || '',
-        name: currentUser.user_metadata?.full_name || 'Kullanıcı',
+        name: (currentUser.user_metadata as any)?.full_name || 'Kullanıcı',
         properties: {
           role: currentUser.user_metadata?.role || 'user',
           loginDate: new Date().toISOString()

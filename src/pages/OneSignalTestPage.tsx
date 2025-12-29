@@ -9,11 +9,10 @@ import {
   getNotificationPermission 
 } from '../lib/oneSignal';
 import { 
-  sendNotificationToAll,
-  sendNotificationToUser,
-  sendMembershipApprovedNotification,
-  sendOpportunityListingNotification,
-  sendFeaturedListingNotification
+  sendOneSignalNotification,
+  subscribeUserToOneSignal,
+  bulkSubscribeUsersToOneSignal,
+  OneSignalNotificationTemplates
 } from '../lib/oneSignalNotifications';
 
 function OneSignalTestPage() {
@@ -89,11 +88,11 @@ function OneSignalTestPage() {
   const handleSendToAll = async () => {
     try {
       updateStatus('Tüm kullanıcılara bildirim gönderiliyor...');
-      const success = await sendNotificationToAll({
+      const success = await sendOneSignalNotification({
         title: testForm.title,
         message: testForm.message,
-        deepLink: testForm.deepLink,
-        targetType: 'all'
+        targetType: 'all',
+        url: testForm.deepLink
       });
       
       if (success) {
@@ -108,12 +107,13 @@ function OneSignalTestPage() {
 
   const handleSendToUser = async () => {
     try {
-      updateStatus(`${testForm.phone} numarasına bildirim gönderiliyor...`);
-      const success = await sendNotificationToUser(testForm.phone, {
+      updateStatus(`Test kullanıcısına bildirim gönderiliyor...`);
+      const success = await sendOneSignalNotification({
         title: testForm.title,
         message: testForm.message,
-        deepLink: testForm.deepLink,
-        targetType: 'user'
+        targetType: 'user',
+        targetValue: 'test-user-123', // Test user ID
+        url: testForm.deepLink
       });
       
       if (success) {
@@ -129,7 +129,8 @@ function OneSignalTestPage() {
   const handleSendMembershipApproved = async () => {
     try {
       updateStatus('Üyelik onayı bildirimi gönderiliyor...');
-      const success = await sendMembershipApprovedNotification(testForm.phone, 'Test Kullanıcı');
+      const template = OneSignalNotificationTemplates.userApproved('Test Kullanıcı', 'test-user-123');
+      const success = await sendOneSignalNotification(template);
       
       if (success) {
         updateStatus('✅ Üyelik onayı bildirimi gönderildi!');
@@ -144,12 +145,13 @@ function OneSignalTestPage() {
   const handleSendOpportunity = async () => {
     try {
       updateStatus('Fırsat ilanı bildirimi gönderiliyor...');
-      const success = await sendOpportunityListingNotification(
+      const template = OneSignalNotificationTemplates.opportunityListing(
         'Test Fırsat İlanı',
         250000,
         'Merkez',
         'test-123'
       );
+      const success = await sendOneSignalNotification(template);
       
       if (success) {
         updateStatus('✅ Fırsat ilanı bildirimi gönderildi!');
@@ -164,17 +166,36 @@ function OneSignalTestPage() {
   const handleSendFeatured = async () => {
     try {
       updateStatus('Öne çıkan ilan bildirimi gönderiliyor...');
-      const success = await sendFeaturedListingNotification(
+      const template = OneSignalNotificationTemplates.featuredListing(
         'Test Öne Çıkan İlan',
         350000,
         'Yeni Mahalle',
         'test-456'
       );
+      const success = await sendOneSignalNotification(template);
       
       if (success) {
         updateStatus('✅ Öne çıkan ilan bildirimi gönderildi!');
       } else {
         updateStatus('❌ Öne çıkan ilan bildirimi gönderilemedi!');
+      }
+    } catch (error) {
+      updateStatus('❌ Hata: ' + (error as any)?.message);
+    }
+  };
+
+  const handleBulkSubscribe = async () => {
+    try {
+      updateStatus('Toplu abonelik işlemi başlatılıyor...');
+      const result = await bulkSubscribeUsersToOneSignal();
+      
+      if (result.success) {
+        updateStatus(`✅ Toplu abonelik tamamlandı!`);
+        if (result.results) {
+          updateStatus(`📊 Toplam: ${result.results.total}, Başarılı: ${result.results.successful}, Başarısız: ${result.results.failed}`);
+        }
+      } else {
+        updateStatus('❌ Toplu abonelik başarısız!');
       }
     } catch (error) {
       updateStatus('❌ Hata: ' + (error as any)?.message);
@@ -361,6 +382,13 @@ function OneSignalTestPage() {
                 className="w-full px-4 py-3 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 transition-colors"
               >
                 ⭐ Öne Çıkan İlan
+              </button>
+
+              <button
+                onClick={handleBulkSubscribe}
+                className="w-full px-4 py-3 bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-700 transition-colors"
+              >
+                👥 Toplu Abonelik
               </button>
 
               <div className="p-4 bg-gray-50 rounded-lg">

@@ -1,246 +1,197 @@
-// OneSignal REST API ile bildirim gönderme
+// OneSignal Notification Management via Supabase Edge Functions
+import { supabase } from './supabaseClient';
 
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || '2c4e9ae5-6554-448c-8016-5d5a1894755a';
-const ONESIGNAL_AUTH_KEY = import.meta.env.VITE_ONESIGNAL_AUTH_KEY || 'os_v2_app_frhjvzlfkrcizaawlvnbrfdvlicd2tdk3vpunt46wftlkso24yevrm2he7euenxjvqncdthm2nrywgwc4awij6s7f3bkpiinbhqookq';
-
-export interface NotificationData {
+export interface OneSignalNotificationPayload {
   title: string;
   message: string;
-  deepLink?: string;
-  targetType: 'all' | 'user' | 'phone' | 'tag';
-  targetValue?: string;
-  icon?: string;
-  image?: string;
+  targetType: 'all' | 'user' | 'segment';
+  targetValue?: string; // user ID or segment name
+  url?: string; // deep link
+  imageUrl?: string;
   data?: Record<string, any>;
 }
 
-// Tüm kullanıcılara bildirim gönder
-export async function sendNotificationToAll(notification: NotificationData): Promise<boolean> {
+export interface OneSignalSubscriptionData {
+  userId: string;
+  playerId?: string; // OneSignal player ID from frontend
+  email?: string;
+  phone?: string;
+  tags?: Record<string, string>;
+}
+
+// Send OneSignal notification via Supabase Edge Function
+export async function sendOneSignalNotification(payload: OneSignalNotificationPayload): Promise<boolean> {
   try {
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_AUTH_KEY}`
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        included_segments: ['All'],
-        headings: { tr: notification.title },
-        contents: { tr: notification.message },
-        url: notification.deepLink || window.location.origin,
-        chrome_web_icon: notification.icon || '/icon-192x192.png',
-        chrome_web_image: notification.image,
-        data: notification.data || {}
-      })
+    console.log('Sending OneSignal notification:', payload);
+
+    const { data, error } = await supabase.functions.invoke('send-onesignal-notification', {
+      body: payload
     });
 
-    const result = await response.json();
-    
-    if (response.ok) {
-      console.log('OneSignal bildirim gönderildi:', result);
-      return true;
-    } else {
-      console.error('OneSignal bildirim hatası:', result);
+    if (error) {
+      console.error('Supabase function error:', error);
       return false;
     }
+
+    console.log('Notification sent successfully:', data);
+    return true;
   } catch (error) {
-    console.error('OneSignal API hatası:', error);
+    console.error('Error sending OneSignal notification:', error);
     return false;
   }
 }
 
-// Belirli kullanıcıya bildirim gönder (telefon numarasına göre)
-export async function sendNotificationToUser(phone: string, notification: NotificationData): Promise<boolean> {
+// Subscribe user to OneSignal via Supabase Edge Function
+export async function subscribeUserToOneSignal(subscriptionData: OneSignalSubscriptionData): Promise<boolean> {
   try {
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_AUTH_KEY}`
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        filters: [
-          { field: 'tag', key: 'phone', relation: '=', value: phone }
-        ],
-        headings: { tr: notification.title },
-        contents: { tr: notification.message },
-        url: notification.deepLink || window.location.origin,
-        chrome_web_icon: notification.icon || '/icon-192x192.png',
-        chrome_web_image: notification.image,
-        data: notification.data || {}
-      })
+    console.log('Subscribing user to OneSignal:', subscriptionData);
+
+    const { data, error } = await supabase.functions.invoke('onesignal-subscribe', {
+      body: subscriptionData
     });
 
-    const result = await response.json();
-    
-    if (response.ok) {
-      console.log('OneSignal kullanıcı bildirimi gönderildi:', result);
-      return true;
-    } else {
-      console.error('OneSignal kullanıcı bildirimi hatası:', result);
+    if (error) {
+      console.error('Supabase function error:', error);
       return false;
     }
+
+    console.log('User subscribed successfully:', data);
+    return true;
   } catch (error) {
-    console.error('OneSignal API hatası:', error);
+    console.error('Error subscribing user to OneSignal:', error);
     return false;
   }
 }
 
-// Tag'e göre bildirim gönder
-export async function sendNotificationToTag(tagKey: string, tagValue: string, notification: NotificationData): Promise<boolean> {
+// Bulk subscribe all existing users to OneSignal
+export async function bulkSubscribeUsersToOneSignal(): Promise<{ success: boolean; results?: any }> {
   try {
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_AUTH_KEY}`
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        filters: [
-          { field: 'tag', key: tagKey, relation: '=', value: tagValue }
-        ],
-        headings: { tr: notification.title },
-        contents: { tr: notification.message },
-        url: notification.deepLink || window.location.origin,
-        chrome_web_icon: notification.icon || '/icon-192x192.png',
-        chrome_web_image: notification.image,
-        data: notification.data || {}
-      })
+    console.log('Starting bulk subscription to OneSignal...');
+
+    const { data, error } = await supabase.functions.invoke('bulk-onesignal-subscribe', {
+      body: {}
     });
 
-    const result = await response.json();
-    
-    if (response.ok) {
-      console.log('OneSignal tag bildirimi gönderildi:', result);
-      return true;
-    } else {
-      console.error('OneSignal tag bildirimi hatası:', result);
-      return false;
+    if (error) {
+      console.error('Supabase function error:', error);
+      return { success: false };
     }
+
+    console.log('Bulk subscription completed:', data);
+    return { success: true, results: data.results };
   } catch (error) {
-    console.error('OneSignal API hatası:', error);
-    return false;
+    console.error('Error in bulk subscription:', error);
+    return { success: false };
   }
 }
 
-// Bildirim şablonları
-export const NotificationTemplates = {
-  // Üyelik onayı bildirimi
-  membershipApproved: (userName: string): NotificationData => ({
-    title: '🎉 Üyeliğiniz Onaylandı!',
-    message: `Tebrikler ${userName}! Üyeliğiniz onaylanmıştır. Artık ilan verebilirsiniz.`,
-    deepLink: '/ilanlarim',
+// Predefined notification templates
+export const OneSignalNotificationTemplates = {
+  // User registration approved
+  userApproved: (userName: string, userId: string): OneSignalNotificationPayload => ({
+    title: '🎉 Hoş Geldiniz!',
+    message: `Merhaba ${userName}! Üyeliğiniz onaylandı. Artık ilan verebilir ve favorilerinizi takip edebilirsiniz.`,
     targetType: 'user',
-    icon: '/icon-192x192.png',
-    data: { type: 'membership_approved' }
+    targetValue: userId,
+    url: '/profile',
+    data: { type: 'user_approved', userId }
   }),
 
-  // Favori ilan fiyat değişikliği
-  favoriteListingPriceChanged: (listingTitle: string, oldPrice: number, newPrice: number, listingId: string): NotificationData => ({
-    title: '💰 Favori İlanınızın Fiyatı Değişti!',
-    message: `${listingTitle} - Fiyat: ${oldPrice.toLocaleString('tr-TR')}₺ → ${newPrice.toLocaleString('tr-TR')}₺`,
-    deepLink: `/ilan/${listingId}`,
-    targetType: 'tag',
-    icon: '/icon-192x192.png',
-    data: { 
-      type: 'favorite_price_changed',
-      listing_id: listingId,
-      old_price: oldPrice,
-      new_price: newPrice
-    }
-  }),
-
-  // Fırsat ilanı bildirimi
-  opportunityListing: (listingTitle: string, price: number, neighborhood: string, listingId: string): NotificationData => ({
-    title: '🔥 Yeni Fırsat İlanı!',
-    message: `${listingTitle} - ${price.toLocaleString('tr-TR')}₺ - ${neighborhood}`,
-    deepLink: `/ilan/${listingId}`,
-    targetType: 'all',
-    icon: '/icon-192x192.png',
-    data: { 
-      type: 'opportunity_listing',
-      listing_id: listingId
-    }
-  }),
-
-  // Öne çıkan ilan bildirimi
-  featuredListing: (listingTitle: string, price: number, neighborhood: string, listingId: string): NotificationData => ({
-    title: '⭐ Öne Çıkan İlan!',
-    message: `${listingTitle} - ${price.toLocaleString('tr-TR')}₺ - ${neighborhood}`,
-    deepLink: `/ilan/${listingId}`,
-    targetType: 'all',
-    icon: '/icon-192x192.png',
-    data: { 
-      type: 'featured_listing',
-      listing_id: listingId
-    }
-  }),
-
-  // İlan onaylandı bildirimi
-  listingApproved: (listingTitle: string, listingId: string): NotificationData => ({
-    title: '✅ İlanınız Onaylandı!',
-    message: `"${listingTitle}" ilanınız onaylanmış ve yayınlanmıştır.`,
-    deepLink: `/ilan/${listingId}`,
+  // Listing approved
+  listingApproved: (listingTitle: string, listingId: string, userId: string): OneSignalNotificationPayload => ({
+    title: '✅ İlanınız Yayında!',
+    message: `"${listingTitle}" ilanınız onaylandı ve yayına alındı.`,
     targetType: 'user',
-    icon: '/icon-192x192.png',
-    data: { 
-      type: 'listing_approved',
-      listing_id: listingId
-    }
-  })
+    targetValue: userId,
+    url: `/ilan/${listingId}`,
+    data: { type: 'listing_approved', listingId, userId }
+  }),
+
+  // Price drop notification (for users who favorited the listing)
+  priceDrop: (listingTitle: string, oldPrice: number, newPrice: number, listingId: string): OneSignalNotificationPayload => ({
+    title: '💰 Fiyat Düştü!',
+    message: `Favorinizdeki "${listingTitle}" ilanının fiyatı ${oldPrice}₺'den ${newPrice}₺'ye düştü!`,
+    targetType: 'segment',
+    targetValue: `listing-${listingId}-favorites`,
+    url: `/ilan/${listingId}`,
+    data: { type: 'price_drop', listingId, oldPrice, newPrice }
+  }),
+
+  // New message notification
+  newMessage: (senderName: string, messagePreview: string, userId: string): OneSignalNotificationPayload => ({
+    title: '💬 Yeni Mesaj',
+    message: `${senderName}: ${messagePreview}`,
+    targetType: 'user',
+    targetValue: userId,
+    url: '/messages',
+    data: { type: 'new_message', senderName }
+  }),
+
+  // Opportunity listing (to all users)
+  opportunityListing: (listingTitle: string, price: number, neighborhood: string, listingId: string): OneSignalNotificationPayload => ({
+    title: '🔥 Fırsat İlanı!',
+    message: `${neighborhood}'da ${price}₺ - ${listingTitle}`,
+    targetType: 'all',
+    url: `/ilan/${listingId}`,
+    data: { type: 'opportunity_listing', listingId, price, neighborhood }
+  }),
+
+  // Featured listing (to all users)
+  featuredListing: (listingTitle: string, price: number, neighborhood: string, listingId: string): OneSignalNotificationPayload => ({
+    title: '⭐ Öne Çıkan İlan',
+    message: `${neighborhood}'da ${price}₺ - ${listingTitle}`,
+    targetType: 'all',
+    url: `/ilan/${listingId}`,
+    data: { type: 'featured_listing', listingId, price, neighborhood }
+  }),
+
+  // General announcement (to all users)
+  announcement: (title: string, message: string, url?: string): OneSignalNotificationPayload => ({
+    title,
+    message,
+    targetType: 'all',
+    url: url || '/',
+    data: { type: 'announcement' }
+  }),
+
+  // Welcome notification for new users
+  welcome: (userName: string, userId: string): OneSignalNotificationPayload => ({
+    title: '👋 Kulu İlan\'a Hoş Geldiniz!',
+    message: `Merhaba ${userName}! Kulu'nun en büyük emlak platformuna katıldınız. Hemen keşfetmeye başlayın!`,
+    targetType: 'user',
+    targetValue: userId,
+    url: '/ilanlar',
+    data: { type: 'welcome', userId }
+  }),
 };
 
-// Kolay kullanım fonksiyonları
-export async function sendMembershipApprovedNotification(phone: string, userName: string): Promise<boolean> {
-  const notification = NotificationTemplates.membershipApproved(userName);
-  return await sendNotificationToUser(phone, notification);
-}
+// Get notification statistics
+export async function getNotificationStats(days: number = 7) {
+  try {
+    const { data, error } = await supabase
+      .from('notification_logs')
+      .select('success, created_at, type, target_type')
+      .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
 
-export async function sendFavoriteListingPriceChangedNotification(
-  userPhones: string[], 
-  listingTitle: string, 
-  oldPrice: number, 
-  newPrice: number, 
-  listingId: string
-): Promise<boolean> {
-  const notification = NotificationTemplates.favoriteListingPriceChanged(listingTitle, oldPrice, newPrice, listingId);
-  
-  // Her kullanıcıya ayrı ayrı gönder
-  const results = await Promise.all(
-    userPhones.map(phone => sendNotificationToUser(phone, notification))
-  );
-  
-  return results.every(result => result);
-}
+    if (error) throw error;
 
-export async function sendOpportunityListingNotification(
-  listingTitle: string, 
-  price: number, 
-  neighborhood: string, 
-  listingId: string
-): Promise<boolean> {
-  const notification = NotificationTemplates.opportunityListing(listingTitle, price, neighborhood, listingId);
-  return await sendNotificationToAll(notification);
-}
+    const stats = {
+      total: data.length,
+      successful: data.filter(n => n.success).length,
+      failed: data.filter(n => !n.success).length,
+      byType: data.reduce((acc, n) => {
+        acc[n.type] = (acc[n.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      byTargetType: data.reduce((acc, n) => {
+        acc[n.target_type] = (acc[n.target_type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    };
 
-export async function sendFeaturedListingNotification(
-  listingTitle: string, 
-  price: number, 
-  neighborhood: string, 
-  listingId: string
-): Promise<boolean> {
-  const notification = NotificationTemplates.featuredListing(listingTitle, price, neighborhood, listingId);
-  return await sendNotificationToAll(notification);
-}
-
-export async function sendListingApprovedNotification(
-  phone: string, 
-  listingTitle: string, 
-  listingId: string
-): Promise<boolean> {
-  const notification = NotificationTemplates.listingApproved(listingTitle, listingId);
-  return await sendNotificationToUser(phone, notification);
+    return stats;
+  } catch (error) {
+    console.error('Error getting notification stats:', error);
+    return null;
+  }
 }

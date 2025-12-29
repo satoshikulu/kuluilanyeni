@@ -49,11 +49,9 @@ const router = createBrowserRouter([
   },
 ])
 
-// Web Push notifications are handled by the service worker
-// No need for foreground message listener as service worker handles all notifications);
-
-// PWA Service Worker otomatik olarak vite-plugin-pwa tarafından yönetiliyor
-// Manuel kayıt yapmaya gerek yok
+// Web Push notifications are handled by OneSignal service worker
+// PWA Service Worker DEVRE DIŞI - OneSignal çakışmasını önlemek için
+// Manuel kayıt yapmıyoruz - sadece OneSignal SW aktif
 
 // Global PWA Install Prompt Handler
 let deferredPrompt: unknown = null;

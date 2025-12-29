@@ -41,11 +41,11 @@ export async function initOneSignal(): Promise<boolean> {
       }
     }, 100);
 
-    // 10 saniye timeout
+    // 15 saniye timeout (daha uzun süre)
     setTimeout(() => {
       clearInterval(checkInterval);
       resolve(false);
-    }, 10000);
+    }, 15000);
   });
 }
 
@@ -55,6 +55,14 @@ export async function subscribeToNotifications(user: OneSignalUser): Promise<boo
     const ready = await initOneSignal();
     if (!ready) {
       console.error('OneSignal yüklenemedi');
+      return false;
+    }
+
+    // Önce bildirim izni iste
+    const permission = await window.OneSignal.Notifications.requestPermission();
+    
+    if (!permission) {
+      console.log('Kullanıcı bildirim iznini reddetti');
       return false;
     }
 
@@ -76,16 +84,13 @@ export async function subscribeToNotifications(user: OneSignalUser): Promise<boo
       await window.OneSignal.User.addTags(user.properties);
     }
 
-    // Bildirim izni iste
-    const permission = await window.OneSignal.Notifications.requestPermission();
-    
     console.log('OneSignal subscription başarılı:', {
       permission,
       userId: user.userId,
       phone: user.phone
     });
 
-    return permission;
+    return true;
   } catch (error) {
     console.error('OneSignal subscription hatası:', error);
     return false;

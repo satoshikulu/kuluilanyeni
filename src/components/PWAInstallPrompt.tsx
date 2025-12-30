@@ -105,79 +105,75 @@ function PWAInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-slide-up">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 max-w-sm relative overflow-hidden">
-        {/* Close button */}
-        <button
-          onClick={handleDismiss}
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1"
-        >
-          <X className="w-4 h-4" />
-        </button>
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 animate-fadeIn" />
+      
+      {/* Centered Modal - Compact Size */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4 max-w-sm w-full relative animate-slideUp">
+          {/* Close button */}
+          <button
+            onClick={handleDismiss}
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+          >
+            <X className="w-4 h-4" />
+          </button>
 
-        {/* Content */}
-        <div className="flex items-center gap-3">
-          {/* Logo */}
-          <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg relative overflow-hidden">
-              {/* House icon using CSS */}
-              <div className="relative">
-                {/* House roof */}
-                <div className="w-6 h-4 relative">
-                  <div className="absolute inset-0 bg-white transform rotate-45 origin-bottom-left" 
-                       style={{clipPath: 'polygon(0 100%, 100% 0, 100% 100%)'}}></div>
-                  <div className="absolute top-1 right-1 w-2 h-2 bg-white rounded-sm"></div>
-                </div>
-                {/* House base */}
-                <div className="w-5 h-3 bg-white rounded-sm mt-1 relative">
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-2 bg-orange-500 rounded-t-sm"></div>
-                </div>
-                {/* Key symbol */}
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-                  <div className="w-1 h-3 bg-white rounded-full"></div>
-                  <div className="w-2 h-1 bg-white rounded-full -mt-1"></div>
-                </div>
-              </div>
+          {/* Header with Logo */}
+          <div className="text-center mb-4">
+            {/* App Icon */}
+            <div className="w-16 h-16 mx-auto mb-3 relative">
+              <img 
+                src="/icon-192x192.png" 
+                alt="Kulu İlan Logo" 
+                className="w-full h-full rounded-2xl shadow-lg"
+                onError={(e) => {
+                  // Fallback to public folder if dist version not found
+                  e.currentTarget.src = '/icon-192x192.png';
+                }}
+              />
             </div>
+
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Kulu İlan</h2>
+            <p className="text-xs text-gray-600">Ana Ekrana Ekle</p>
           </div>
 
-          {/* Text content */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 text-sm mb-1">Kulu İlan</h3>
+          {/* Simple Instructions */}
+          <div className="mb-4">
             {isIOS ? (
-              <p className="text-xs text-gray-600 leading-relaxed mb-2">
-                Safari'de <span className="font-medium">Paylaş</span> → <span className="font-medium">Ana Ekrana Ekle</span>
-              </p>
-            ) : (
-              <p className="text-xs text-gray-600 leading-relaxed mb-2">
-                Hızlı erişim için ana ekrana ekle
-              </p>
+              <div className="bg-blue-50 rounded-xl p-3">
+                <p className="text-sm font-medium text-blue-900 mb-2">📱 Safari'de:</p>
+                <div className="text-xs text-blue-800 space-y-1">
+                  <p>1. Paylaş ⬆️ butonuna tıklayın</p>
+                  <p>2. "Ana Ekrana Ekle" seçin</p>
+                  <p>3. "Ekle" butonuna tıklayın</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            {!isIOS && (
+              <button
+                onClick={handleInstallClick}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                <Download className="w-4 h-4" />
+                Yükle
+              </button>
             )}
-            
-            {/* Action button */}
             <button
-              onClick={handleInstallClick}
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+              onClick={handleDismiss}
+              className={`${isIOS ? 'flex-1' : ''} px-4 py-2.5 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors rounded-xl hover:bg-gray-50 border border-gray-200`}
             >
-              {isIOS ? (
-                <>
-                  <span className="text-xs">📱</span>
-                  Anladım
-                </>
-              ) : (
-                <>
-                  <Download className="w-3 h-3" />
-                  Yükle
-                </>
-              )}
+              {isIOS ? 'Anladım' : 'Şimdi Değil'}
             </button>
           </div>
         </div>
-
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/20 to-transparent pointer-events-none rounded-2xl"></div>
       </div>
-    </div>
+    </>
   );
 }
 

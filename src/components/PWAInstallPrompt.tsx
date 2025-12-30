@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Smartphone, Share } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -20,9 +20,8 @@ function PWAInstallPrompt() {
     // Check if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInWebAppiOS = (window.navigator as any).standalone === true;
-    const isInWebAppChrome = window.matchMedia('(display-mode: standalone)').matches;
     
-    if (isStandalone || isInWebAppiOS || isInWebAppChrome) {
+    if (isStandalone || isInWebAppiOS) {
       setIsInstalled(true);
       return;
     }
@@ -44,7 +43,6 @@ function PWAInstallPrompt() {
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
-      console.log('PWA was installed');
     };
 
     // For iOS, show manual install instructions after delay
@@ -65,7 +63,9 @@ function PWAInstallPrompt() {
 
   const handleInstallClick = async () => {
     if (isIOS) {
-      // iOS manual install instructions - don't close modal
+      // For iOS, just close the prompt as instructions are shown
+      setShowPrompt(false);
+      sessionStorage.setItem('pwa-prompt-dismissed', 'true');
       return;
     }
 
@@ -75,139 +75,109 @@ function PWAInstallPrompt() {
       await deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
       
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      
       setDeferredPrompt(null);
       setShowPrompt(false);
+      
+      if (choiceResult.outcome === 'accepted') {
+        sessionStorage.setItem('pwa-installed', 'true');
+      } else {
+        sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+      }
     } catch (error) {
       console.error('Error during PWA installation:', error);
+      setShowPrompt(false);
     }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Don't show again for this session
     sessionStorage.setItem('pwa-prompt-dismissed', 'true');
   };
 
-  // Don't show if already installed or dismissed this session
+  // Don't show if already installed, dismissed, or not ready
   if (isInstalled || !showPrompt) {
     return null;
   }
 
   // Don't show if dismissed this session
-  if (sessionStorage.getItem('pwa-prompt-dismissed')) {
+  if (sessionStorage.getItem('pwa-prompt-dismissed') || sessionStorage.getItem('pwa-installed')) {
     return null;
   }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 animate-fadeIn" />
-      
-      {/* iPhone Style Modal */}
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-96">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden animate-slideUp">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-8 text-center">
-            <div className="w-16 h-16 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-              <Smartphone className="w-8 h-8 text-blue-600" />
+    <div className="fixed bottom-4 right-4 z-50 animate-slide-up">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 max-w-sm relative overflow-hidden">
+        {/* Close button */}
+        <button
+          onClick={handleDismiss}
+          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Content */}
+        <div className="flex items-center gap-3">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg relative overflow-hidden">
+              {/* House icon using CSS */}
+              <div className="relative">
+                {/* House roof */}
+                <div className="w-6 h-4 relative">
+                  <div className="absolute inset-0 bg-white transform rotate-45 origin-bottom-left" 
+                       style={{clipPath: 'polygon(0 100%, 100% 0, 100% 100%)'}}></div>
+                  <div className="absolute top-1 right-1 w-2 h-2 bg-white rounded-sm"></div>
+                </div>
+                {/* House base */}
+                <div className="w-5 h-3 bg-white rounded-sm mt-1 relative">
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-2 bg-orange-500 rounded-t-sm"></div>
+                </div>
+                {/* Key symbol */}
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                  <div className="w-1 h-3 bg-white rounded-full"></div>
+                  <div className="w-2 h-1 bg-white rounded-full -mt-1"></div>
+                </div>
+              </div>
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Kulu İlan</h2>
-            <p className="text-blue-100 text-sm">Ana Ekrana Ekle</p>
           </div>
 
-          {/* Content */}
-          <div className="px-6 py-6">
+          {/* Text content */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 text-sm mb-1">Kulu İlan</h3>
             {isIOS ? (
-              // iOS Instructions
-              <div className="text-center">
-                <p className="text-gray-700 text-sm mb-6 leading-relaxed">
-                  Kulu İlan'ı ana ekranınıza ekleyerek daha hızlı erişim sağlayın:
-                </p>
-                
-                <div className="space-y-4 text-left">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Share className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">1. Paylaş butonuna tıklayın</p>
-                      <p className="text-xs text-gray-600">Safari'nin alt kısmındaki paylaş ikonu</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <span className="text-green-600 text-xs font-bold">+</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">2. "Ana Ekrana Ekle" seçin</p>
-                      <p className="text-xs text-gray-600">Listeden bu seçeneği bulun</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <span className="text-purple-600 text-xs font-bold">✓</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">3. "Ekle" butonuna tıklayın</p>
-                      <p className="text-xs text-gray-600">Sağ üst köşedeki ekle butonu</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                Safari'de <span className="font-medium">Paylaş</span> → <span className="font-medium">Ana Ekrana Ekle</span>
+              </p>
             ) : (
-              // Android/Desktop
-              <div className="text-center">
-                <p className="text-gray-700 text-sm mb-6 leading-relaxed">
-                  Kulu İlan'ı cihazınıza yükleyerek:
-                </p>
-                
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl mx-auto mb-2 flex items-center justify-center">
-                      <span className="text-blue-600 text-xl">⚡</span>
-                    </div>
-                    <p className="text-xs text-gray-600">Hızlı Erişim</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-green-100 rounded-xl mx-auto mb-2 flex items-center justify-center">
-                      <span className="text-green-600 text-xl">🔔</span>
-                    </div>
-                    <p className="text-xs text-gray-600">Push Bildirimler</p>
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                Hızlı erişim için ana ekrana ekle
+              </p>
             )}
-
-            {/* Buttons */}
-            <div className="flex gap-3 mt-6">
-              {!isIOS && (
-                <button
-                  onClick={handleInstallClick}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  <Download className="w-4 h-4" />
+            
+            {/* Action button */}
+            <button
+              onClick={handleInstallClick}
+              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+            >
+              {isIOS ? (
+                <>
+                  <span className="text-xs">📱</span>
+                  Anladım
+                </>
+              ) : (
+                <>
+                  <Download className="w-3 h-3" />
                   Yükle
-                </button>
+                </>
               )}
-              <button
-                onClick={handleDismiss}
-                className={`${isIOS ? 'flex-1' : ''} px-6 py-4 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors rounded-2xl hover:bg-gray-50`}
-              >
-                {isIOS ? 'Anladım' : 'Şimdi Değil'}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
+
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/20 to-transparent pointer-events-none rounded-2xl"></div>
       </div>
-    </>
+    </div>
   );
 }
 

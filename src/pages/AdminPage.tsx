@@ -1323,7 +1323,7 @@ function AdminPage() {
                           onClick={async () => {
                             try {
                               // Retry sync by calling the edge function
-                              const { data, error } = await supabase.functions.invoke('create-onesignal-user', {
+                              const { error } = await supabase.functions.invoke('create-onesignal-user', {
                                 body: {
                                   user_id: osUser.user_id,
                                   full_name: osUser.users_min?.full_name,

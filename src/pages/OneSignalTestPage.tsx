@@ -3,7 +3,6 @@ import {
   initOneSignal, 
   subscribeToNotifications, 
   addUserTag, 
-  removeUserTag, 
   trackEvent, 
   getOneSignalStatus,
   getNotificationPermission 

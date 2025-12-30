@@ -31,7 +31,50 @@
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: "2c4e9ae5-6554-448c-8016-5d5a1894755a",
-          notifyButton: { enable: true }
+          notifyButton: { 
+            enable: true,
+            text: {
+              'tip.state.unsubscribed': 'Bildirimlere abone ol',
+              'tip.state.subscribed': "Bildirimlere abone oldunuz",
+              'tip.state.blocked': "Bildirimler engellendi",
+              'message.prenotify': 'Bildirimlere abone olmak için tıklayın',
+              'message.action.subscribed': "Bildirimlere abone oldunuz!",
+              'message.action.resubscribed': "Bildirimlere tekrar abone oldunuz!",
+              'message.action.unsubscribed': "Bildirimlerden çıktınız",
+              'dialog.main.title': 'Bildirimleri Yönet',
+              'dialog.main.button.subscribe': 'ABONE OL',
+              'dialog.main.button.unsubscribe': 'ABONELIKTEN ÇIK',
+              'dialog.blocked.title': 'Bildirimler Engellendi',
+              'dialog.blocked.message': "Bildirimleri etkinleştirmek için tarayıcı ayarlarından izin verin."
+            }
+          },
+          promptOptions: {
+            slidedown: {
+              prompts: [
+                {
+                  type: "push", // current types are "push" & "category"
+                  autoPrompt: true,
+                  text: {
+                    /* actionMessage limited to 90 characters */
+                    actionMessage: "Yeni emlak ilanları ve fırsatlar hakkında bildirim almak ister misiniz?",
+                    /* acceptButton limited to 15 characters */
+                    acceptButton: "İzin Ver",
+                    /* cancelButton limited to 15 characters */
+                    cancelButton: "Hayır"
+                  },
+                  delay: {
+                    pageViews: 1,
+                    timeDelay: 5
+                  }
+                }
+              ]
+            }
+          },
+          welcomeNotification: {
+            "title": "Kulu İlan'a Hoş Geldiniz!",
+            "message": "Yeni emlak ilanları ve fırsatlar hakkında bildirim alacaksınız.",
+            "url": ""
+          }
         });
       });
     </script>

@@ -13,11 +13,15 @@ import {
   bulkSubscribeUsersToOneSignal,
   OneSignalNotificationTemplates
 } from '../lib/oneSignalNotifications';
+import { syncUserToOneSignal } from '../lib/oneSignalUserSync';
+import { getCurrentUser } from '../lib/simpleAuth';
 
 function OneSignalTestPage() {
   const [status, setStatus] = useState<string>('');
   const [oneSignalStatus, setOneSignalStatus] = useState<any>({});
   const [permission, setPermission] = useState<string>('default');
+  const [userTags, setUserTags] = useState<any>({});
+  const currentUser = getCurrentUser();
   const [testForm, setTestForm] = useState({
     title: 'Test Bildirimi',
     message: 'Bu bir test bildirimidir.',
@@ -35,6 +39,22 @@ function OneSignalTestPage() {
     
     const perm = await getNotificationPermission();
     setPermission(perm);
+
+    // OneSignal kullanıcı tags'lerini kontrol et
+    if (typeof window !== 'undefined' && window.OneSignal) {
+      try {
+        window.OneSignal.push(function() {
+          window.OneSignal.User.getTags().then((tags: any) => {
+            setUserTags(tags || {});
+          }).catch((error: any) => {
+            console.log('Tags alınamadı:', error);
+            setUserTags({});
+          });
+        });
+      } catch (error) {
+        console.log('OneSignal tags kontrolü başarısız:', error);
+      }
+    }
   };
 
   useEffect(() => {
@@ -224,13 +244,35 @@ function OneSignalTestPage() {
     }
   };
 
-  const handleRemoveTag = async () => {
+  const handleSyncUserInfo = async () => {
     try {
-      updateStatus('Tag kaldırılıyor...');
-      await removeUserTag('test-user');
-      updateStatus('✅ Tag kaldırıldı: test-user');
+      updateStatus('Kullanıcı bilgileri OneSignal\'a senkronize ediliyor...');
+      await syncUserToOneSignal();
+      updateStatus('✅ Kullanıcı bilgileri OneSignal\'a eklendi!');
+      setTimeout(refreshStatus, 1000); // 1 saniye sonra durumu yenile
     } catch (error) {
-      updateStatus('❌ Tag kaldırma hatası: ' + (error as any)?.message);
+      updateStatus('❌ Kullanıcı bilgileri eklenirken hata: ' + (error as any)?.message);
+    }
+  };
+
+  const handleCheckUserTags = async () => {
+    try {
+      updateStatus('OneSignal kullanıcı tags\'leri kontrol ediliyor...');
+      
+      if (typeof window !== 'undefined' && window.OneSignal) {
+        window.OneSignal.push(function() {
+          window.OneSignal.User.getTags().then((tags: any) => {
+            updateStatus('📋 Mevcut tags: ' + JSON.stringify(tags, null, 2));
+            setUserTags(tags || {});
+          }).catch((error: any) => {
+            updateStatus('❌ Tags alınamadı: ' + error.message);
+          });
+        });
+      } else {
+        updateStatus('❌ OneSignal henüz yüklenmemiş');
+      }
+    } catch (error) {
+      updateStatus('❌ Tags kontrol hatası: ' + (error as any)?.message);
     }
   };
 
@@ -254,6 +296,41 @@ function OneSignalTestPage() {
                 <div>Push Token: <code className="bg-white px-2 py-1 rounded text-xs">{oneSignalStatus.pushToken ? 'Var' : 'Henüz yok'}</code></div>
               </div>
             </div>
+          </div>
+
+          {/* Current User Info */}
+          {currentUser && (
+            <div className="mb-8 p-4 bg-green-50 rounded-lg border border-green-200">
+              <h2 className="text-lg font-semibold text-green-900 mb-2">👤 Mevcut Kullanıcı</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <div>Ad Soyad: <code className="bg-white px-2 py-1 rounded">{currentUser.full_name}</code></div>
+                  <div>Telefon: <code className="bg-white px-2 py-1 rounded">{currentUser.phone}</code></div>
+                  <div>Durum: <code className="bg-white px-2 py-1 rounded">{currentUser.status}</code></div>
+                </div>
+                <div className="space-y-1">
+                  <div>Rol: <code className="bg-white px-2 py-1 rounded">{currentUser.role}</code></div>
+                  <div>ID: <code className="bg-white px-2 py-1 rounded text-xs">{currentUser.id}</code></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OneSignal User Tags */}
+          <div className="mb-8 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <h2 className="text-lg font-semibold text-purple-900 mb-2">🏷️ OneSignal Kullanıcı Tags</h2>
+            {Object.keys(userTags).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                {Object.entries(userTags).map(([key, value]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="font-medium text-purple-700">{key}:</span>
+                    <code className="bg-white px-2 py-1 rounded text-purple-900">{String(value)}</code>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-purple-700 text-sm">Henüz tag eklenmemiş veya OneSignal hazır değil.</p>
+            )}
           </div>
 
           {/* Test Actions */}
@@ -288,6 +365,21 @@ function OneSignalTestPage() {
               </div>
 
               <button
+                onClick={handleSyncUserInfo}
+                className="w-full px-4 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                disabled={!currentUser}
+              >
+                👤 Kullanıcı Bilgilerini Senkronize Et
+              </button>
+
+              <button
+                onClick={handleCheckUserTags}
+                className="w-full px-4 py-3 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                🏷️ Kullanıcı Tags'lerini Kontrol Et
+              </button>
+
+              <button
                 onClick={handleTrackEvent}
                 className="w-full px-4 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
               >
@@ -301,12 +393,13 @@ function OneSignalTestPage() {
                 🏷️ Test Tag Ekle
               </button>
 
-              <button
-                onClick={handleRemoveTag}
-                className="w-full px-4 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-              >
-                🗑️ Test Tag Kaldır
-              </button>
+              {!currentUser && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-sm">
+                    ⚠️ Kullanıcı bilgilerini senkronize etmek için giriş yapın.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Manual Notifications */}

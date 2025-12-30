@@ -76,6 +76,53 @@
             "url": ""
           }
         });
+
+        // Kullanıcı subscription değişikliklerini dinle
+        OneSignal.on('subscriptionChange', function(isSubscribed) {
+          console.log('🔔 OneSignal: Subscription değişti:', isSubscribed);
+          
+          if (isSubscribed === true) {
+            console.log('🔔 OneSignal: Kullanıcı subscribe oldu!');
+            
+            // Kullanıc�� giriş yapmışsa bilgilerini ekle
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+              try {
+                const user = JSON.parse(userStr);
+                const nameParts = user.full_name.trim().split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                const phoneNumber = user.phone.startsWith('+90') 
+                  ? user.phone 
+                  : `+90${user.phone.replace(/\\D/g, '')}`;
+
+                // External ID olarak Supabase user ID'sini kullan
+                OneSignal.User.addAlias('external_id', user.id);
+                
+                // Kullanıcı bilgilerini tags olarak ekle
+                OneSignal.User.addTags({
+                  'first_name': firstName,
+                  'last_name': lastName,
+                  'phone_number': phoneNumber,
+                  'user_id': user.id,
+                  'user_status': user.status,
+                  'user_role': user.role,
+                  'sync_source': 'subscription_change',
+                  'last_sync': new Date().toISOString()
+                });
+                
+                console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi (subscription)', {
+                  firstName,
+                  lastName,
+                  phoneNumber,
+                  userId: user.id
+                });
+              } catch (error) {
+                console.error('🔔 OneSignal: Kullanıcı bilgileri eklenirken hata:', error);
+              }
+            }
+          }
+        });
       });
     </script>
   </head>

@@ -3,6 +3,8 @@ import { getCurrentUser, logoutUser, isAdmin } from './lib/simpleAuth'
 import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
+import { setupOneSignalUserSync } from './lib/oneSignalUserSync'
+import { useEffect } from 'react'
 
 
 function App() {
@@ -12,6 +14,11 @@ function App() {
   
   // Kullanıcı adını title case yap
   const displayName = currentUser?.full_name ? toTitleCase(currentUser.full_name) : ''
+
+  // OneSignal user sync kurulumu
+  useEffect(() => {
+    setupOneSignalUserSync()
+  }, [])
 
 
 

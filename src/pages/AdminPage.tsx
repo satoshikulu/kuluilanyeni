@@ -43,6 +43,17 @@ type UserMin = {
   role?: string
 }
 
+type OneSignalUser = {
+  id: string
+  user_id: string
+  onesignal_external_id: string
+  onesignal_user_id?: string
+  sync_status: 'pending' | 'success' | 'failed'
+  sync_error?: string
+  last_sync_at?: string
+  created_at: string
+}
+
 function AdminPage() {
   // Data state
   const [listings, setListings] = useState<Listing[]>([])
@@ -50,6 +61,13 @@ function AdminPage() {
   const [pendingUsers, setPendingUsers] = useState<UserMin[]>([])
   const [approvedUsers, setApprovedUsers] = useState<UserMin[]>([])
   const [rejectedUsers, setRejectedUsers] = useState<UserMin[]>([])
+  const [oneSignalUsers, setOneSignalUsers] = useState<OneSignalUser[]>([])
+  const [oneSignalStats, setOneSignalStats] = useState({
+    total: 0,
+    pending: 0,
+    success: 0,
+    failed: 0
+  })
 
   // UI state
   const [loading, setLoading] = useState<boolean>(true)
@@ -74,7 +92,7 @@ function AdminPage() {
   const [page, setPage] = useState<number>(1)
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'listings' | 'users'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'onesignal'>('listings')
   
   // User listings modal state
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -110,12 +128,42 @@ function AdminPage() {
       setApprovedUsers(all.filter((u) => u.status === 'approved'))
       setRejectedUsers(all.filter((u) => u.status === 'rejected'))
 
+      // Load OneSignal sync data
+      await loadOneSignalData()
+
       // Then query listings with current filters
       await queryListings(true)
     } catch (e: any) {
       setError(e.message || 'Veriler yüklenemedi')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadOneSignalData() {
+    try {
+      const { data: oneSignalData, error: oneSignalError } = await supabase
+        .from('onesignal_users')
+        .select(`
+          *,
+          users_min!inner(full_name, phone, status)
+        `)
+        .order('created_at', { ascending: false })
+      
+      if (oneSignalError) throw oneSignalError
+      
+      const oneSignalUsers = (oneSignalData as any[]) || []
+      setOneSignalUsers(oneSignalUsers)
+      
+      // Calculate stats
+      setOneSignalStats({
+        total: oneSignalUsers.length,
+        pending: oneSignalUsers.filter(u => u.sync_status === 'pending').length,
+        success: oneSignalUsers.filter(u => u.sync_status === 'success').length,
+        failed: oneSignalUsers.filter(u => u.sync_status === 'failed').length
+      })
+    } catch (e: any) {
+      console.error('OneSignal data load error:', e)
     }
   }
 
@@ -715,6 +763,23 @@ function AdminPage() {
               )}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab('onesignal')}
+            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
+              activeTab === 'onesignal'
+                ? 'bg-white text-blue-600 shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              🔔 OneSignal
+              {oneSignalStats.failed > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse">
+                  {oneSignalStats.failed}
+                </span>
+              )}
+            </span>
+          </button>
         </div>
       </div>
       {/* İlanlar Tab */}
@@ -1132,6 +1197,180 @@ function AdminPage() {
                         </button>
                       )}
                       <button onClick={() => void deleteUser(u.id, u.full_name, u.phone)} className="rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 text-white px-3 py-1.5 text-xs font-semibold hover:from-red-700 hover:to-red-900 shadow-sm hover:shadow-md transition-all duration-200">
+                        🗑️ Sil
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* OneSignal Tab */}
+      {activeTab === 'onesignal' && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">OneSignal Senkronizasyon Durumu</h2>
+          
+          {/* OneSignal Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-blue-700">{oneSignalStats.total}</div>
+              <div className="text-sm text-blue-600">Toplam Kullanıcı</div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-700">{oneSignalStats.pending}</div>
+              <div className="text-sm text-yellow-600">Bekleyen</div>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-green-700">{oneSignalStats.success}</div>
+              <div className="text-sm text-green-600">Başarılı</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-red-700">{oneSignalStats.failed}</div>
+              <div className="text-sm text-red-600">Başarısız</div>
+            </div>
+          </div>
+
+          {/* Refresh Button */}
+          <div className="mb-6">
+            <button 
+              onClick={() => void loadOneSignalData()}
+              className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            >
+              🔄 Verileri Yenile
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center gap-3 text-gray-600">
+              <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              Yükleniyor...
+            </div>
+          ) : oneSignalUsers.length === 0 ? (
+            <div className="text-gray-600 bg-gray-50 rounded-lg p-4 text-center">
+              Henüz OneSignal'a senkronize edilmiş kullanıcı yok.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {oneSignalUsers.map((osUser: any) => (
+                <div key={osUser.id} className="group relative rounded-2xl border border-gray-200 p-6 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300">
+                  <div className="absolute top-4 right-4">
+                    {osUser.sync_status === 'pending' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200 animate-pulse">
+                        ⏳ Bekliyor
+                      </span>
+                    )}
+                    {osUser.sync_status === 'success' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                        ✓ Başarılı
+                      </span>
+                    )}
+                    {osUser.sync_status === 'failed' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                        ✕ Başarısız
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+                    <div className="flex-1 w-full lg:pr-24">
+                      <div className="font-bold text-xl text-gray-900 mb-3">
+                        {osUser.users_min?.full_name || 'Bilinmeyen Kullanıcı'}
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
+                          <span className="text-sm font-medium text-gray-700">📞 Telefon:</span>
+                          <span className="text-sm text-gray-900 font-semibold">{osUser.users_min?.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
+                          <span className="text-sm font-medium text-gray-700">🆔 External ID:</span>
+                          <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-md text-gray-900">{osUser.onesignal_external_id}</span>
+                        </div>
+                        {osUser.onesignal_user_id && (
+                          <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
+                            <span className="text-sm font-medium text-gray-700">🔔 OneSignal ID:</span>
+                            <span className="font-mono text-sm bg-blue-100 px-3 py-1 rounded-md text-blue-900">{osUser.onesignal_user_id}</span>
+                          </div>
+                        )}
+                        {osUser.sync_error && (
+                          <div className="flex items-start gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                            <span className="text-sm font-medium text-red-700">❌ Hata:</span>
+                            <span className="text-sm text-red-800 flex-1">{osUser.sync_error}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span>🕐 Oluşturulma: {formatDate(osUser.created_at)}</span>
+                        {osUser.last_sync_at && (
+                          <span>🔄 Son Sync: {formatDate(osUser.last_sync_at)}</span>
+                        )}
+                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                          👤 {osUser.users_min?.status || 'Bilinmiyor'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5 w-full lg:w-auto lg:min-w-[140px]">
+                      {osUser.sync_status === 'failed' && (
+                        <button 
+                          onClick={async () => {
+                            try {
+                              // Retry sync by calling the edge function
+                              const { data, error } = await supabase.functions.invoke('create-onesignal-user', {
+                                body: {
+                                  user_id: osUser.user_id,
+                                  full_name: osUser.users_min?.full_name,
+                                  phone: osUser.users_min?.phone
+                                }
+                              })
+                              
+                              if (error) throw error
+                              
+                              alert('✅ Yeniden senkronizasyon başlatıldı!')
+                              await loadOneSignalData() // Refresh data
+                            } catch (e: any) {
+                              alert('Hata: ' + (e.message || 'Senkronizasyon başlatılamadı'))
+                            }
+                          }}
+                          className="rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-orange-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        >
+                          🔄 Yeniden Dene
+                        </button>
+                      )}
+                      
+                      <button 
+                        onClick={async () => {
+                          const confirmed = window.confirm(
+                            `OneSignal senkronizasyon kaydını silmek istediğinize emin misiniz?\n\n` +
+                            `Kullanıcı: ${osUser.users_min?.full_name}\n` +
+                            `Bu işlem geri alınamaz!`
+                          )
+                          
+                          if (!confirmed) return
+                          
+                          try {
+                            const { error } = await supabase
+                              .from('onesignal_users')
+                              .delete()
+                              .eq('id', osUser.id)
+                            
+                            if (error) throw error
+                            
+                            alert('✅ OneSignal kaydı silindi!')
+                            await loadOneSignalData() // Refresh data
+                          } catch (e: any) {
+                            alert('Hata: ' + (e.message || 'Kayıt silinemedi'))
+                          }
+                        }}
+                        className="rounded-xl bg-gradient-to-r from-gray-700 to-gray-900 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-700 hover:to-red-900 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                      >
                         🗑️ Sil
                       </button>
                     </div>

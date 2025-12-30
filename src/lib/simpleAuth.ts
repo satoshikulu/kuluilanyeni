@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { syncUserToOneSignal, clearOneSignalUserData } from './oneSignalUserSync'
 
 // Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
 function simpleHash(password: string): string {
@@ -88,6 +89,11 @@ export async function loginUser(
       // Kullanıcıyı localStorage'a kaydet
       localStorage.setItem('user', JSON.stringify(result.user))
       
+      // OneSignal'a kullanıcı bilgilerini senkronize et
+      setTimeout(() => {
+        syncUserToOneSignal()
+      }, 1500) // OneSignal'ın hazır olması için bekle
+      
       return {
         success: true,
         message: result.message,
@@ -112,14 +118,14 @@ export async function loginUser(
  * Çıkış yap
  */
 export async function logoutUser(): Promise<void> {
-  // TODO: Bildirim sistemi temizliği
+  // OneSignal kullanıcı bilgilerini temizle
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      // Bildirim sistemi temizliği buraya eklenecek
-      console.log('✅ Bildirim sistemi temizlendi');
+      await clearOneSignalUserData()
+      console.log('✅ OneSignal kullanıcı bilgileri temizlendi');
     } catch (error) {
-      console.warn('⚠️ Bildirim sistemi temizliği başarısız:', error);
+      console.warn('⚠️ OneSignal temizliği başarısız:', error);
     }
   }
   

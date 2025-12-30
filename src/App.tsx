@@ -23,11 +23,18 @@ function App() {
             Kulu İlan <span className="text-gray-500">·</span> <span className="text-gray-600">Kulu Emlak Pazarı</span>
           </Link>
           <nav className="flex items-center gap-4 text-sm">
-            {/* Compact PWA Install Button - Same size as login button */}
+            {/* Enhanced PWA Install Button */}
             <button
-              onClick={() => (window as any).installPWA?.()}
+              onClick={() => {
+                if ((window as any).installPWA) {
+                  (window as any).installPWA();
+                } else {
+                  // Fallback for browsers that don't support beforeinstallprompt
+                  alert('Bu tarayıcıda PWA yüklemesi desteklenmiyor. Chrome, Edge veya Firefox kullanın.');
+                }
+              }}
               className="relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 overflow-hidden group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/50 hover:border-blue-300/60 shadow-sm hover:shadow-md transform hover:scale-105 animate-download-cycle"
-              title="Uygulamayı Telefonuna İndir"
+              title="Uygulamayı Telefonuna İndir - PWA olarak yükle"
             >
               {/* Download Icon - Smaller */}
               <div className="relative z-10 flex items-center justify-center w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded shadow-sm group-hover:shadow-md transition-all duration-300">

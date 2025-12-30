@@ -49,12 +49,23 @@ const router = createBrowserRouter([
   },
 ])
 
-// Web Push notifications are handled by OneSignal service worker
-// PWA Service Worker DEVRE DIŞI - OneSignal çakışmasını önlemek için
-// Manuel kayıt yapmıyoruz - sadece OneSignal SW aktif
+// PWA Service Worker Registration
+import { registerSW } from 'virtual:pwa-register'
+
+// Register PWA Service Worker
+const updateSW = registerSW({
+  onNeedRefresh() {
+    console.log('PWA update available')
+    // Otomatik güncelleme için hemen güncelle
+    updateSW(true)
+  },
+  onOfflineReady() {
+    console.log('PWA ready to work offline')
+  },
+})
 
 // Global PWA Install Prompt Handler
-let deferredPrompt: unknown = null;
+let deferredPrompt: any = null;
 
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
@@ -63,22 +74,29 @@ window.addEventListener("beforeinstallprompt", (e) => {
 });
 
 // Global PWA install function for buttons
-(window as { installPWA?: () => Promise<void> }).installPWA = async () => {
-  if (!deferredPrompt) return;
+(window as any).installPWA = async () => {
+  if (!deferredPrompt) {
+    console.log("Install prompt not available");
+    return;
+  }
   
-  // Type assertion for deferredPrompt
-  const promptEvent = deferredPrompt as { prompt: () => void; userChoice: Promise<{ outcome: string }> };
-  
-  promptEvent.prompt();
-  const choice = await promptEvent.userChoice;
-  
-  console.log("User choice:", choice.outcome);
-  
-  deferredPrompt = null;
+  try {
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    
+    console.log("User choice:", choice.outcome);
+    
+    if (choice.outcome === 'accepted') {
+      console.log('PWA installed successfully');
+    } else {
+      console.log('PWA installation dismissed');
+    }
+    
+    deferredPrompt = null;
+  } catch (error) {
+    console.error('PWA installation error:', error);
+  }
 };
-
-// WonderPush'ı lazy loading yap - sadece gerektiğinde yükle
-// Login sayfası veya test sayfası açıldığında otomatik yüklenecek
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

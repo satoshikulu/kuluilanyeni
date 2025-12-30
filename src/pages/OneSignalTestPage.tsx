@@ -10,7 +10,6 @@ import {
 } from '../lib/oneSignal';
 import { 
   sendOneSignalNotification,
-  subscribeUserToOneSignal,
   bulkSubscribeUsersToOneSignal,
   OneSignalNotificationTemplates
 } from '../lib/oneSignalNotifications';

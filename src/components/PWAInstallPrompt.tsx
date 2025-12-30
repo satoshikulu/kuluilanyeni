@@ -1,142 +1,136 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react';
+import { X, Download, Smartphone } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export default function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
-  const [isStandalone, setIsStandalone] = useState(false)
+function PWAInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // iOS detection
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
-    setIsIOS(iOS)
-
-    // Check if already installed (standalone mode)
-    const standalone = window.matchMedia('(display-mode: standalone)').matches || 
-                      (window.navigator as any).standalone === true
-    setIsStandalone(standalone)
-
-    // Android/Chrome install prompt - sadece event yakala, otomatik prompt gösterme
-    const handler = (e: Event) => {
-      e.preventDefault()
-      const promptEvent = e as BeforeInstallPromptEvent
-      setDeferredPrompt(promptEvent)
-      setShowInstallPrompt(true) // Modal'ı göster ama otomatik prompt yapma
+    // Check if already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isInWebAppiOS = (window.navigator as any).standalone === true;
+    const isInWebAppChrome = window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (isStandalone || isInWebAppiOS || isInWebAppChrome) {
+      setIsInstalled(true);
+      return;
     }
 
-    window.addEventListener('beforeinstallprompt', handler)
+    // Listen for beforeinstallprompt event
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      const promptEvent = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(promptEvent);
+      
+      // Show prompt after a delay (better UX)
+      setTimeout(() => {
+        setShowPrompt(true);
+      }, 3000);
+    };
 
-    // iOS için otomatik göster (eğer daha önce dismiss edilmemişse)
-    if (iOS && !standalone) {
-      const dismissed = localStorage.getItem('pwa-install-dismissed')
-      if (!dismissed || Date.now() - parseInt(dismissed) > 7 * 24 * 60 * 60 * 1000) {
-        setTimeout(() => setShowInstallPrompt(true), 3000)
-      }
-    }
+    // Listen for app installed event
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setShowPrompt(false);
+      setDeferredPrompt(null);
+      console.log('PWA was installed');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler)
-    }
-  }, [])
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return
+    if (!deferredPrompt) return;
 
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-
-    if (outcome === 'accepted') {
-      console.log('✅ PWA installed')
-    } else {
-      console.log('❌ PWA installation dismissed')
+    try {
+      await deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      
+      setDeferredPrompt(null);
+      setShowPrompt(false);
+    } catch (error) {
+      console.error('Error during PWA installation:', error);
     }
-
-    setDeferredPrompt(null)
-    setShowInstallPrompt(false)
-  }
+  };
 
   const handleDismiss = () => {
-    setShowInstallPrompt(false)
-    // Remember dismissal for 7 days
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString())
+    setShowPrompt(false);
+    // Don't show again for this session
+    sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+  };
+
+  // Don't show if already installed or dismissed this session
+  if (isInstalled || !showPrompt || !deferredPrompt) {
+    return null;
   }
 
-  // Check if user dismissed recently
-  useEffect(() => {
-    const dismissed = localStorage.getItem('pwa-install-dismissed')
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed)
-      const sevenDays = 7 * 24 * 60 * 60 * 1000
-      if (Date.now() - dismissedTime < sevenDays) {
-        setShowInstallPrompt(false)
-      }
-    }
-  }, [])
+  // Don't show if dismissed this session
+  if (sessionStorage.getItem('pwa-prompt-dismissed')) {
+    return null;
+  }
 
-  // Don't show if already installed
-  if (isStandalone) return null
-
-  // Don't show if not ready
-  if (!showInstallPrompt) return null
-
-  // Kompakt PWA Modal - Küçük ve Minimal
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white/95 backdrop-blur-xl w-full max-w-xs p-4 rounded-2xl shadow-xl animate-slide-up">
-        {/* Kompakt Header */}
-        <div className="flex items-center gap-3 mb-3">
-          <img 
-            src="/icon-192x192.png" 
-            alt="Kulu İlan" 
-            className="w-10 h-10 rounded-xl shadow-md"
-          />
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {isIOS ? 'Ana Ekrana Ekle' : 'Uygulamayı Yükle'}
-            </h2>
-          </div>
-        </div>
-        
-        {/* Kısa Açıklama */}
-        {isIOS ? (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2">
-              Kulu İlan'ı ana ekranınıza ekleyin
-            </p>
-            <div className="text-xs text-gray-500 space-y-0.5">
-              <p>Safari → Paylaş (□↑) → Ana Ekrana Ekle</p>
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 animate-slide-up">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Smartphone className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-lg">Kulu İlan</h3>
+              <p className="text-sm text-gray-600">Uygulamayı İndir</p>
             </div>
           </div>
-        ) : (
-          <p className="text-sm text-gray-600 mb-4">
-            Kulu İlan'ı cihazınıza ekleyip daha hızlı erişin
-          </p>
-        )}
-        
-        {/* Kompakt Butonlar */}
-        <div className="flex gap-2">
-          {!isIOS && deferredPrompt && (
-            <button
-              onClick={handleInstallClick}
-              className="flex-1 py-2.5 px-3 bg-blue-500 text-white text-sm font-medium rounded-xl hover:bg-blue-600 transition-colors"
-            >
-              Yükle
-            </button>
-          )}
-          
           <button
             onClick={handleDismiss}
-            className={`${!isIOS && deferredPrompt ? 'flex-1' : 'w-full'} py-2.5 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors`}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            {isIOS ? 'Anladım' : 'Kapat'}
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <p className="text-gray-700 text-sm mb-4 leading-relaxed">
+          Kulu İlan'ı telefonunuza yükleyerek daha hızlı erişim sağlayın. 
+          Offline çalışma ve push bildirimler ile hiçbir fırsatı kaçırmayın!
+        </p>
+        
+        <div className="flex gap-3">
+          <button
+            onClick={handleInstallClick}
+            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <Download className="w-4 h-4" />
+            Yükle
+          </button>
+          <button
+            onClick={handleDismiss}
+            className="px-4 py-3 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors"
+          >
+            Şimdi Değil
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
+
+export default PWAInstallPrompt;

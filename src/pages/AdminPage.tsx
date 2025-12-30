@@ -4,10 +4,8 @@ import AdminGate from '../components/AdminGate'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
 import { 
-  sendOpportunityListingNotification, 
-  sendFeaturedListingNotification,
-  sendMembershipApprovedNotification,
-  sendListingApprovedNotification
+  sendOneSignalNotification,
+  OneSignalNotificationTemplates
 } from '../lib/oneSignalNotifications'
 
 type Listing = {
@@ -220,11 +218,12 @@ function AdminPage() {
       // OneSignal bildirimi gönder (sadece onaylanan ilanlar için)
       if (decision === 'approved' && listing) {
         try {
-          await sendListingApprovedNotification(
-            listing.owner_phone,
+          const template = OneSignalNotificationTemplates.listingApproved(
             listing.title,
-            listing.id
+            listing.id,
+            listing.user_id || 'unknown-user'
           );
+          await sendOneSignalNotification(template);
           console.log('İlan onayı bildirimi gönderildi');
         } catch (notificationError) {
           console.error('Bildirim gönderme hatası:', notificationError);
@@ -313,10 +312,11 @@ function AdminPage() {
       // OneSignal bildirimi gönder (sadece onaylanan kullanıcılar için)
       if (decision === 'approved' && user) {
         try {
-          await sendMembershipApprovedNotification(
-            user.phone,
-            user.full_name
+          const template = OneSignalNotificationTemplates.userApproved(
+            user.full_name,
+            user.id
           );
+          await sendOneSignalNotification(template);
           console.log('Üyelik onayı bildirimi gönderildi');
         } catch (notificationError) {
           console.error('Bildirim gönderme hatası:', notificationError);
@@ -435,12 +435,13 @@ function AdminPage() {
       // OneSignal bildirimi gönder (sadece öne çıkarma işlemi için)
       if (!currentFeatured && listing) {
         try {
-          await sendFeaturedListingNotification(
+          const template = OneSignalNotificationTemplates.featuredListing(
             listing.title,
             listing.price_tl || 0,
             listing.neighborhood || 'Bilinmiyor',
             listing.id
           );
+          await sendOneSignalNotification(template);
           console.log('Öne çıkan ilan bildirimi gönderildi');
         } catch (notificationError) {
           console.error('Bildirim gönderme hatası:', notificationError);
@@ -484,12 +485,13 @@ function AdminPage() {
       // OneSignal bildirimi gönder (sadece fırsat yapma işlemi için)
       if (!currentOpportunity && listing) {
         try {
-          await sendOpportunityListingNotification(
+          const template = OneSignalNotificationTemplates.opportunityListing(
             listing.title,
             listing.price_tl || 0,
             listing.neighborhood || 'Bilinmiyor',
             listing.id
           );
+          await sendOneSignalNotification(template);
           console.log('Fırsat ilanı bildirimi gönderildi');
         } catch (notificationError) {
           console.error('Bildirim gönderme hatası:', notificationError);

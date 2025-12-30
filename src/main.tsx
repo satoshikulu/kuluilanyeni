@@ -49,20 +49,8 @@ const router = createBrowserRouter([
   },
 ])
 
-// PWA Service Worker Registration
-import { registerSW } from 'virtual:pwa-register'
-
-// Register PWA Service Worker
-const updateSW = registerSW({
-  onNeedRefresh() {
-    console.log('PWA update available')
-    // Otomatik güncelleme için hemen güncelle
-    updateSW(true)
-  },
-  onOfflineReady() {
-    console.log('PWA ready to work offline')
-  },
-})
+// OneSignal Service Worker korunuyor - PWA Service Worker devre dışı
+// Sadece install prompt kullanıyoruz
 
 // Global PWA Install Prompt Handler
 let deferredPrompt: any = null;

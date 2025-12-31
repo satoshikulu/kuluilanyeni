@@ -119,7 +119,7 @@ function AdminPage() {
     try {
       // Initial load for users (static on mount)
       const { data: usersData, error: usersError } = await supabase
-        .from('users_min')
+        .from('users') // users_min yerine users tablosundan oku
         .select('*')
         .order('created_at', { ascending: false })
       if (usersError) throw usersError
@@ -146,7 +146,7 @@ function AdminPage() {
         .from('onesignal_users')
         .select(`
           *,
-          users_min!inner(full_name, phone, status)
+          users!inner(full_name, phone, status)
         `)
         .order('created_at', { ascending: false })
       
@@ -1280,13 +1280,13 @@ function AdminPage() {
                   <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
                     <div className="flex-1 w-full lg:pr-24">
                       <div className="font-bold text-xl text-gray-900 mb-3">
-                        {osUser.users_min?.full_name || 'Bilinmeyen Kullanıcı'}
+                        {osUser.users?.full_name || 'Bilinmeyen Kullanıcı'}
                       </div>
                       
                       <div className="flex flex-col gap-2 mb-3">
                         <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
                           <span className="text-sm font-medium text-gray-700">📞 Telefon:</span>
-                          <span className="text-sm text-gray-900 font-semibold">{osUser.users_min?.phone}</span>
+                          <span className="text-sm text-gray-900 font-semibold">{osUser.users?.phone}</span>
                         </div>
                         <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
                           <span className="text-sm font-medium text-gray-700">🆔 External ID:</span>
@@ -1312,7 +1312,7 @@ function AdminPage() {
                           <span>🔄 Son Sync: {formatDate(osUser.last_sync_at)}</span>
                         )}
                         <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-medium">
-                          👤 {osUser.users_min?.status || 'Bilinmiyor'}
+                          👤 {osUser.users?.status || 'Bilinmiyor'}
                         </span>
                       </div>
                     </div>
@@ -1326,8 +1326,8 @@ function AdminPage() {
                               const { error } = await supabase.functions.invoke('create-onesignal-user', {
                                 body: {
                                   user_id: osUser.user_id,
-                                  full_name: osUser.users_min?.full_name,
-                                  phone: osUser.users_min?.phone
+                                  full_name: osUser.users?.full_name,
+                                  phone: osUser.users?.phone
                                 }
                               })
                               
@@ -1349,7 +1349,7 @@ function AdminPage() {
                         onClick={async () => {
                           const confirmed = window.confirm(
                             `OneSignal senkronizasyon kaydını silmek istediğinize emin misiniz?\n\n` +
-                            `Kullanıcı: ${osUser.users_min?.full_name}\n` +
+                            `Kullanıcı: ${osUser.users?.full_name}\n` +
                             `Bu işlem geri alınamaz!`
                           )
                           

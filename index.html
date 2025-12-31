@@ -77,14 +77,24 @@
           }
         });
 
-        // Kullanıcı subscription değişikliklerini dinle
-        OneSignal.on('subscriptionChange', function(isSubscribed) {
-          console.log('🔔 OneSignal: Subscription değişti:', isSubscribed);
+        console.log('🔔 OneSignal initialized:', OneSignal.initialized);
+      });
+
+      // Debug logging açık
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.Debug.setLogLevel('trace');
+      });
+
+      // Kullanıcı subscription değişikliklerini dinle (YENİ API)
+      OneSignalDeferred.push(function(OneSignal) {
+        // Subscription change listener
+        OneSignal.User.PushSubscription.addEventListener('change', function(event) {
+          console.log('🔔 OneSignal: Subscription değişti:', event.current.optedIn);
           
-          if (isSubscribed === true) {
+          if (event.current.optedIn === true) {
             console.log('🔔 OneSignal: Kullanıcı subscribe oldu!');
             
-            // Kullanıc�� giriş yapmışsa bilgilerini ekle
+            // Kullanıcı giriş yapmışsa bilgilerini ekle
             const userStr = localStorage.getItem('user');
             if (userStr) {
               try {
@@ -118,6 +128,11 @@
                   userId: user.id
                 });
               } catch (error) {
+                console.error('🔔 OneSignal: Kullanıcı bilgileri eklenirken hata:', error);
+              }
+            }
+          }
+        });
                 console.error('🔔 OneSignal: Kullanıcı bilgileri eklenirken hata:', error);
               }
             }

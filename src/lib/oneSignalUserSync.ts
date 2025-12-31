@@ -18,25 +18,6 @@ export async function syncUserToOneSignal(): Promise<void> {
     return
   }
 
-  // OneSignal yüklenene kadar bekle
-  if (typeof window.OneSignal === 'undefined') {
-    console.log('🔔 OneSignal: SDK henüz yüklenmemiş, bekliyor...')
-    
-    // OneSignal yüklenene kadar bekle (max 10 saniye)
-    let attempts = 0
-    const maxAttempts = 50 // 10 saniye (200ms * 50)
-    
-    while (typeof window.OneSignal === 'undefined' && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 200))
-      attempts++
-    }
-    
-    if (typeof window.OneSignal === 'undefined') {
-      console.error('🔔 OneSignal: SDK yüklenemedi')
-      return
-    }
-  }
-
   try {
     // İsim ve soyismi ayır
     const nameParts = currentUser.full_name.trim().split(' ')
@@ -48,14 +29,15 @@ export async function syncUserToOneSignal(): Promise<void> {
       ? currentUser.phone 
       : `+90${currentUser.phone.replace(/\D/g, '')}`
 
-    // OneSignal'a kullanıcı bilgilerini tags olarak ekle
-    window.OneSignal.push(function() {
+    // OneSignalDeferred kullanarak kullanıcı bilgilerini ekle
+    window.OneSignalDeferred = window.OneSignalDeferred || []
+    window.OneSignalDeferred.push(function(OneSignal: any) {
       try {
         // External ID olarak Supabase user ID'sini kullan
-        window.OneSignal.User.addAlias('external_id', currentUser.id)
+        OneSignal.User.addAlias('external_id', currentUser.id)
         
         // Kullanıcı bilgilerini tags olarak ekle
-        window.OneSignal.User.addTags({
+        OneSignal.User.addTags({
           'first_name': firstName,
           'last_name': lastName,
           'phone_number': phoneNumber,
@@ -89,50 +71,36 @@ export async function syncUserToOneSignal(): Promise<void> {
  * Kullanıcı subscribe olduğunda otomatik olarak bilgilerini ekle
  */
 export function setupOneSignalUserSync(): void {
-  if (typeof window.OneSignal === 'undefined') {
-    console.log('🔔 OneSignal: SDK henüz yüklenmemiş, listener kurulacak...')
-    
-    // OneSignal yüklendiğinde listener'ı kur
-    window.OneSignalDeferred = window.OneSignalDeferred || []
-    window.OneSignalDeferred.push(function(OneSignal: any) {
-      setupSubscriptionListener(OneSignal)
-    })
-  } else {
-    setupSubscriptionListener(window.OneSignal)
-  }
+  // OneSignalDeferred kullanarak listener'ı kur
+  window.OneSignalDeferred = window.OneSignalDeferred || []
+  window.OneSignalDeferred.push(function(OneSignal: any) {
+    setupSubscriptionListener(OneSignal)
+  })
 }
 
 function setupSubscriptionListener(OneSignal: any): void {
   try {
-    // Subscription değişikliklerini dinle
-    OneSignal.push(function() {
-      OneSignal.on('subscriptionChange', function(isSubscribed: boolean) {
-        console.log('🔔 OneSignal: Subscription değişti:', isSubscribed)
-        
-        if (isSubscribed === true) {
-          console.log('🔔 OneSignal: Kullanıcı subscribe oldu, bilgiler ekleniyor...')
-          // Kullanıcı subscribe olduğunda bilgilerini ekle
-          setTimeout(() => {
-            syncUserToOneSignal()
-          }, 1000) // 1 saniye bekle, OneSignal'ın hazır olması için
-        }
-      })
+    // Yeni API: PushSubscription.addEventListener kullan
+    OneSignal.User.PushSubscription.addEventListener('change', function(event: any) {
+      console.log('🔔 OneSignal: Subscription değişti:', event.current.optedIn)
+      
+      if (event.current.optedIn === true) {
+        console.log('🔔 OneSignal: Kullanıcı subscribe oldu, bilgiler ekleniyor...')
+        // Kullanıcı subscribe olduğunda bilgilerini ekle
+        setTimeout(() => {
+          syncUserToOneSignal()
+        }, 1000) // 1 saniye bekle, OneSignal'ın hazır olması için
+      }
     })
 
     // Sayfa yüklendiğinde mevcut subscription durumunu kontrol et
-    OneSignal.push(function() {
-      OneSignal.User.PushSubscription.optedIn.then((isOptedIn: boolean) => {
-        if (isOptedIn) {
-          console.log('🔔 OneSignal: Kullanıcı zaten subscribe, bilgiler kontrol ediliyor...')
-          // Zaten subscribe ise bilgileri güncelle
-          setTimeout(() => {
-            syncUserToOneSignal()
-          }, 2000) // 2 saniye bekle
-        }
-      }).catch((error: any) => {
-        console.log('🔔 OneSignal: Subscription durumu kontrol edilemedi:', error)
-      })
-    })
+    if (OneSignal.User.PushSubscription.optedIn) {
+      console.log('🔔 OneSignal: Kullanıcı zaten subscribe, bilgiler kontrol ediliyor...')
+      // Zaten subscribe ise bilgileri güncelle
+      setTimeout(() => {
+        syncUserToOneSignal()
+      }, 2000) // 2 saniye bekle
+    }
 
     console.log('🔔 OneSignal: User sync listener kuruldu')
   } catch (error) {
@@ -144,16 +112,13 @@ function setupSubscriptionListener(OneSignal: any): void {
  * Kullanıcı çıkış yaptığında OneSignal'dan bilgileri temizle
  */
 export async function clearOneSignalUserData(): Promise<void> {
-  if (typeof window.OneSignal === 'undefined') {
-    console.log('🔔 OneSignal: SDK yüklü değil, temizlik yapılamıyor')
-    return
-  }
-
   try {
-    window.OneSignal.push(function() {
+    // OneSignalDeferred kullanarak temizlik yap
+    window.OneSignalDeferred = window.OneSignalDeferred || []
+    window.OneSignalDeferred.push(function(OneSignal: any) {
       try {
         // Kullanıcı bilgilerini temizle
-        window.OneSignal.User.removeTags([
+        OneSignal.User.removeTags([
           'first_name',
           'last_name', 
           'phone_number',
@@ -165,7 +130,7 @@ export async function clearOneSignalUserData(): Promise<void> {
         ])
         
         // External ID'yi temizle
-        window.OneSignal.User.removeAlias('external_id')
+        OneSignal.User.removeAlias('external_id')
         
         console.log('🔔 OneSignal: Kullanıcı bilgileri temizlendi')
       } catch (error) {

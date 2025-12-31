@@ -40,22 +40,17 @@ function OneSignalTestPage() {
     setPermission(perm);
 
     // OneSignal kullanıcı tags'lerini kontrol et
-    if (typeof window !== 'undefined' && window.OneSignal) {
+    window.OneSignalDeferred = window.OneSignalDeferred || []
+    window.OneSignalDeferred.push(function(OneSignal: any) {
       try {
-        window.OneSignal.push(function() {
-          try {
-            // getTags() senkron bir fonksiyon, Promise değil
-            const tags = window.OneSignal.User.getTags();
-            setUserTags(tags || {});
-          } catch (error) {
-            console.log('Tags alınamadı:', error);
-            setUserTags({});
-          }
-        });
+        // getTags() senkron bir fonksiyon, Promise değil
+        const tags = OneSignal.User.getTags();
+        setUserTags(tags || {});
       } catch (error) {
-        console.log('OneSignal tags kontrolü başarısız:', error);
+        console.log('Tags alınamadı:', error);
+        setUserTags({});
       }
-    }
+    });
   };
 
   useEffect(() => {
@@ -260,20 +255,17 @@ function OneSignalTestPage() {
     try {
       updateStatus('OneSignal kullanıcı tags\'leri kontrol ediliyor...');
       
-      if (typeof window !== 'undefined' && window.OneSignal) {
-        window.OneSignal.push(function() {
-          try {
-            // getTags() senkron bir fonksiyon
-            const tags = window.OneSignal.User.getTags();
-            updateStatus('📋 Mevcut tags: ' + JSON.stringify(tags, null, 2));
-            setUserTags(tags || {});
-          } catch (error: any) {
-            updateStatus('❌ Tags alınamadı: ' + error.message);
-          }
-        });
-      } else {
-        updateStatus('❌ OneSignal henüz yüklenmemiş');
-      }
+      window.OneSignalDeferred = window.OneSignalDeferred || []
+      window.OneSignalDeferred.push(function(OneSignal: any) {
+        try {
+          // getTags() senkron bir fonksiyon
+          const tags = OneSignal.User.getTags();
+          updateStatus('📋 Mevcut tags: ' + JSON.stringify(tags, null, 2));
+          setUserTags(tags || {});
+        } catch (error: any) {
+          updateStatus('❌ Tags alınamadı: ' + error.message);
+        }
+      });
     } catch (error) {
       updateStatus('❌ Tags kontrol hatası: ' + (error as any)?.message);
     }

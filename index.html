@@ -27,7 +27,10 @@
     <!-- OneSignal SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
+      // OneSignal Hibrit Yaklaşım - Anonymous + Authenticated Users
       window.OneSignalDeferred = window.OneSignalDeferred || [];
+      
+      // 1. OneSignal başlatma (tüm kullanıcılar için)
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: "2c4e9ae5-6554-448c-8016-5d5a1894755a",
@@ -52,14 +55,11 @@
             slidedown: {
               prompts: [
                 {
-                  type: "push", // current types are "push" & "category"
+                  type: "push",
                   autoPrompt: true,
                   text: {
-                    /* actionMessage limited to 90 characters */
                     actionMessage: "Yeni emlak ilanları ve fırsatlar hakkında bildirim almak ister misiniz?",
-                    /* acceptButton limited to 15 characters */
                     acceptButton: "İzin Ver",
-                    /* cancelButton limited to 15 characters */
                     cancelButton: "Hayır"
                   },
                   delay: {
@@ -78,57 +78,135 @@
         });
 
         console.log('🔔 OneSignal initialized:', OneSignal.initialized);
-      });
-
-      // Debug logging açık
-      OneSignalDeferred.push(function(OneSignal) {
+        
+        // Debug logging açık
         OneSignal.Debug.setLogLevel('trace');
+        
+        // Kullanıcı durumunu kontrol et
+        await checkUserStatus();
       });
 
-      // Kullanıcı subscription değişikliklerini dinle (YENİ API)
+      // 2. Kullanıcı durumu kontrolü
+      async function checkUserStatus() {
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            console.log('🔔 OneSignal: Giriş yapmış kullanıcı tespit edildi, login yapılıyor...', user.id);
+            await handleUserLogin(user.id, user);
+          } else {
+            console.log('🔔 OneSignal: Anonymous kullanıcı - hiçbir şey yapılmıyor');
+            // Anonymous kullanıcılar için hiçbir şey yapmayın - otomatik abone olabilirler
+          }
+        } catch (error) {
+          console.error('🔔 OneSignal: Kullanıcı durumu kontrol hatası:', error);
+        }
+      }
+
+      // 3. Login işlemi (PWA'dan çağrılacak)
+      window.handleOneSignalLogin = async function(userId, userInfo) {
+        try {
+          console.log('🔔 OneSignal: Login işlemi başlatılıyor...', userId);
+          
+          OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.login(userId);
+            console.log('🔔 OneSignal: Login başarılı:', userId);
+            
+            // Kullanıcı bilgilerini tags olarak ekle
+            if (userInfo) {
+              await addUserTags(userInfo);
+            }
+          });
+        } catch (error) {
+          console.error('🔔 OneSignal: Login hatası:', error);
+        }
+      };
+
+      // 4. Logout işlemi (PWA'dan çağrılacak)
+      window.handleOneSignalLogout = async function() {
+        try {
+          console.log('🔔 OneSignal: Logout işlemi başlatılıyor...');
+          
+          OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.logout();
+            console.log('🔔 OneSignal: Logout başarılı');
+          });
+        } catch (error) {
+          console.error('🔔 OneSignal: Logout hatası:', error);
+        }
+      };
+
+      // Internal login handler
+      async function handleUserLogin(userId, userInfo) {
+        OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            await OneSignal.login(userId);
+            console.log('🔔 OneSignal: Internal login başarılı:', userId);
+            
+            // Kullanıcı bilgilerini tags olarak ekle
+            if (userInfo) {
+              await addUserTags(userInfo);
+            }
+          } catch (error) {
+            console.error('🔔 OneSignal: Internal login hatası:', error);
+          }
+        });
+      }
+
+      // Kullanıcı bilgilerini tags olarak ekle
+      async function addUserTags(user) {
+        try {
+          const nameParts = user.full_name.trim().split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          const phoneNumber = user.phone.startsWith('+90') 
+            ? user.phone 
+            : `+90${user.phone.replace(/\\D/g, '')}`;
+
+          OneSignalDeferred.push(function(OneSignal) {
+            // External ID olarak Supabase user ID'sini kullan
+            OneSignal.User.addAlias('external_id', user.id);
+            
+            // Kullanıcı bilgilerini tags olarak ekle
+            OneSignal.User.addTags({
+              'first_name': firstName,
+              'last_name': lastName,
+              'phone_number': phoneNumber,
+              'user_id': user.id,
+              'user_status': user.status,
+              'user_role': user.role,
+              'sync_source': 'hibrit_login',
+              'last_sync': new Date().toISOString()
+            });
+            
+            console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi (hibrit)', {
+              firstName,
+              lastName,
+              phoneNumber,
+              userId: user.id
+            });
+          });
+        } catch (error) {
+          console.error('🔔 OneSignal: Tags eklenirken hata:', error);
+        }
+      }
+
+      // Subscription değişikliklerini dinle (opsiyonel - ekstra bilgi için)
       OneSignalDeferred.push(function(OneSignal) {
-        // Subscription change listener
         OneSignal.User.PushSubscription.addEventListener('change', function(event) {
           console.log('🔔 OneSignal: Subscription değişti:', event.current.optedIn);
           
           if (event.current.optedIn === true) {
             console.log('🔔 OneSignal: Kullanıcı subscribe oldu!');
             
-            // Kullanıcı giriş yapmışsa bilgilerini ekle
+            // Eğer giriş yapmış kullanıcı varsa bilgilerini güncelle
             const userStr = localStorage.getItem('user');
             if (userStr) {
               try {
                 const user = JSON.parse(userStr);
-                const nameParts = user.full_name.trim().split(' ');
-                const firstName = nameParts[0] || '';
-                const lastName = nameParts.slice(1).join(' ') || '';
-                const phoneNumber = user.phone.startsWith('+90') 
-                  ? user.phone 
-                  : `+90${user.phone.replace(/\\D/g, '')}`;
-
-                // External ID olarak Supabase user ID'sini kullan
-                OneSignal.User.addAlias('external_id', user.id);
-                
-                // Kullanıcı bilgilerini tags olarak ekle
-                OneSignal.User.addTags({
-                  'first_name': firstName,
-                  'last_name': lastName,
-                  'phone_number': phoneNumber,
-                  'user_id': user.id,
-                  'user_status': user.status,
-                  'user_role': user.role,
-                  'sync_source': 'subscription_change',
-                  'last_sync': new Date().toISOString()
-                });
-                
-                console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi (subscription)', {
-                  firstName,
-                  lastName,
-                  phoneNumber,
-                  userId: user.id
-                });
+                setTimeout(() => addUserTags(user), 1000); // 1 saniye bekle
               } catch (error) {
-                console.error('🔔 OneSignal: Kullanıcı bilgileri eklenirken hata:', error);
+                console.error('🔔 OneSignal: Subscription change tag hatası:', error);
               }
             }
           }

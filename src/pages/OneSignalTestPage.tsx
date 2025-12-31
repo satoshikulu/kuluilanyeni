@@ -242,12 +242,51 @@ function OneSignalTestPage() {
 
   const handleSyncUserInfo = async () => {
     try {
-      updateStatus('Kullanıcı bilgileri OneSignal\'a senkronize ediliyor...');
+      updateStatus('Kullanıcı bilgileri OneSignal\'a hibrit senkronize ediliyor...');
       await syncUserToOneSignal();
-      updateStatus('✅ Kullanıcı bilgileri OneSignal\'a eklendi!');
+      updateStatus('✅ Kullanıcı bilgileri OneSignal\'a hibrit login ile eklendi!');
       setTimeout(refreshStatus, 1000); // 1 saniye sonra durumu yenile
     } catch (error) {
       updateStatus('❌ Kullanıcı bilgileri eklenirken hata: ' + (error as any)?.message);
+    }
+  };
+
+  const handleTestHibridLogin = async () => {
+    try {
+      updateStatus('OneSignal hibrit login test ediliyor...');
+      
+      if (!currentUser) {
+        updateStatus('❌ Test için giriş yapmanız gerekiyor');
+        return;
+      }
+
+      // Global hibrit login fonksiyonunu çağır
+      if (window.handleOneSignalLogin) {
+        await window.handleOneSignalLogin(currentUser.id, currentUser);
+        updateStatus('✅ Hibrit login başarılı!');
+        setTimeout(refreshStatus, 1000);
+      } else {
+        updateStatus('❌ handleOneSignalLogin fonksiyonu bulunamadı');
+      }
+    } catch (error) {
+      updateStatus('❌ Hibrit login hatası: ' + (error as any)?.message);
+    }
+  };
+
+  const handleTestHibridLogout = async () => {
+    try {
+      updateStatus('OneSignal hibrit logout test ediliyor...');
+      
+      // Global hibrit logout fonksiyonunu çağır
+      if (window.handleOneSignalLogout) {
+        await window.handleOneSignalLogout();
+        updateStatus('✅ Hibrit logout başarılı!');
+        setTimeout(refreshStatus, 1000);
+      } else {
+        updateStatus('❌ handleOneSignalLogout fonksiyonu bulunamadı');
+      }
+    } catch (error) {
+      updateStatus('❌ Hibrit logout hatası: ' + (error as any)?.message);
     }
   };
 
@@ -364,7 +403,22 @@ function OneSignalTestPage() {
                 className="w-full px-4 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
                 disabled={!currentUser}
               >
-                👤 Kullanıcı Bilgilerini Senkronize Et
+                👤 Hibrit Kullanıcı Senkronize Et
+              </button>
+
+              <button
+                onClick={handleTestHibridLogin}
+                className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                disabled={!currentUser}
+              >
+                🔐 Hibrit Login Test Et
+              </button>
+
+              <button
+                onClick={handleTestHibridLogout}
+                className="w-full px-4 py-3 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                🚪 Hibrit Logout Test Et
               </button>
 
               <button
@@ -391,7 +445,7 @@ function OneSignalTestPage() {
               {!currentUser && (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-yellow-800 text-sm">
-                    ⚠️ Kullanıcı bilgilerini senkronize etmek için giriş yapın.
+                    ⚠️ Hibrit login/logout testleri için giriş yapın. Anonymous kullanıcılar otomatik abone olabilir.
                   </p>
                 </div>
               )}
@@ -479,12 +533,12 @@ function OneSignalTestPage() {
               </button>
 
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-2">💡 Test İpuçları</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">💡 Hibrit Yaklaşım İpuçları</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Önce OneSignal'ı başlatın</li>
-                  <li>• Sonra bildirimlere abone olun</li>
-                  <li>• Telefon numarasını doğru girin</li>
-                  <li>• Tarayıcı bildirim izni verin</li>
+                  <li>• Anonymous kullanıcılar hemen abone olabilir</li>
+                  <li>• Giriş yapanlar tüm cihazlarında bildirim alır</li>
+                  <li>• Login/logout cihazları birleştirir/ayırır</li>
+                  <li>• Performans sorunu çözüldü</li>
                 </ul>
               </div>
             </div>

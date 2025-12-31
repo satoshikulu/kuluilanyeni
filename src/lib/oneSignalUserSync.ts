@@ -3,18 +3,72 @@ import { getCurrentUser } from './simpleAuth'
 declare global {
   interface Window {
     OneSignal: any;
+    handleOneSignalLogin: (userId: string, userInfo: any) => Promise<void>;
+    handleOneSignalLogout: () => Promise<void>;
   }
 }
 
 /**
- * OneSignal kullanıcı bilgilerini senkronize et
- * Kullanıcı giriş yaptığında ve subscribe olduğunda çağrılır
+ * OneSignal hibrit yaklaşım - kullanıcı giriş yaptığında çağrılır
+ * Anonymous kullanıcıları authenticated kullanıcıya dönüştürür
  */
 export async function syncUserToOneSignal(): Promise<void> {
   const currentUser = getCurrentUser()
   
   if (!currentUser) {
-    console.log('🔔 OneSignal: Kullanıcı giriş yapmamış, tags eklenmeyecek')
+    console.log('🔔 OneSignal: Kullanıcı giriş yapmamış, hibrit sync yapılmayacak')
+    return
+  }
+
+  try {
+    // Global login handler'ı çağır (index.html'de tanımlı)
+    if (window.handleOneSignalLogin) {
+      await window.handleOneSignalLogin(currentUser.id, currentUser)
+      console.log('🔔 OneSignal: Hibrit login başarılı:', currentUser.id)
+    } else {
+      console.warn('🔔 OneSignal: handleOneSignalLogin fonksiyonu bulunamadı')
+    }
+  } catch (error) {
+    console.error('🔔 OneSignal: Hibrit login hatası:', error)
+  }
+}
+
+/**
+ * OneSignal hibrit yaklaşım - kullanıcı çıkış yaptığında çağrılır
+ * Authenticated kullanıcıyı anonymous kullanıcıya dönüştürür
+ */
+export async function clearOneSignalUserData(): Promise<void> {
+  try {
+    // Global logout handler'ı çağır (index.html'de tanımlı)
+    if (window.handleOneSignalLogout) {
+      await window.handleOneSignalLogout()
+      console.log('🔔 OneSignal: Hibrit logout başarılı')
+    } else {
+      console.warn('🔔 OneSignal: handleOneSignalLogout fonksiyonu bulunamadı')
+    }
+  } catch (error) {
+    console.error('🔔 OneSignal: Hibrit logout hatası:', error)
+  }
+}
+
+/**
+ * OneSignal subscription değişikliklerini dinle
+ * Hibrit yaklaşımda bu otomatik olarak index.html'de yapılıyor
+ */
+export function setupOneSignalUserSync(): void {
+  console.log('🔔 OneSignal: Hibrit yaklaşım kullanılıyor - setup otomatik')
+  // Hibrit yaklaşımda bu işlem index.html'de otomatik olarak yapılıyor
+}
+
+/**
+ * Manuel kullanıcı bilgisi güncelleme (eski API uyumluluğu için)
+ * Hibrit yaklaşımda login/logout kullanılması önerilir
+ */
+export async function updateUserTags(): Promise<void> {
+  const currentUser = getCurrentUser()
+  
+  if (!currentUser) {
+    console.log('🔔 OneSignal: Kullanıcı giriş yapmamış, tags güncellenemez')
     return
   }
 
@@ -29,14 +83,11 @@ export async function syncUserToOneSignal(): Promise<void> {
       ? currentUser.phone 
       : `+90${currentUser.phone.replace(/\D/g, '')}`
 
-    // OneSignalDeferred kullanarak kullanıcı bilgilerini ekle
+    // OneSignalDeferred kullanarak kullanıcı bilgilerini güncelle
     window.OneSignalDeferred = window.OneSignalDeferred || []
     window.OneSignalDeferred.push(function(OneSignal: any) {
       try {
-        // External ID olarak Supabase user ID'sini kullan
-        OneSignal.User.addAlias('external_id', currentUser.id)
-        
-        // Kullanıcı bilgilerini tags olarak ekle
+        // Kullanıcı bilgilerini tags olarak güncelle
         OneSignal.User.addTags({
           'first_name': firstName,
           'last_name': lastName,
@@ -44,100 +95,22 @@ export async function syncUserToOneSignal(): Promise<void> {
           'user_id': currentUser.id,
           'user_status': currentUser.status,
           'user_role': currentUser.role,
-          'sync_source': 'pwa_login',
+          'sync_source': 'manual_update',
           'last_sync': new Date().toISOString()
         })
         
-        console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi', {
+        console.log('🔔 OneSignal: Kullanıcı tags güncellendi', {
           firstName,
           lastName,
           phoneNumber,
-          userId: currentUser.id,
-          status: currentUser.status,
-          role: currentUser.role
+          userId: currentUser.id
         })
       } catch (error) {
-        console.error('🔔 OneSignal: Tags eklenirken hata:', error)
+        console.error('🔔 OneSignal: Tags güncellenirken hata:', error)
       }
     })
 
   } catch (error) {
-    console.error('🔔 OneSignal: Kullanıcı bilgileri eklenirken hata:', error)
-  }
-}
-
-/**
- * OneSignal subscription değişikliklerini dinle
- * Kullanıcı subscribe olduğunda otomatik olarak bilgilerini ekle
- */
-export function setupOneSignalUserSync(): void {
-  // OneSignalDeferred kullanarak listener'ı kur
-  window.OneSignalDeferred = window.OneSignalDeferred || []
-  window.OneSignalDeferred.push(function(OneSignal: any) {
-    setupSubscriptionListener(OneSignal)
-  })
-}
-
-function setupSubscriptionListener(OneSignal: any): void {
-  try {
-    // Yeni API: PushSubscription.addEventListener kullan
-    OneSignal.User.PushSubscription.addEventListener('change', function(event: any) {
-      console.log('🔔 OneSignal: Subscription değişti:', event.current.optedIn)
-      
-      if (event.current.optedIn === true) {
-        console.log('🔔 OneSignal: Kullanıcı subscribe oldu, bilgiler ekleniyor...')
-        // Kullanıcı subscribe olduğunda bilgilerini ekle
-        setTimeout(() => {
-          syncUserToOneSignal()
-        }, 1000) // 1 saniye bekle, OneSignal'ın hazır olması için
-      }
-    })
-
-    // Sayfa yüklendiğinde mevcut subscription durumunu kontrol et
-    if (OneSignal.User.PushSubscription.optedIn) {
-      console.log('🔔 OneSignal: Kullanıcı zaten subscribe, bilgiler kontrol ediliyor...')
-      // Zaten subscribe ise bilgileri güncelle
-      setTimeout(() => {
-        syncUserToOneSignal()
-      }, 2000) // 2 saniye bekle
-    }
-
-    console.log('🔔 OneSignal: User sync listener kuruldu')
-  } catch (error) {
-    console.error('🔔 OneSignal: Listener kurulurken hata:', error)
-  }
-}
-
-/**
- * Kullanıcı çıkış yaptığında OneSignal'dan bilgileri temizle
- */
-export async function clearOneSignalUserData(): Promise<void> {
-  try {
-    // OneSignalDeferred kullanarak temizlik yap
-    window.OneSignalDeferred = window.OneSignalDeferred || []
-    window.OneSignalDeferred.push(function(OneSignal: any) {
-      try {
-        // Kullanıcı bilgilerini temizle
-        OneSignal.User.removeTags([
-          'first_name',
-          'last_name', 
-          'phone_number',
-          'user_id',
-          'user_status',
-          'user_role',
-          'sync_source',
-          'last_sync'
-        ])
-        
-        // External ID'yi temizle
-        OneSignal.User.removeAlias('external_id')
-        
-        console.log('🔔 OneSignal: Kullanıcı bilgileri temizlendi')
-      } catch (error) {
-        console.error('🔔 OneSignal: Temizlik sırasında hata:', error)
-      }
-    })
-  } catch (error) {
-    console.error('🔔 OneSignal: Kullanıcı bilgileri temizlenirken hata:', error)
+    console.error('🔔 OneSignal: Manuel tag güncelleme hatası:', error)
   }
 }

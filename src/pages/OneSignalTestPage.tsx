@@ -43,12 +43,14 @@ function OneSignalTestPage() {
     if (typeof window !== 'undefined' && window.OneSignal) {
       try {
         window.OneSignal.push(function() {
-          window.OneSignal.User.getTags().then((tags: any) => {
+          try {
+            // getTags() senkron bir fonksiyon, Promise değil
+            const tags = window.OneSignal.User.getTags();
             setUserTags(tags || {});
-          }).catch((error: any) => {
+          } catch (error) {
             console.log('Tags alınamadı:', error);
             setUserTags({});
-          });
+          }
         });
       } catch (error) {
         console.log('OneSignal tags kontrolü başarısız:', error);
@@ -260,12 +262,14 @@ function OneSignalTestPage() {
       
       if (typeof window !== 'undefined' && window.OneSignal) {
         window.OneSignal.push(function() {
-          window.OneSignal.User.getTags().then((tags: any) => {
+          try {
+            // getTags() senkron bir fonksiyon
+            const tags = window.OneSignal.User.getTags();
             updateStatus('📋 Mevcut tags: ' + JSON.stringify(tags, null, 2));
             setUserTags(tags || {});
-          }).catch((error: any) => {
+          } catch (error: any) {
             updateStatus('❌ Tags alınamadı: ' + error.message);
-          });
+          }
         });
       } else {
         updateStatus('❌ OneSignal henüz yüklenmemiş');

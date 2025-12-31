@@ -50,29 +50,33 @@ export async function syncUserToOneSignal(): Promise<void> {
 
     // OneSignal'a kullanıcı bilgilerini tags olarak ekle
     window.OneSignal.push(function() {
-      // External ID olarak Supabase user ID'sini kullan
-      window.OneSignal.User.addAlias('external_id', currentUser.id)
-      
-      // Kullanıcı bilgilerini tags olarak ekle
-      window.OneSignal.User.addTags({
-        'first_name': firstName,
-        'last_name': lastName,
-        'phone_number': phoneNumber,
-        'user_id': currentUser.id,
-        'user_status': currentUser.status,
-        'user_role': currentUser.role,
-        'sync_source': 'pwa_login',
-        'last_sync': new Date().toISOString()
-      })
-      
-      console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi', {
-        firstName,
-        lastName,
-        phoneNumber,
-        userId: currentUser.id,
-        status: currentUser.status,
-        role: currentUser.role
-      })
+      try {
+        // External ID olarak Supabase user ID'sini kullan
+        window.OneSignal.User.addAlias('external_id', currentUser.id)
+        
+        // Kullanıcı bilgilerini tags olarak ekle
+        window.OneSignal.User.addTags({
+          'first_name': firstName,
+          'last_name': lastName,
+          'phone_number': phoneNumber,
+          'user_id': currentUser.id,
+          'user_status': currentUser.status,
+          'user_role': currentUser.role,
+          'sync_source': 'pwa_login',
+          'last_sync': new Date().toISOString()
+        })
+        
+        console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi', {
+          firstName,
+          lastName,
+          phoneNumber,
+          userId: currentUser.id,
+          status: currentUser.status,
+          role: currentUser.role
+        })
+      } catch (error) {
+        console.error('🔔 OneSignal: Tags eklenirken hata:', error)
+      }
     })
 
   } catch (error) {
@@ -147,22 +151,26 @@ export async function clearOneSignalUserData(): Promise<void> {
 
   try {
     window.OneSignal.push(function() {
-      // Kullanıcı bilgilerini temizle
-      window.OneSignal.User.removeTags([
-        'first_name',
-        'last_name', 
-        'phone_number',
-        'user_id',
-        'user_status',
-        'user_role',
-        'sync_source',
-        'last_sync'
-      ])
-      
-      // External ID'yi temizle
-      window.OneSignal.User.removeAlias('external_id')
-      
-      console.log('🔔 OneSignal: Kullanıcı bilgileri temizlendi')
+      try {
+        // Kullanıcı bilgilerini temizle
+        window.OneSignal.User.removeTags([
+          'first_name',
+          'last_name', 
+          'phone_number',
+          'user_id',
+          'user_status',
+          'user_role',
+          'sync_source',
+          'last_sync'
+        ])
+        
+        // External ID'yi temizle
+        window.OneSignal.User.removeAlias('external_id')
+        
+        console.log('🔔 OneSignal: Kullanıcı bilgileri temizlendi')
+      } catch (error) {
+        console.error('🔔 OneSignal: Temizlik sırasında hata:', error)
+      }
     })
   } catch (error) {
     console.error('🔔 OneSignal: Kullanıcı bilgileri temizlenirken hata:', error)

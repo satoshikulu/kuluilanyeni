@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabaseClient'
 import AdminGate from '../components/AdminGate'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
-import { getCurrentUser } from '../lib/simpleAuth'
 import { 
   sendOneSignalNotification,
   OneSignalNotificationTemplates
@@ -339,24 +338,39 @@ function AdminPage() {
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_user' : 'reject_user'
       
-      // Admin ID'yi getCurrentUser'dan al
-      const currentUser = getCurrentUser()
+      // Supabase session'dan admin ID'yi al (AdminGate Supabase Auth kullanıyor)
+      const { data: { session } } = await supabase.auth.getSession()
       
-      // Debug: localStorage'daki user bilgisini kontrol et
-      console.log('🔍 Debug - getCurrentUser():', currentUser)
-      console.log('🔍 Debug - localStorage user:', localStorage.getItem('user'))
+      // Debug: Supabase session bilgisini kontrol et
+      console.log('🔍 Debug - Supabase session:', session)
       
-      if (!currentUser) {
-        alert('Giriş yapmanız gerekiyor. Debug: getCurrentUser() null döndü.')
+      if (!session?.user) {
+        alert('Supabase session bulunamadı. Lütfen tekrar giriş yapın.')
         return
       }
       
-      console.log('🔍 Debug - Admin ID:', currentUser.id)
+      // Supabase user ID'sini kullan ama önce public.users'da bu ID'ye sahip admin var mı kontrol et
+      let adminId = session.user.id
+      
+      // Eğer Supabase user ID'si public.users'da yoksa, email ile admin'i bul
+      const { data: adminUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', session.user.email)
+        .eq('role', 'admin')
+        .single()
+      
+      if (adminUser) {
+        adminId = adminUser.id
+        console.log('🔍 Debug - Admin ID from public.users:', adminId)
+      } else {
+        console.log('🔍 Debug - Admin not found in public.users, using Supabase ID:', adminId)
+      }
       
       const { data, error } = await supabase
         .rpc(rpcFunction, {
           p_user_id: id,
-          p_admin_id: currentUser.id
+          p_admin_id: adminId
         })
       
       if (error) {

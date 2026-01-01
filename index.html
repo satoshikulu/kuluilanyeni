@@ -178,6 +178,26 @@
               'sync_source': 'hibrit_login',
               'last_sync': new Date().toISOString()
             });
+
+            // Email subscription ekle (eğer email varsa)
+            if (user.email && user.email.trim()) {
+              try {
+                OneSignal.User.addEmail(user.email.trim());
+                console.log('🔔 OneSignal: Email subscription eklendi:', user.email);
+              } catch (emailError) {
+                console.warn('🔔 OneSignal: Email subscription hatası:', emailError);
+              }
+            }
+
+            // SMS subscription ekle (telefon numarası ile)
+            if (phoneNumber) {
+              try {
+                OneSignal.User.addSms(phoneNumber);
+                console.log('🔔 OneSignal: SMS subscription eklendi:', phoneNumber);
+              } catch (smsError) {
+                console.warn('🔔 OneSignal: SMS subscription hatası:', smsError);
+              }
+            }
             
             console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi (hibrit)', {
               firstName,

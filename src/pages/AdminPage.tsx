@@ -673,7 +673,7 @@ function AdminPage() {
   }, [activeTab, pendingUsers, approvedUsers, rejectedUsers])
   return (
     <AdminGate>
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 admin-quicksand">
       {/* Modern Admin Header */}
       <div className="relative overflow-hidden">
         <div 

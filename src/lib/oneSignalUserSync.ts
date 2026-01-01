@@ -87,6 +87,9 @@ export async function updateUserTags(): Promise<void> {
     window.OneSignalDeferred = window.OneSignalDeferred || []
     window.OneSignalDeferred.push(function(OneSignal: any) {
       try {
+        // External ID olarak Supabase user ID'sini kullan
+        OneSignal.User.addAlias('external_id', currentUser.id)
+        
         // Kullanıcı bilgilerini tags olarak güncelle
         OneSignal.User.addTags({
           'first_name': firstName,
@@ -98,12 +101,33 @@ export async function updateUserTags(): Promise<void> {
           'sync_source': 'manual_update',
           'last_sync': new Date().toISOString()
         })
+
+        // Email subscription ekle (eğer email varsa)
+        if (currentUser.email && currentUser.email.trim()) {
+          try {
+            OneSignal.User.addEmail(currentUser.email.trim())
+            console.log('🔔 OneSignal: Email subscription eklendi:', currentUser.email)
+          } catch (emailError) {
+            console.warn('🔔 OneSignal: Email subscription hatası:', emailError)
+          }
+        }
+
+        // SMS subscription ekle (telefon numarası ile)
+        if (phoneNumber) {
+          try {
+            OneSignal.User.addSms(phoneNumber)
+            console.log('🔔 OneSignal: SMS subscription eklendi:', phoneNumber)
+          } catch (smsError) {
+            console.warn('🔔 OneSignal: SMS subscription hatası:', smsError)
+          }
+        }
         
-        console.log('🔔 OneSignal: Kullanıcı tags güncellendi', {
+        console.log('🔔 OneSignal: Kullanıcı bilgileri güncellendi (manuel)', {
           firstName,
           lastName,
           phoneNumber,
-          userId: currentUser.id
+          userId: currentUser.id,
+          email: currentUser.email || 'yok'
         })
       } catch (error) {
         console.error('🔔 OneSignal: Tags güncellenirken hata:', error)

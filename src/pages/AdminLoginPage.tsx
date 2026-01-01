@@ -17,6 +17,46 @@ function AdminLoginPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
+  // Quicksand font yükleme - sadece bir kez
+  useEffect(() => {
+    // Eğer font zaten yüklenmişse tekrar yükleme
+    if (document.querySelector('link[href*="Quicksand"]')) {
+      return
+    }
+
+    const link = document.createElement('link')
+    link.href = 'https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap'
+    link.rel = 'stylesheet'
+    link.id = 'quicksand-font-admin-login'
+    document.head.appendChild(link)
+
+    // CSS class ekle
+    const style = document.createElement('style')
+    style.id = 'admin-login-quicksand-style'
+    style.textContent = `
+      .admin-login-quicksand {
+        font-family: 'Quicksand', sans-serif !important;
+      }
+      .admin-login-quicksand * {
+        font-family: inherit !important;
+      }
+    `
+    document.head.appendChild(style)
+
+    return () => {
+      // Cleanup: font linkini ve style'ı kaldır
+      const existingLink = document.getElementById('quicksand-font-admin-login')
+      const existingStyle = document.getElementById('admin-login-quicksand-style')
+      
+      if (existingLink && document.head.contains(existingLink)) {
+        document.head.removeChild(existingLink)
+      }
+      if (existingStyle && document.head.contains(existingStyle)) {
+        document.head.removeChild(existingStyle)
+      }
+    }
+  }, [])
+
   // Zaten giriş yapmışsa admin paneline yönlendir
   useEffect(() => {
     const checkAuth = async () => {
@@ -92,89 +132,121 @@ function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
+    <div className="min-h-screen bg-gray-50 admin-login-quicksand">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('https://plus.unsplash.com/premium_photo-1661908377130-772731de98f6?q=80&w=1624&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`
+        }}
+      >
+        <div className="absolute inset-0 bg-black/50"></div>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* Logo/Brand */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">👑</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin Girişi</h1>
-            <p className="text-gray-600 mt-2">Yönetici paneline erişim</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Admin Login</h1>
+            <p className="text-white/80">Kulu İlan Yönetim Sistemi</p>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Adresi
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="admin@example.com"
-                required
-                disabled={loading}
-              />
+          {/* Login Card */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Yönetici Girişi</h2>
+              <p className="text-gray-600">Admin hesabınızla giriş yapın</p>
             </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Şifre
-              </label>
-              <div className="relative">
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Adresi
+                </label>
                 <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="••••••••"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="admin@kuluilani.com"
                   required
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  disabled={loading}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Giriş yapılıyor...' : 'Admin Girişi'}
-            </button>
-          </form>
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Şifre
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="••••••••••••"
+                    required
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-xl bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    Giriş yapılıyor...
+                  </div>
+                ) : (
+                  'Admin Paneline Giriş Yap'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-center text-xs text-gray-500 leading-relaxed">
+                Admin hesabınızın <code className="bg-gray-100 px-2 py-1 rounded text-blue-600">profiles.role = "admin"</code> olarak tanımlanmış olması gerekir
+              </p>
+            </div>
+          </div>
 
           {/* Footer */}
-          <div className="mt-8 text-center">
+          <div className="text-center mt-8 space-y-2">
             <a
               href="/"
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="inline-block text-white/80 hover:text-white text-sm transition-colors"
             >
               ← Ana sayfaya dön
             </a>
+            <p className="text-white/60 text-sm">
+              © 2025 Kulu İlan. Tüm hakları saklıdır.
+            </p>
           </div>
         </div>
       </div>

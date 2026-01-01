@@ -13,6 +13,7 @@ export interface User {
   phone: string
   role: 'user' | 'admin'
   status: 'pending' | 'approved' | 'rejected'
+  email?: string // Optional email field for admin users and future email functionality
 }
 
 export interface AuthResponse {

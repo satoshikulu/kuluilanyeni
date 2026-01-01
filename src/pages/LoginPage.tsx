@@ -16,6 +16,19 @@ function LoginPage() {
   const [currentUser, setCurrentUser] = useState<{ email?: string; phone?: string; user_metadata?: { role?: string } } | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Quicksand font yükleme
+  useEffect(() => {
+    const link = document.createElement('link')
+    link.href = 'https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap'
+    link.rel = 'stylesheet'
+    document.head.appendChild(link)
+
+    return () => {
+      // Cleanup: font linkini kaldır
+      document.head.removeChild(link)
+    }
+  }, [])
+
   useEffect(() => {
     checkCurrentSession()
   }, [])
@@ -115,8 +128,8 @@ function LoginPage() {
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-sm w-full mx-4">
           <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-gray-600">Oturum kontrol ediliyor...</p>
         </div>
@@ -130,43 +143,43 @@ function LoginPage() {
     const isAdmin = typedCurrentUser.user_metadata?.role === 'admin'
     
     return (
-      <div className="max-w-md mx-auto">
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-8 border-2 border-blue-200">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
+        <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full mx-4">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">{isAdmin ? '👑' : '👤'}</span>
+              <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {isAdmin ? 'Admin Oturumu Aktif' : 'Kullanıcı Oturumu Aktif'}
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              {isAdmin ? 'Admin Oturumu Aktif' : 'Oturum Aktif'}
             </h2>
-            <p className="text-gray-700 mb-2">
+            <p className="text-gray-600 mb-2">
               <strong>{typedCurrentUser.email || typedCurrentUser.phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
             </p>
-            <p className="text-gray-600 text-sm">
-              Farklı bir hesapla giriş yapmak için önce mevcut oturumunuzu kapatmanız gerekiyor.
+            <p className="text-gray-500 text-sm">
+              Farklı bir hesapla giriş yapmak için önce mevcut oturumunuzu kapatın.
             </p>
           </div>
 
           <div className="space-y-3">
             <button
               onClick={handleSupabaseLogout}
-              className="w-full rounded-lg bg-gradient-to-r from-red-500 to-rose-600 text-white py-3 font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all"
+              className="w-full rounded-lg bg-red-600 text-white py-3 font-medium hover:bg-red-700 transition-colors"
             >
-              🚪 Oturumu Kapat
+              Oturumu Kapat
             </button>
             {isAdmin && (
               <button
                 onClick={() => navigate('/admin')}
-                className="w-full rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 font-semibold hover:from-purple-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
+                className="w-full rounded-lg bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors"
               >
-                👑 Admin Paneline Git
+                Admin Paneline Git
               </button>
             )}
             <button
               onClick={() => navigate('/')}
-              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-semibold hover:bg-gray-200 transition-all"
+              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-medium hover:bg-gray-200 transition-colors"
             >
-              🏠 Ana Sayfaya Git
+              Ana Sayfaya Git
             </button>
           </div>
         </div>
@@ -176,36 +189,36 @@ function LoginPage() {
 
   if (isAdminSession) {
     return (
-      <div className="max-w-md mx-auto">
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-lg p-8 border-2 border-yellow-200">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
+        <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full mx-4">
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">⚠️</span>
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-8 h-8 bg-orange-600 rounded-full"></div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Admin Oturumu Aktif</h2>
-            <p className="text-gray-700">
-              Şu anda admin olarak giriş yapmış durumdasınız. Normal kullanıcı girişi yapmak için önce admin oturumunuzu kapatmanız gerekiyor.
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Admin Oturumu Aktif</h2>
+            <p className="text-gray-600">
+              Şu anda admin olarak giriş yapmış durumdasınız. Normal kullanıcı girişi yapmak için önce admin oturumunuzu kapatın.
             </p>
           </div>
 
           <div className="space-y-3">
             <button
               onClick={handleAdminLogout}
-              className="w-full rounded-lg bg-gradient-to-r from-red-500 to-rose-600 text-white py-3 font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all"
+              className="w-full rounded-lg bg-red-600 text-white py-3 font-medium hover:bg-red-700 transition-colors"
             >
-              🚪 Admin Oturumunu Kapat
+              Admin Oturumunu Kapat
             </button>
             <button
               onClick={() => navigate('/admin')}
-              className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
+              className="w-full rounded-lg bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors"
             >
-              👑 Admin Paneline Dön
+              Admin Paneline Dön
             </button>
             <button
               onClick={() => navigate('/')}
-              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-semibold hover:bg-gray-200 transition-all"
+              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-medium hover:bg-gray-200 transition-colors"
             >
-              🏠 Ana Sayfaya Git
+              Ana Sayfaya Git
             </button>
           </div>
         </div>
@@ -214,66 +227,113 @@ function LoginPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold mb-2 text-gray-900">Giriş Yap</h1>
-        <p className="text-gray-600 mb-6">Telefon ve şifre ile hızlı giriş.</p>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2053&q=80')`
+        }}
+      >
+        <div className="absolute inset-0 bg-black/50"></div>
+      </div>
 
-        <form className="space-y-4" onSubmit={onSubmit}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Telefon Numarası *</label>
-            <input 
-              type="tel"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-              placeholder="5xx xxx xx xx" 
-              value={phone} 
-              onChange={(e) => setPhone(e.target.value)}
-              required
-            />
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* Logo/Brand */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Kulu İlan</h1>
+            <p className="text-white/80">Emlak Pazarınız</p>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Şifre *</label>
-            <div className="relative">
-              <input 
-                type={showPassword ? 'text' : 'password'}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                placeholder="Şifrenizi girin" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+
+          {/* Login Card */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Giriş Yap</h2>
+              <p className="text-gray-600">Hesabınıza erişim sağlayın</p>
+            </div>
+
+            <form className="space-y-5" onSubmit={onSubmit}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Telefon Numarası
+                </label>
+                <input 
+                  type="tel"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                  placeholder="5xx xxx xx xx" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Şifre
+                </label>
+                <div className="relative">
+                  <input 
+                    type={showPassword ? 'text' : 'password'}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                    placeholder="Şifrenizi girin" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  {error}
+                </div>
+              )}
+              
+              <button 
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-xl bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {submitting ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    Giriş yapılıyor...
+                  </div>
+                ) : (
+                  'Giriş Yap'
+                )}
               </button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-center text-sm text-gray-600">
+                Hesabınız yok mu?{' '}
+                <Link 
+                  to="/uye-ol" 
+                  className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                >
+                  Üye Ol
+                </Link>
+              </p>
             </div>
           </div>
-          
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-          
-          <button 
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-          >
-            {submitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-          </button>
-          
-          <div className="text-center text-sm text-gray-600 mt-4">
-            Hesabın yok mu?{' '}
-            <Link to="/uye-ol" className="text-blue-600 hover:text-blue-700 font-medium">
-              Üye Ol
-            </Link>
+
+          {/* Footer */}
+          <div className="text-center mt-8">
+            <p className="text-white/60 text-sm">
+              © 2025 Kulu İlan. Tüm hakları saklıdır.
+            </p>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

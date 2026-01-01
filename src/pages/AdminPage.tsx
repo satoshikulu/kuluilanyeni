@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import AdminGate from '../components/AdminGate'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
+import { getCurrentUser } from '../lib/simpleAuth'
 import { 
   sendOneSignalNotification,
   OneSignalNotificationTemplates
@@ -338,13 +339,17 @@ function AdminPage() {
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_user' : 'reject_user'
       
-      // Admin ID'yi al (şimdilik dummy, sonra gerçek admin ID kullanılacak)
-      const adminId = '00000000-0000-0000-0000-000000000000' // Dummy admin ID
+      // Admin ID'yi getCurrentUser'dan al
+      const currentUser = getCurrentUser()
+      if (!currentUser) {
+        alert('Giriş yapmanız gerekiyor')
+        return
+      }
       
       const { data, error } = await supabase
         .rpc(rpcFunction, {
           p_user_id: id,
-          p_admin_id: adminId
+          p_admin_id: currentUser.id
         })
       
       if (error) {

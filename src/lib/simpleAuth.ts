@@ -72,8 +72,8 @@ export async function loginUser(
   try {
     const { data, error } = await supabase
       .rpc('login_user', {
-        p_phone: phone,
-        p_password: simpleHash(password)
+        p_password: simpleHash(password),
+        p_phone_or_email: phone
       })
 
     if (error) {

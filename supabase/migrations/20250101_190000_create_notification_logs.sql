@@ -1,7 +1,7 @@
 -- Create notification_logs table for tracking OneSignal notifications
 CREATE TABLE IF NOT EXISTS notification_logs (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES users_min(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     type VARCHAR(50) NOT NULL, -- 'notification', 'subscription', 'bulk_subscription'
     title VARCHAR(255),
     message TEXT,

@@ -16,6 +16,7 @@ export default {
         'download-cycle': 'downloadCycle 20s ease-in-out infinite',
         'shimmer': 'shimmer 2s linear infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
+        'shake': 'shake 0.5s ease-in-out',
       },
       keyframes: {
         fadeIn: {
@@ -86,6 +87,11 @@ export default {
             boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)',
             opacity: '1'
           },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
+          '20%, 40%, 60%, 80%': { transform: 'translateX(2px)' },
         },
       },
     },

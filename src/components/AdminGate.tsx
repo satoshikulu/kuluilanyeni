@@ -123,80 +123,154 @@ function AdminGate({ children }: Props) {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">👑</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Girişi</h1>
-            <p className="text-gray-600">Supabase hesabınızla giriş yapın</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80')`
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90" />
+        
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-500" />
+        </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Adresi
-              </label>
-              <input
-                type="email"
-                required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-                disabled={isLoggingIn}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Şifre
-              </label>
-              <input
-                type="password"
-                required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                disabled={isLoggingIn}
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-500">⚠️</span>
-                  <span className="text-sm text-red-700">{error}</span>
+        {/* Login Card */}
+        <div className="relative z-10 max-w-md w-full">
+          {/* Glass Card Effect */}
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 relative overflow-hidden">
+            {/* Card Background Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/10 to-transparent rounded-3xl" />
+            
+            {/* Content */}
+            <div className="relative z-10">
+              {/* Header */}
+              <div className="text-center mb-8">
+                {/* Logo/Icon */}
+                <div className="relative mx-auto mb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-400 via-pink-400 to-indigo-400 rounded-2xl flex items-center justify-center mx-auto shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                    <span className="text-3xl">👑</span>
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full border-2 border-white animate-pulse" />
                 </div>
+                
+                <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
+                  Admin Paneli
+                </h1>
+                <p className="text-white/70 text-lg">
+                  Kulu İlan Yönetim Sistemi
+                </p>
+                <div className="w-16 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mx-auto mt-4" />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={isLoggingIn || !email.trim() || !password}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
-            >
-              {isLoggingIn ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
-                  Giriş yapılıyor...
-                </span>
-              ) : (
-                'Giriş Yap'
-              )}
-            </button>
-          </form>
+              {/* Login Form */}
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-white/90 mb-3">
+                      📧 Email Adresi
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        required
+                        className="w-full rounded-2xl border-0 bg-white/20 backdrop-blur-sm px-4 py-4 text-white placeholder-white/50 focus:bg-white/30 focus:ring-2 focus:ring-purple-400/50 transition-all duration-300 text-lg"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="admin@kuluilani.com"
+                        disabled={isLoggingIn}
+                      />
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400/20 to-pink-400/20 pointer-events-none" />
+                    </div>
+                  </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              Admin hesabınızın <code className="bg-gray-100 px-1 rounded">profiles.role = "admin"</code> olarak tanımlanmış olması gerekir
-            </p>
+                  <div>
+                    <label className="block text-sm font-semibold text-white/90 mb-3">
+                      🔐 Şifre
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        required
+                        className="w-full rounded-2xl border-0 bg-white/20 backdrop-blur-sm px-4 py-4 text-white placeholder-white/50 focus:bg-white/30 focus:ring-2 focus:ring-purple-400/50 transition-all duration-300 text-lg"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        disabled={isLoggingIn}
+                      />
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400/20 to-pink-400/20 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="bg-red-500/20 backdrop-blur-sm border border-red-400/30 rounded-2xl p-4 animate-shake">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-sm">⚠️</span>
+                      </div>
+                      <span className="text-red-100 font-medium">{error}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isLoggingIn || !email.trim() || !password}
+                  className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-purple-600 hover:via-pink-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-2xl hover:shadow-purple-500/25 transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
+                >
+                  {/* Button Background Animation */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <span className="relative z-10 flex items-center justify-center gap-3">
+                    {isLoggingIn ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        Giriş Yapılıyor...
+                      </>
+                    ) : (
+                      <>
+                        <span>🚀</span>
+                        Yönetim Paneline Giriş Yap
+                      </>
+                    )}
+                  </span>
+                </button>
+              </form>
+
+              {/* Footer Info */}
+              <div className="mt-8 text-center space-y-3">
+                <div className="flex items-center justify-center gap-2 text-white/60 text-sm">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span>Güvenli Bağlantı</span>
+                </div>
+                <p className="text-xs text-white/50 leading-relaxed">
+                  Admin hesabınızın <code className="bg-white/20 px-2 py-1 rounded-lg text-purple-200">profiles.role = "admin"</code> olarak tanımlanmış olması gerekir
+                </p>
+              </div>
+            </div>
           </div>
+
+          {/* Floating Elements */}
+          <div className="absolute -top-4 -left-4 w-8 h-8 bg-purple-400/30 rounded-full blur-sm animate-bounce" />
+          <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-pink-400/30 rounded-full blur-sm animate-bounce delay-1000" />
+        </div>
+
+        {/* Bottom Branding */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
+          <p className="text-white/40 text-sm font-medium">
+            Kulu İlan © 2025 • Emlak Yönetim Sistemi
+          </p>
         </div>
       </div>
     )

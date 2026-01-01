@@ -168,7 +168,7 @@ function AdminGate({ children }: Props) {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2053&q=80')`
+            backgroundImage: `url('https://plus.unsplash.com/premium_photo-1661908377130-772731de98f6?q=80&w=1112&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`
           }}
         >
           <div className="absolute inset-0 bg-black/60"></div>
@@ -176,7 +176,7 @@ function AdminGate({ children }: Props) {
 
         {/* Content */}
         <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-sm">
             {/* Logo/Brand */}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>

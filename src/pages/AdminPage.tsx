@@ -341,10 +341,17 @@ function AdminPage() {
       
       // Admin ID'yi getCurrentUser'dan al
       const currentUser = getCurrentUser()
+      
+      // Debug: localStorage'daki user bilgisini kontrol et
+      console.log('🔍 Debug - getCurrentUser():', currentUser)
+      console.log('🔍 Debug - localStorage user:', localStorage.getItem('user'))
+      
       if (!currentUser) {
-        alert('Giriş yapmanız gerekiyor')
+        alert('Giriş yapmanız gerekiyor. Debug: getCurrentUser() null döndü.')
         return
       }
+      
+      console.log('🔍 Debug - Admin ID:', currentUser.id)
       
       const { data, error } = await supabase
         .rpc(rpcFunction, {

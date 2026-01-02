@@ -20,13 +20,21 @@ function OneSignalTestPage() {
   const [oneSignalStatus, setOneSignalStatus] = useState<any>({});
   const [permission, setPermission] = useState<string>('default');
   const [userTags, setUserTags] = useState<any>({});
-  const currentUser = getCurrentUser();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [testForm, setTestForm] = useState({
     title: 'Test Bildirimi',
     message: 'Bu bir test bildirimidir.',
     deepLink: '/test',
     phone: '05551234567'
   });
+
+  useEffect(() => {
+    async function loadUser() {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    }
+    loadUser();
+  }, []);
 
   const updateStatus = (message: string) => {
     setStatus(prev => prev + '\n' + new Date().toLocaleTimeString() + ': ' + message);

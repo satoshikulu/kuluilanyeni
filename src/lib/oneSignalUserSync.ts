@@ -13,7 +13,7 @@ declare global {
  * Anonymous kullanıcıları authenticated kullanıcıya dönüştürür
  */
 export async function syncUserToOneSignal(): Promise<void> {
-  const currentUser = getCurrentUser()
+  const currentUser = await getCurrentUser()
   
   if (!currentUser) {
     console.log('🔔 OneSignal: Kullanıcı giriş yapmamış, hibrit sync yapılmayacak')
@@ -65,7 +65,7 @@ export function setupOneSignalUserSync(): void {
  * Hibrit yaklaşımda login/logout kullanılması önerilir
  */
 export async function updateUserTags(): Promise<void> {
-  const currentUser = getCurrentUser()
+  const currentUser = await getCurrentUser()
   
   if (!currentUser) {
     console.log('🔔 OneSignal: Kullanıcı giriş yapmamış, tags güncellenemez')

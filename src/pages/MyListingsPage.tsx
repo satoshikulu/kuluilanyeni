@@ -22,21 +22,28 @@ type Listing = {
 
 function MyListingsPage() {
   const navigate = useNavigate()
-  const currentUser = getCurrentUser()
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!currentUser) {
-      navigate('/giris')
-      return
+    async function checkUser() {
+      const user = await getCurrentUser()
+      if (!user) {
+        navigate('/giris')
+        return
+      }
+      setCurrentUser(user)
+      loadMyListings(user)
     }
-    loadMyListings()
+    checkUser()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function loadMyListings() {
+  async function loadMyListings(user = currentUser) {
+    if (!user) return
+    
     setLoading(true)
     setError('')
     
@@ -44,7 +51,7 @@ function MyListingsPage() {
       const { data, error: fetchError } = await supabase
         .from('listings')
         .select('*')
-        .eq('owner_phone', currentUser?.phone)
+        .eq('owner_phone', user.phone)
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError

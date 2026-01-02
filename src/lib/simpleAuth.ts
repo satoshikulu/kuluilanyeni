@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import { syncUserToOneSignal, clearOneSignalUserData } from './oneSignalUserSync'
+import { saveUser, getUser, removeUser } from './persistentStorage'
 
 // Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
 function simpleHash(password: string): string {
@@ -87,8 +88,8 @@ export async function loginUser(
     const result = data as any
     
     if (result.success && result.user) {
-      // Kullanıcıyı localStorage'a kaydet
-      localStorage.setItem('user', JSON.stringify(result.user))
+      // Kullanıcıyı kalıcı storage'a kaydet (iOS PWA uyumlu)
+      await saveUser(result.user)
       
       // OneSignal'a kullanıcı bilgilerini senkronize et
       setTimeout(() => {
@@ -120,7 +121,7 @@ export async function loginUser(
  */
 export async function logoutUser(): Promise<void> {
   // OneSignal kullanıcı bilgilerini temizle
-  const currentUser = getCurrentUser();
+  const currentUser = await getCurrentUser();
   if (currentUser) {
     try {
       await clearOneSignalUserData()
@@ -130,20 +131,17 @@ export async function logoutUser(): Promise<void> {
     }
   }
   
-  localStorage.removeItem('user')
+  // Kalıcı storage'dan kullanıcıyı sil
+  await removeUser()
   window.location.href = '/'
 }
 
 /**
  * Mevcut kullanıcıyı al
  */
-export function getCurrentUser(): User | null {
+export async function getCurrentUser(): Promise<User | null> {
   try {
-    const userStr = localStorage.getItem('user')
-    if (!userStr) return null
-    
-    const user = JSON.parse(userStr)
-    return user
+    return await getUser()
   } catch {
     return null
   }
@@ -152,15 +150,16 @@ export function getCurrentUser(): User | null {
 /**
  * Kullanıcı giriş yapmış mı?
  */
-export function isAuthenticated(): boolean {
-  return getCurrentUser() !== null
+export async function isAuthenticated(): Promise<boolean> {
+  const user = await getCurrentUser()
+  return user !== null
 }
 
 /**
  * Kullanıcı admin mi?
  */
-export function isAdmin(): boolean {
-  const user = getCurrentUser()
+export async function isAdmin(): Promise<boolean> {
+  const user = await getCurrentUser()
   return user?.role === 'admin'
 }
 
@@ -168,7 +167,7 @@ export function isAdmin(): boolean {
  * Admin: Kullanıcı onayla
  */
 export async function approveUser(userId: string): Promise<AuthResponse> {
-  const currentUser = getCurrentUser()
+  const currentUser = await getCurrentUser()
   if (!currentUser || currentUser.role !== 'admin') {
     return {
       success: false,
@@ -210,7 +209,7 @@ export async function approveUser(userId: string): Promise<AuthResponse> {
  * Admin: Kullanıcı reddet
  */
 export async function rejectUser(userId: string): Promise<AuthResponse> {
-  const currentUser = getCurrentUser()
+  const currentUser = await getCurrentUser()
   if (!currentUser || currentUser.role !== 'admin') {
     return {
       success: false,

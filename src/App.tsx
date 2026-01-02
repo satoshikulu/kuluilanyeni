@@ -4,21 +4,59 @@ import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import { setupOneSignalUserSync } from './lib/oneSignalUserSync'
-import { useEffect } from 'react'
+import { initStorage } from './lib/persistentStorage'
+import { useEffect, useState } from 'react'
 
 
 function App() {
-  const currentUser = getCurrentUser()
-  const userIsAdmin = isAdmin()
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [userIsAdmin, setUserIsAdmin] = useState(false)
+  const [loading, setLoading] = useState(true)
   const isAdminSession = sessionStorage.getItem('isAdmin') === 'true'
   
   // Kullanıcı adını title case yap
   const displayName = currentUser?.full_name ? toTitleCase(currentUser.full_name) : ''
 
-  // OneSignal user sync kurulumu
+  // Uygulama başlatma ve kullanıcı durumu kontrolü
   useEffect(() => {
-    setupOneSignalUserSync()
+    async function initApp() {
+      try {
+        // Storage sistemini başlat
+        await initStorage()
+        
+        // Kullanıcı durumunu kontrol et
+        const user = await getCurrentUser()
+        setCurrentUser(user)
+        
+        if (user) {
+          const adminStatus = await isAdmin()
+          setUserIsAdmin(adminStatus)
+          console.log('✅ User session restored:', user.full_name)
+        }
+        
+        // OneSignal user sync kurulumu
+        setupOneSignalUserSync()
+      } catch (error) {
+        console.error('❌ App initialization error:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initApp()
   }, [])
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Uygulama yükleniyor...</p>
+        </div>
+      </div>
+    )
+  }
 
 
 

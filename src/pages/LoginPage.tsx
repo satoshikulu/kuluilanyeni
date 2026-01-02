@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { loginUser } from '../lib/simpleAuth'
+import { loginUser, getCurrentUser } from '../lib/simpleAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import { subscribeToNotifications } from '../lib/oneSignal'
@@ -66,9 +66,15 @@ function LoginPage() {
         return
       }
 
-      // Supabase session kontrolü
+      // Kalıcı storage'dan kullanıcı kontrolü
+      const user = await getCurrentUser()
+      if (user) {
+        setCurrentUser(user)
+      }
+
+      // Supabase session kontrolü (fallback)
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
+      if (session?.user && !user) {
         setCurrentUser(session.user)
       }
     } catch (error) {

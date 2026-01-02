@@ -7,6 +7,7 @@ import {
   sendOneSignalNotification,
   OneSignalNotificationTemplates
 } from '../lib/oneSignalNotifications'
+import { useDebounce } from '../hooks/useDebounce'
 
 type Listing = {
   id: string
@@ -83,6 +84,7 @@ function AdminPage() {
   const [priceMin, setPriceMin] = useState<string>('')
   const [priceMax, setPriceMax] = useState<string>('')
   const [search, setSearch] = useState<string>('')
+  const debouncedSearch = useDebounce(search, 500) // 500ms debounce
 
   const [orderBy, setOrderBy] = useState<'created_at' | 'price_tl' | 'area_m2'>('created_at')
   const [orderAsc, setOrderAsc] = useState<boolean>(false)
@@ -217,6 +219,13 @@ function AdminPage() {
   }
 
   useEffect(() => { void load() }, [])
+
+  // Debounced search effect - arama değiştiğinde otomatik ara
+  useEffect(() => {
+    if (debouncedSearch.trim()) {
+      void queryListings(true) // Reset page when searching
+    }
+  }, [debouncedSearch])
 
   // 🔐 GÜVENLİK KONTROLÜ - EN ÖNEMLİ!
   useEffect(() => {

@@ -63,7 +63,8 @@ function OneSignalTestPage() {
 
   useEffect(() => {
     refreshStatus();
-    const interval = setInterval(refreshStatus, 2000);
+    // 5 saniyede bir refresh (daha az agresif)
+    const interval = setInterval(refreshStatus, 5000);
     return () => clearInterval(interval);
   }, []);
 

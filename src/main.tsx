@@ -23,6 +23,10 @@ import DebugAuthPage from './pages/DebugAuthPage.tsx'
 import MyListingsPage from './pages/MyListingsPage.tsx'
 import OneSignalTestPage from './pages/OneSignalTestPage.tsx'
 
+// Security Components
+import ProtectedRoute from './components/ProtectedRoute.tsx'
+import AdminRoute from './components/AdminRoute.tsx'
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -30,21 +34,95 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'ilanlar', element: <ListingsPage /> },
-      { path: 'ilanlarim', element: <MyListingsPage /> },
+      { 
+        path: 'ilanlarim', 
+        element: (
+          <ProtectedRoute requireAuth={true}>
+            <MyListingsPage />
+          </ProtectedRoute>
+        )
+      },
       { path: 'giris', element: <LoginPage /> },
       { path: 'uye-ol', element: <RegisterPage /> },
-      { path: 'satmak', element: <SellPage /> },
-      { path: 'kiralamak', element: <RentPage /> },
+      { 
+        path: 'satmak', 
+        element: (
+          <ProtectedRoute requireAuth={true}>
+            <SellPage />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: 'kiralamak', 
+        element: (
+          <ProtectedRoute requireAuth={true}>
+            <RentPage />
+          </ProtectedRoute>
+        )
+      },
       { path: 'firsatlar', element: <OpportunitiesPage /> },
       { path: 'ilan/:id', element: <ListingDetailPage /> },
-      { path: 'favoriler', element: <FavoritesPage /> },
-      { path: 'admin', element: <AdminPage /> },
+      { 
+        path: 'favoriler', 
+        element: (
+          <ProtectedRoute requireAuth={true}>
+            <FavoritesPage />
+          </ProtectedRoute>
+        )
+      },
+      
+      // 🔒 ADMIN ROUTES - STRICT PROTECTION
+      { 
+        path: 'admin', 
+        element: (
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
+        )
+      },
       { path: 'admin/login', element: <AdminLoginPage /> },
-      { path: 'debug/supabase', element: <DebugSupabasePage /> },
-      { path: 'debug/storage', element: <DebugStoragePage /> },
-      { path: 'debug/auth', element: <DebugAuthPage /> },
-      { path: 'admin-dashboard', element: <AdminDashboard /> },
-      { path: 'onesignal-test', element: <OneSignalTestPage /> },
+      { 
+        path: 'admin-dashboard', 
+        element: (
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        )
+      },
+      
+      // 🔧 DEBUG ROUTES - ADMIN ONLY
+      { 
+        path: 'debug/supabase', 
+        element: (
+          <AdminRoute>
+            <DebugSupabasePage />
+          </AdminRoute>
+        )
+      },
+      { 
+        path: 'debug/storage', 
+        element: (
+          <AdminRoute>
+            <DebugStoragePage />
+          </AdminRoute>
+        )
+      },
+      { 
+        path: 'debug/auth', 
+        element: (
+          <AdminRoute>
+            <DebugAuthPage />
+          </AdminRoute>
+        )
+      },
+      { 
+        path: 'onesignal-test', 
+        element: (
+          <AdminRoute>
+            <OneSignalTestPage />
+          </AdminRoute>
+        )
+      },
     ],
   },
 ])

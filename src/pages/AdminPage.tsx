@@ -253,8 +253,18 @@ function AdminPage() {
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_listing' : 'reject_listing'
       
-      // Admin ID'yi al (şimdilik dummy, sonra gerçek admin ID kullanılacak)
-      const adminId = '00000000-0000-0000-0000-000000000000' // Dummy admin ID
+      // Supabase session'dan admin ID'yi al - Single source of truth
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+        window.location.href = '/admin/login'
+        return
+      }
+      
+      // Sadece Supabase user ID kullan - no hybrid system
+      const adminId = session.user.id
+      console.log('✅ Using Supabase admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc(rpcFunction, {
@@ -311,7 +321,18 @@ function AdminPage() {
     if (!confirmed) return
     
     try {
-      const adminId = '00000000-0000-0000-0000-000000000000'
+      // Supabase session'dan admin ID'yi al - Single source of truth
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+        window.location.href = '/admin/login'
+        return
+      }
+      
+      // Sadece Supabase user ID kullan - no hybrid system
+      const adminId = session.user.id
+      console.log('✅ Using Supabase admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc('delete_listing', {
@@ -347,34 +368,18 @@ function AdminPage() {
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_user' : 'reject_user'
       
-      // Supabase session'dan admin ID'yi al (AdminGate Supabase Auth kullanıyor)
+      // Supabase session'dan admin ID'yi al - Single source of truth
       const { data: { session } } = await supabase.auth.getSession()
       
-      // Debug: Supabase session bilgisini kontrol et
-      console.log('🔍 Debug - Supabase session:', session)
-      
       if (!session?.user) {
-        alert('Supabase session bulunamadı. Lütfen tekrar giriş yapın.')
+        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+        window.location.href = '/admin/login'
         return
       }
       
-      // Supabase user ID'sini kullan ama önce public.users'da bu ID'ye sahip admin var mı kontrol et
-      let adminId = session.user.id
-      
-      // Eğer Supabase user ID'si public.users'da yoksa, email ile admin'i bul
-      const { data: adminUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', session.user.email)
-        .eq('role', 'admin')
-        .single()
-      
-      if (adminUser) {
-        adminId = adminUser.id
-        console.log('🔍 Debug - Admin ID from public.users:', adminId)
-      } else {
-        console.log('🔍 Debug - Admin not found in public.users, using Supabase ID:', adminId)
-      }
+      // Sadece Supabase user ID kullan - no hybrid system
+      const adminId = session.user.id
+      console.log('✅ Using Supabase admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc(rpcFunction, {
@@ -441,7 +446,18 @@ function AdminPage() {
     if (!confirmed) return
     
     try {
-      const adminId = '00000000-0000-0000-0000-000000000000'
+      // Supabase session'dan admin ID'yi al - Single source of truth
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+        window.location.href = '/admin/login'
+        return
+      }
+      
+      // Sadece Supabase user ID kullan - no hybrid system
+      const adminId = session.user.id
+      console.log('✅ Using Supabase admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc('delete_user', {

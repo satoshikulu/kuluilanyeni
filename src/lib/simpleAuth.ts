@@ -156,93 +156,10 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 /**
- * Kullanıcı admin mi?
+ * Kullanıcı admin mi? (Custom auth için - deprecated)
+ * NOT: Bu fonksiyon artık kullanılmıyor. Admin kontrolü Supabase Auth ile yapılıyor.
  */
 export async function isAdmin(): Promise<boolean> {
-  const user = await getCurrentUser()
-  return user?.role === 'admin'
-}
-
-/**
- * Admin: Kullanıcı onayla
- */
-export async function approveUser(userId: string): Promise<AuthResponse> {
-  const currentUser = await getCurrentUser()
-  if (!currentUser || currentUser.role !== 'admin') {
-    return {
-      success: false,
-      error: 'Yetkiniz yok'
-    }
-  }
-
-  try {
-    const { data, error } = await supabase
-      .rpc('approve_user', {
-        p_user_id: userId,
-        p_admin_id: currentUser.id
-      })
-
-    if (error) {
-      console.error('Onaylama hatası:', error)
-      return {
-        success: false,
-        error: 'Onaylama sırasında bir hata oluştu'
-      }
-    }
-
-    const result = data as any
-    return {
-      success: result.success || false,
-      message: result.message,
-      error: result.error
-    }
-  } catch (error) {
-    console.error('Onaylama hatası:', error)
-    return {
-      success: false,
-      error: 'Onaylama sırasında bir hata oluştu'
-    }
-  }
-}
-
-/**
- * Admin: Kullanıcı reddet
- */
-export async function rejectUser(userId: string): Promise<AuthResponse> {
-  const currentUser = await getCurrentUser()
-  if (!currentUser || currentUser.role !== 'admin') {
-    return {
-      success: false,
-      error: 'Yetkiniz yok'
-    }
-  }
-
-  try {
-    const { data, error } = await supabase
-      .rpc('reject_user', {
-        p_user_id: userId,
-        p_admin_id: currentUser.id
-      })
-
-    if (error) {
-      console.error('Reddetme hatası:', error)
-      return {
-        success: false,
-        error: 'Reddetme sırasında bir hata oluştu'
-      }
-    }
-
-    const result = data as any
-    return {
-      success: result.success || false,
-      message: result.message,
-      error: result.error
-    }
-  } catch (error) {
-    console.error('Reddetme hatası:', error)
-    return {
-      success: false,
-      error: 'Reddetme sırasında bir hata oluştu'
-    }
-  }
+  console.warn('⚠️ isAdmin() deprecated - Use Supabase Auth admin check instead')
+  return false
 }

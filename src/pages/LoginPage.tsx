@@ -12,7 +12,6 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [isAdminSession, setIsAdminSession] = useState(false)
   const [currentUser, setCurrentUser] = useState<{ email?: string; phone?: string; user_metadata?: { role?: string } } | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -58,14 +57,6 @@ function LoginPage() {
 
   async function checkCurrentSession() {
     try {
-      // Admin session kontrolü
-      const adminFlag = sessionStorage.getItem('isAdmin') === 'true'
-      if (adminFlag) {
-        setIsAdminSession(true)
-        setLoading(false)
-        return
-      }
-
       // Kalıcı storage'dan kullanıcı kontrolü
       const user = await getCurrentUser()
       if (user) {
@@ -114,11 +105,6 @@ function LoginPage() {
     } finally {
       setSubmitting(false)
     }
-  }
-
-  function handleAdminLogout() {
-    sessionStorage.removeItem('isAdmin')
-    setIsAdminSession(false)
   }
 
   async function handleSupabaseLogout() {
@@ -181,45 +167,6 @@ function LoginPage() {
                 Admin Paneline Git
               </button>
             )}
-            <button
-              onClick={() => navigate('/')}
-              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-medium hover:bg-gray-200 transition-colors"
-            >
-              Ana Sayfaya Git
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (isAdminSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
-        <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full mx-4">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <div className="w-8 h-8 bg-orange-600 rounded-full"></div>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Admin Oturumu Aktif</h2>
-            <p className="text-gray-600">
-              Şu anda admin olarak giriş yapmış durumdasınız. Normal kullanıcı girişi yapmak için önce admin oturumunuzu kapatın.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              onClick={handleAdminLogout}
-              className="w-full rounded-lg bg-red-600 text-white py-3 font-medium hover:bg-red-700 transition-colors"
-            >
-              Admin Oturumunu Kapat
-            </button>
-            <button
-              onClick={() => navigate('/admin')}
-              className="w-full rounded-lg bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors"
-            >
-              Admin Paneline Dön
-            </button>
             <button
               onClick={() => navigate('/')}
               className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-medium hover:bg-gray-200 transition-colors"

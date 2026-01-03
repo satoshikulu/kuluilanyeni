@@ -12,7 +12,6 @@ function App() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [userIsAdmin, setUserIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const isAdminSession = sessionStorage.getItem('isAdmin') === 'true'
   
   // Kullanıcı adını title case yap
   const displayName = currentUser?.full_name ? toTitleCase(currentUser.full_name) : ''
@@ -94,7 +93,7 @@ function App() {
               </span>
             </button>
             
-            {currentUser && !isAdminSession && (
+            {currentUser && (
               <NavLink
                 to="/ilanlarim"
                 className={({ isActive }) => [
@@ -111,38 +110,7 @@ function App() {
               </NavLink>
             )}
             
-            {isAdminSession ? (
-              <>
-                <NavLink
-                  to="/admin"
-                  className={({ isActive }) => [
-                    'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-all duration-300',
-                    'bg-gradient-to-r from-indigo-100/80 to-purple-100/80 backdrop-blur-md',
-                    'text-indigo-700 hover:from-indigo-200/90 hover:to-purple-200/90 hover:text-indigo-800',
-                    'border border-indigo-200/50 hover:border-indigo-300/60',
-                    'shadow-lg hover:shadow-xl hover:shadow-indigo-200/25',
-                    'hover:scale-105 transform',
-                    isActive ? 'ring-2 ring-indigo-300/50 shadow-indigo-200/30' : ''
-                  ].join(' ')}
-                >
-                  👑 Admin Panel
-                </NavLink>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-100/80 to-purple-100/80 backdrop-blur-md rounded-xl border border-indigo-200/50 shadow-lg">
-                  <span className="text-xl">👑</span>
-                  <span className="text-indigo-800 font-bold">Admin Yönetici</span>
-                </div>
-                <button
-                  onClick={() => {
-                    sessionStorage.removeItem('isAdmin')
-                    window.location.href = '/'
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-all duration-300 bg-gradient-to-r from-red-100/80 to-rose-100/80 backdrop-blur-md text-red-700 hover:from-red-200/90 hover:to-rose-200/90 hover:text-red-800 border border-red-200/50 hover:border-red-300/60 shadow-lg hover:shadow-xl hover:shadow-red-200/25 hover:scale-105 transform"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Çıkış
-                </button>
-              </>
-            ) : currentUser ? (
+            {currentUser ? (
               <>
                 {userIsAdmin && (
                   <NavLink

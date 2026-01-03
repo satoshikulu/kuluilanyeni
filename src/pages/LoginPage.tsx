@@ -193,28 +193,28 @@ function LoginPage() {
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-xs">
           {/* Logo/Brand */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Kulu İlan</h1>
-            <p className="text-white/80">Emlak Pazarınız</p>
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-white mb-1">Kulu İlan</h1>
+            <p className="text-white/80 text-sm">Emlak Pazarınız</p>
           </div>
 
           {/* Login Card */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Giriş Yap</h2>
-              <p className="text-gray-600">Hesabınıza erişim sağlayın</p>
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6">
+            <div className="mb-5">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">Giriş Yap</h2>
+              <p className="text-gray-600 text-sm">Hesabınıza erişim sağlayın</p>
             </div>
 
-            <form className="space-y-5" onSubmit={onSubmit}>
+            <form className="space-y-4" onSubmit={onSubmit}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Telefon Numarası
                 </label>
                 <input 
                   type="tel"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
                   placeholder="5xx xxx xx xx" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)}
@@ -223,13 +223,13 @@ function LoginPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Şifre
                 </label>
                 <div className="relative">
                   <input 
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-10 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
                     placeholder="Şifrenizi girin" 
                     value={password} 
                     onChange={(e) => setPassword(e.target.value)}
@@ -240,13 +240,13 @@ function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
                   {error}
                 </div>
               )}
@@ -254,11 +254,11 @@ function LoginPage() {
               <button 
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-xl bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full rounded-lg bg-blue-600 text-white py-2.5 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {submitting ? (
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
                     Giriş yapılıyor...
                   </div>
                 ) : (
@@ -267,7 +267,7 @@ function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-5 pt-4 border-t border-gray-200">
               <p className="text-center text-sm text-gray-600">
                 Hesabınız yok mu?{' '}
                 <Link 
@@ -281,8 +281,8 @@ function LoginPage() {
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-8">
-            <p className="text-white/60 text-sm">
+          <div className="text-center mt-6">
+            <p className="text-white/60 text-xs">
               © 2025 Kulu İlan. Tüm hakları saklıdır.
             </p>
           </div>

@@ -145,32 +145,32 @@ function AdminLoginPage() {
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-xs">
           {/* Logo/Brand */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Admin Login</h1>
-            <p className="text-white/80">Kulu İlan Yönetim Sistemi</p>
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-white mb-1">Admin Login</h1>
+            <p className="text-white/80 text-sm">Kulu İlan Yönetim Sistemi</p>
           </div>
 
           {/* Login Card */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Yönetici Girişi</h2>
-              <p className="text-gray-600">Admin hesabınızla giriş yapın</p>
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6">
+            <div className="mb-5">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">Yönetici Girişi</h2>
+              <p className="text-gray-600 text-sm">Admin hesabınızla giriş yapın</p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+              <div className="mb-5 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email Adresi
                 </label>
                 <input
@@ -178,7 +178,7 @@ function AdminLoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="admin@kuluilani.com"
                   required
                   disabled={loading}
@@ -187,7 +187,7 @@ function AdminLoginPage() {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Şifre
                 </label>
                 <div className="relative">
@@ -196,7 +196,7 @@ function AdminLoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-10 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     placeholder="••••••••••••"
                     required
                     disabled={loading}
@@ -207,7 +207,7 @@ function AdminLoginPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     disabled={loading}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -216,11 +216,11 @@ function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full rounded-lg bg-blue-600 text-white py-2.5 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
                     Giriş yapılıyor...
                   </div>
                 ) : (
@@ -229,22 +229,22 @@ function AdminLoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-5 pt-4 border-t border-gray-200">
               <p className="text-center text-xs text-gray-500 leading-relaxed">
-                Admin hesabınızın <code className="bg-gray-100 px-2 py-1 rounded text-blue-600">profiles.role = "admin"</code> olarak tanımlanmış olması gerekir
+                Admin hesabınızın <code className="bg-gray-100 px-1.5 py-0.5 rounded text-blue-600 text-xs">profiles.role = "admin"</code> olarak tanımlanmış olması gerekir
               </p>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-8 space-y-2">
+          <div className="text-center mt-6 space-y-1">
             <a
               href="/"
               className="inline-block text-white/80 hover:text-white text-sm transition-colors"
             >
               ← Ana sayfaya dön
             </a>
-            <p className="text-white/60 text-sm">
+            <p className="text-white/60 text-xs">
               © 2025 Kulu İlan. Tüm hakları saklıdır.
             </p>
           </div>

@@ -1,4 +1,4 @@
-import { getCurrentUser } from './simpleAuth'
+import { getCurrentUser } from './supabaseAuth'
 
 declare global {
   interface Window {
@@ -79,9 +79,9 @@ export async function updateUserTags(): Promise<void> {
     const lastName = nameParts.slice(1).join(' ') || ''
 
     // Telefon numarasını normalize et
-    const phoneNumber = currentUser.phone.startsWith('+90') 
+    const phoneNumber = currentUser.phone && currentUser.phone.startsWith('+90') 
       ? currentUser.phone 
-      : `+90${currentUser.phone.replace(/\D/g, '')}`
+      : `+90${(currentUser.phone || '').replace(/\D/g, '')}`
 
     // OneSignalDeferred kullanarak kullanıcı bilgilerini güncelle
     window.OneSignalDeferred = window.OneSignalDeferred || []

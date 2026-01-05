@@ -1,10 +1,9 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
-import { getCurrentUser, logoutUser, isAdmin } from './lib/simpleAuth'
+import { getCurrentUser, logoutUser, isAdmin } from './lib/supabaseAuth'
 import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import { setupOneSignalUserSync } from './lib/oneSignalUserSync'
-import { initStorage } from './lib/persistentStorage'
 import { useEffect, useState } from 'react'
 
 
@@ -20,9 +19,6 @@ function App() {
   useEffect(() => {
     async function initApp() {
       try {
-        // Storage sistemini başlat
-        await initStorage()
-        
         // Kullanıcı durumunu kontrol et
         const user = await getCurrentUser()
         setCurrentUser(user)

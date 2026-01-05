@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { loginUser, getCurrentUser } from '../lib/simpleAuth'
+import { loginUser, getCurrentUser } from '../lib/supabaseAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import { subscribeToNotifications } from '../lib/oneSignal'
@@ -57,16 +57,10 @@ function LoginPage() {
 
   async function checkCurrentSession() {
     try {
-      // Kalıcı storage'dan kullanıcı kontrolü
+      // Supabase Auth session kontrolü
       const user = await getCurrentUser()
       if (user) {
         setCurrentUser(user)
-      }
-
-      // Supabase session kontrolü (fallback)
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user && !user) {
-        setCurrentUser(session.user)
       }
     } catch (error) {
       console.error('Session check error:', error)
@@ -131,8 +125,7 @@ function LoginPage() {
 
   // Supabase kullanıcı oturumu varsa uyarı göster
   if (currentUser) {
-    const typedCurrentUser = currentUser as { email?: string; phone?: string; user_metadata?: { role?: string } };
-    const isAdmin = typedCurrentUser.user_metadata?.role === 'admin'
+    const isAdmin = (currentUser as any).role === 'admin'
     
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
@@ -145,7 +138,7 @@ function LoginPage() {
               {isAdmin ? 'Admin Oturumu Aktif' : 'Oturum Aktif'}
             </h2>
             <p className="text-gray-600 mb-2">
-              <strong>{typedCurrentUser.email || typedCurrentUser.phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
+              <strong>{(currentUser as any).full_name || currentUser.email || (currentUser as any).phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
             </p>
             <p className="text-gray-500 text-sm">
               Farklı bir hesapla giriş yapmak için önce mevcut oturumunuzu kapatın.

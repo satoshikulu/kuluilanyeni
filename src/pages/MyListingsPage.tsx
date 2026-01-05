@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { getCurrentUser } from '../lib/simpleAuth'
+import { getCurrentUser } from '../lib/supabaseAuth'
 
 type Listing = {
   id: string
@@ -48,10 +48,11 @@ function MyListingsPage() {
     setError('')
     
     try {
+      // Supabase Auth kullanıcısının ilanlarını getir
       const { data, error: fetchError } = await supabase
         .from('listings')
         .select('*')
-        .eq('owner_phone', user.phone)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError

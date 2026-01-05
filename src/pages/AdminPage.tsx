@@ -144,6 +144,19 @@ function AdminPage() {
 
   async function loadOneSignalData() {
     try {
+      // GEÇICI ÇÖZÜM: OneSignal tablosu ilişki sorunu var, şimdilik sessizleştir
+      console.log('⚠️ OneSignal data loading temporarily disabled due to database relationship issues')
+      
+      // Boş stats set et
+      setOneSignalUsers([])
+      setOneSignalStats({
+        total: 0,
+        pending: 0,
+        success: 0,
+        failed: 0
+      })
+      
+      /* ASIL KOD - İlişki sorunu çözülünce aktif edilecek:
       const { data: oneSignalData, error: oneSignalError } = await supabase
         .from('onesignal_users')
         .select(`
@@ -164,8 +177,12 @@ function AdminPage() {
         success: oneSignalUsers.filter(u => u.sync_status === 'success').length,
         failed: oneSignalUsers.filter(u => u.sync_status === 'failed').length
       })
+      */
     } catch (e: any) {
-      console.error('OneSignal data load error:', e)
+      console.error('OneSignal data load error (silenced):', e)
+      // Hata durumunda boş stats
+      setOneSignalUsers([])
+      setOneSignalStats({ total: 0, pending: 0, success: 0, failed: 0 })
     }
   }
 
@@ -285,16 +302,18 @@ function AdminPage() {
       // OneSignal bildirimi gönder (sadece onaylanan ilanlar için)
       if (decision === 'approved' && listing) {
         try {
+          console.log('📤 OneSignal bildirimi gönderiliyor...')
           const template = OneSignalNotificationTemplates.listingApproved(
             listing.title,
             listing.id,
             listing.user_id || 'unknown-user'
           );
           await sendOneSignalNotification(template);
-          console.log('İlan onayı bildirimi gönderildi');
+          console.log('✅ İlan onayı bildirimi gönderildi');
         } catch (notificationError) {
-          console.error('Bildirim gönderme hatası:', notificationError);
-          // Bildirim hatası ana işlemi etkilemesin
+          console.warn('⚠️ OneSignal bildirim hatası (sessizleştirildi):', notificationError);
+          // GEÇICI: Bildirim hatası ana işlemi etkilemesin
+          // Edge Function 500 hatası var, şimdilik sessizleştir
         }
       }
       

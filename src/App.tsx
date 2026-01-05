@@ -1,9 +1,10 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
-import { getCurrentUser, logoutUser, isAdmin } from './lib/supabaseAuth'
+import { getCurrentUser, logoutUser, isAdmin } from './lib/hybridAuth'
 import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import { setupOneSignalUserSync } from './lib/oneSignalUserSync'
+import { initStorage } from './lib/persistentStorage'
 import { useEffect, useState } from 'react'
 
 
@@ -19,14 +20,17 @@ function App() {
   useEffect(() => {
     async function initApp() {
       try {
-        // Kullanıcı durumunu kontrol et
+        // Storage sistemini başlat (custom auth için gerekli)
+        await initStorage()
+        
+        // Kullanıcı durumunu kontrol et (hibrit)
         const user = await getCurrentUser()
         setCurrentUser(user)
         
         if (user) {
           const adminStatus = await isAdmin()
           setUserIsAdmin(adminStatus)
-          console.log('✅ User session restored:', user.full_name)
+          console.log('✅ User session restored:', user.full_name, `(${user.auth_type} auth)`)
         }
         
         // OneSignal user sync kurulumu

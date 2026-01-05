@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { registerUser } from '../lib/supabaseAuth'
+import { registerUser } from '../lib/hybridAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import { toTitleCase } from '../lib/textUtils'

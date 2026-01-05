@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { loginUser, getCurrentUser } from '../lib/supabaseAuth'
+import { loginUser, getCurrentUser } from '../lib/hybridAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import { subscribeToNotifications } from '../lib/oneSignal'
@@ -12,7 +12,9 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const [currentUser, setCurrentUser] = useState<{ email?: string; phone?: string; user_metadata?: { role?: string } } | null>(null)
+  const [migrationAvailable, setMigrationAvailable] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Quicksand font yükleme
@@ -83,9 +85,14 @@ function LoginPage() {
       const result = await loginUser(phone, password)
       
       if (result.success && result.user) {
-        console.log("✅ Login başarılı");
+        console.log("✅ Hibrit login başarılı");
         
-        // TODO: Bildirim sistemi entegrasyonu
+        // Migration seçeneği varsa göster
+        if (result.migration_available) {
+          setMigrationAvailable(true)
+          setError('') // Hata mesajını temizle
+          setMessage(result.message || 'Giriş başarılı! Güvenli sisteme geçmek ister misiniz?')
+        }
         
         // Ana sayfaya yönlendir
         console.log("🔄 Ana sayfaya yönlendiriliyor...");
@@ -241,6 +248,25 @@ function LoginPage() {
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
                   {error}
+                </div>
+              )}
+              
+              {message && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm">
+                  {message}
+                  {migrationAvailable && (
+                    <div className="mt-2">
+                      <button 
+                        className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                        onClick={() => {
+                          // TODO: Migration modal açılacak
+                          alert('Migration özelliği yakında eklenecek!')
+                        }}
+                      >
+                        Güvenli Sisteme Geç
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               

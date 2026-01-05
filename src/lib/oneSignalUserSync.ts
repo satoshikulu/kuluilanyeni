@@ -1,4 +1,4 @@
-import { getCurrentUser } from './supabaseAuth'
+import { getCurrentUser } from './hybridAuth'
 
 declare global {
   interface Window {

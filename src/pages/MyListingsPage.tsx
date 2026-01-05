@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { getCurrentUser } from '../lib/supabaseAuth'
+import { getCurrentUser } from '../lib/hybridAuth'
 
 type Listing = {
   id: string
@@ -48,12 +48,20 @@ function MyListingsPage() {
     setError('')
     
     try {
-      // Supabase Auth kullanıcısının ilanlarını getir
-      const { data, error: fetchError } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+      let query = supabase.from('listings').select('*')
+      
+      // Auth tipine göre farklı sorgulama
+      if (user.auth_type === 'supabase' && user.id) {
+        // Supabase Auth kullanıcısı - user_id ile sorgula
+        query = query.eq('user_id', user.id)
+      } else if (user.auth_type === 'custom' && user.phone) {
+        // Custom Auth kullanıcısı - phone ile sorgula
+        query = query.eq('owner_phone', user.phone)
+      } else {
+        throw new Error('Kullanıcı bilgileri eksik')
+      }
+      
+      const { data, error: fetchError } = await query.order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError
 

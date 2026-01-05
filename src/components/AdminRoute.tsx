@@ -35,7 +35,7 @@ function AdminRoute({ children }: AdminRouteProps) {
       // 2. Admin role kontrolü
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, status')
+        .select('role')
         .eq('id', session.user.id)
         .single()
 
@@ -53,14 +53,6 @@ function AdminRoute({ children }: AdminRouteProps) {
         setError('Bu sayfaya erişim yetkiniz yok. Admin hesabı gerekli.')
         console.log('🚫 Non-admin user attempted admin access:', session.user.email)
         // Non-admin session'ını temizle
-        await supabase.auth.signOut()
-        setLoading(false)
-        return
-      }
-
-      // 4. Admin status kontrolü
-      if (profile.status !== 'approved') {
-        setError('Admin hesabınız henüz aktif değil')
         await supabase.auth.signOut()
         setLoading(false)
         return

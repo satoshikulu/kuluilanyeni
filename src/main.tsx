@@ -46,19 +46,11 @@ const router = createBrowserRouter([
       { path: 'uye-ol', element: <RegisterPage /> },
       { 
         path: 'satmak', 
-        element: (
-          <ProtectedRoute requireAuth={true}>
-            <SellPage />
-          </ProtectedRoute>
-        )
+        element: <SellPage />
       },
       { 
         path: 'kiralamak', 
-        element: (
-          <ProtectedRoute requireAuth={true}>
-            <RentPage />
-          </ProtectedRoute>
-        )
+        element: <RentPage />
       },
       { path: 'firsatlar', element: <OpportunitiesPage /> },
       { path: 'ilan/:id', element: <ListingDetailPage /> },

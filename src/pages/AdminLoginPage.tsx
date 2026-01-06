@@ -68,7 +68,7 @@ function AdminLoginPage() {
           // Admin kontrolü yap - profiles tablosundan
           const { data: userRecord } = await supabase
             .from('profiles')
-            .select('role, full_name')
+            .select('id, full_name, role')
             .eq('id', user.id)
             .single()
           
@@ -126,18 +126,18 @@ function AdminLoginPage() {
       // 2. Admin kontrolü yap - profiles tablosundan
       const { data: userRecord, error: userError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('id, full_name, role')
         .eq('id', data.user.id)
         .single()
 
       if (userError || !userRecord) {
-        setError('Kullanıcı kaydı bulunamadı')
+        setError('Admin kullanıcısı bulunamadı')
         await supabase.auth.signOut()
         return
       }
 
       if (userRecord.role !== 'admin') {
-        setError('Bu sayfaya erişim yetkiniz yok')
+        setError('Bu sayfaya erişim yetkiniz yok. Admin hesabı gerekli.')
         await supabase.auth.signOut()
         return
       }

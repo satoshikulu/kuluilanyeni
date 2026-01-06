@@ -15,8 +15,9 @@ function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [adminSessionWarning, setAdminSessionWarning] = useState(false)
+  const [adminSessionUser, setAdminSessionUser] = useState<any>(null)
 
   useEffect(() => {
     checkCurrentSession()
@@ -24,10 +25,23 @@ function RegisterPage() {
 
   async function checkCurrentSession() {
     try {
-      // Supabase session kontrolü
+      // Admin session kontrolü - uyarı için
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        setCurrentUser(session.user)
+        // Admin mi kontrol et
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profileData?.role === 'admin') {
+          setAdminSessionWarning(true)
+          setAdminSessionUser({
+            ...session.user,
+            full_name: profileData.full_name
+          })
+        }
       }
     } catch (error) {
       console.error('Session check error:', error)
@@ -36,13 +50,15 @@ function RegisterPage() {
     }
   }
 
-  async function handleSupabaseLogout() {
+  async function handleClearAdminSession() {
     try {
       await supabase.auth.signOut()
-      setCurrentUser(null)
-      window.location.reload()
+      sessionStorage.removeItem('isAdmin')
+      setAdminSessionWarning(false)
+      setAdminSessionUser(null)
+      console.log('🧹 Admin session temizlendi')
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('Admin session temizleme hatası:', error)
     }
   }
 
@@ -59,46 +75,39 @@ function RegisterPage() {
     )
   }
 
-  // Supabase kullanıcı oturumu varsa uyarı göster
-  if (currentUser) {
-    const isAdmin = currentUser.user_metadata?.role === 'admin'
-    
+  // Normal kullanıcı register sayfasında Supabase session uyarısı gösterme
+  // if (currentUser && window.location.pathname === '/admin/login') { ... } kaldırıldı
+
+  // Admin session uyarısı
+  if (adminSessionWarning && adminSessionUser) {
     return (
       <div className="max-w-md mx-auto">
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg p-8 border-2 border-green-200">
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-lg p-8 border-2 border-amber-200">
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">{isAdmin ? '👑' : '👤'}</span>
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Zaten Giriş Yapmışsınız</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Admin Oturumu Tespit Edildi</h2>
             <p className="text-gray-700 mb-2">
-              <strong>{currentUser.email || currentUser.phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
+              <strong>{adminSessionUser.full_name || adminSessionUser.email || 'Admin'}</strong> olarak admin girişi yapmış durumdasınız.
             </p>
             <p className="text-gray-600 text-sm">
-              Yeni hesap oluşturmak için önce mevcut oturumunuzu kapatmanız gerekiyor.
+              Yeni hesap oluşturmak için admin oturumunu kapatmanızı öneririz.
             </p>
           </div>
 
           <div className="space-y-3">
             <button
-              onClick={handleSupabaseLogout}
+              onClick={handleClearAdminSession}
               className="w-full rounded-lg bg-gradient-to-r from-red-500 to-rose-600 text-white py-3 font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all"
             >
-              🚪 Oturumu Kapat
+              🧹 Admin Oturumunu Kapat ve Devam Et
             </button>
-            {isAdmin && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="w-full rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 font-semibold hover:from-purple-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
-              >
-                👑 Admin Paneline Git
-              </button>
-            )}
             <button
-              onClick={() => navigate('/')}
-              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-semibold hover:bg-gray-200 transition-all"
+              onClick={() => navigate('/admin')}
+              className="w-full rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 font-semibold hover:from-purple-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
             >
-              🏠 Ana Sayfaya Git
+              👑 Admin Paneline Git
             </button>
           </div>
         </div>

@@ -279,6 +279,9 @@ export async function logoutUser(): Promise<void> {
     // Custom auth temizliği
     await removeUser()
     
+    // SessionStorage temizliği
+    sessionStorage.removeItem('isAdmin')
+    
     // Sayfayı yenile
     window.location.href = '/'
   } catch (error) {

@@ -1,9 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { loginUser, getCurrentUser } from '../lib/hybridAuth'
+import { loginUser } from '../lib/hybridAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
-import { subscribeToNotifications } from '../lib/oneSignal'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -13,9 +12,10 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [currentUser, setCurrentUser] = useState<{ email?: string; phone?: string; user_metadata?: { role?: string } } | null>(null)
   const [migrationAvailable, setMigrationAvailable] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [adminSessionWarning, setAdminSessionWarning] = useState(false)
+  const [adminSessionUser, setAdminSessionUser] = useState<any>(null)
 
   // Quicksand font yükleme
   useEffect(() => {
@@ -36,38 +36,46 @@ function LoginPage() {
 
   // OneSignal bildirim entegrasyonu
   useEffect(() => {
-    if (currentUser) {
-      // Kullanıcı giriş yaptığında OneSignal'a kaydet
-      subscribeToNotifications({
-        userId: currentUser.email || currentUser.phone || '',
-        phone: currentUser.phone || '',
-        email: currentUser.email || '',
-        name: (currentUser.user_metadata as any)?.full_name || 'Kullanıcı',
-        properties: {
-          role: currentUser.user_metadata?.role || 'user',
-          loginDate: new Date().toISOString()
-        }
-      }).then(success => {
-        if (success) {
-          console.log('OneSignal subscription başarılı');
-        }
-      }).catch(error => {
-        console.error('OneSignal subscription hatası:', error);
-      });
-    }
-  }, [currentUser])
+    // Normal kullanıcı login sayfasında OneSignal entegrasyonu gerekmiyor
+    // Giriş başarılı olduktan sonra onSubmit içinde yapılacak
+  }, [])
 
   async function checkCurrentSession() {
     try {
-      // Supabase Auth session kontrolü
-      const user = await getCurrentUser()
-      if (user) {
-        setCurrentUser(user)
+      // Admin session kontrolü - uyarı için
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        // Admin mi kontrol et
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profileData?.role === 'admin') {
+          setAdminSessionWarning(true)
+          setAdminSessionUser({
+            ...session.user,
+            full_name: profileData.full_name
+          })
+        }
       }
     } catch (error) {
       console.error('Session check error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleClearAdminSession() {
+    try {
+      await supabase.auth.signOut()
+      sessionStorage.removeItem('isAdmin')
+      setAdminSessionWarning(false)
+      setAdminSessionUser(null)
+      console.log('🧹 Admin session temizlendi')
+    } catch (error) {
+      console.error('Admin session temizleme hatası:', error)
     }
   }
 
@@ -108,17 +116,6 @@ function LoginPage() {
     }
   }
 
-  async function handleSupabaseLogout() {
-    try {
-      await supabase.auth.signOut()
-      setCurrentUser(null)
-      // Sayfayı yenile
-      window.location.reload()
-    } catch (error) {
-      console.error('Logout error:', error)
-    }
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
@@ -130,49 +127,57 @@ function LoginPage() {
     )
   }
 
-  // Supabase kullanıcı oturumu varsa uyarı göster
-  if (currentUser) {
-    const isAdmin = (currentUser as any).role === 'admin'
-    
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
-        <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full mx-4">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              {isAdmin ? 'Admin Oturumu Aktif' : 'Oturum Aktif'}
-            </h2>
-            <p className="text-gray-600 mb-2">
-              <strong>{(currentUser as any).full_name || currentUser.email || (currentUser as any).phone || 'Kullanıcı'}</strong> olarak giriş yapmış durumdasınız.
-            </p>
-            <p className="text-gray-500 text-sm">
-              Farklı bir hesapla giriş yapmak için önce mevcut oturumunuzu kapatın.
-            </p>
-          </div>
+  // Normal kullanıcı login sayfasında Supabase session uyarısı gösterme
+  // if (currentUser && window.location.pathname === '/admin/login') { ... } kaldırıldı
 
-          <div className="space-y-3">
-            <button
-              onClick={handleSupabaseLogout}
-              className="w-full rounded-lg bg-red-600 text-white py-3 font-medium hover:bg-red-700 transition-colors"
-            >
-              Oturumu Kapat
-            </button>
-            {isAdmin && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="w-full rounded-lg bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors"
-              >
-                Admin Paneline Git
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/')}
-              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-medium hover:bg-gray-200 transition-colors"
-            >
-              Ana Sayfaya Git
-            </button>
+  // Admin session uyarısı
+  if (adminSessionWarning && adminSessionUser) {
+    return (
+      <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Quicksand, sans-serif' }}>
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('https://plus.unsplash.com/premium_photo-1661908377130-772731de98f6?q=80&w=1624&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`
+          }}
+        >
+          <div className="absolute inset-0 bg-black/50"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">⚠️</span>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Admin Oturumu Tespit Edildi
+                </h2>
+                <p className="text-gray-600 mb-2">
+                  <strong>{adminSessionUser.full_name || adminSessionUser.email || 'Admin'}</strong> olarak admin girişi yapmış durumdasınız.
+                </p>
+                <p className="text-gray-500 text-sm mb-4">
+                  Normal kullanıcı girişi yapmak için admin oturumunu kapatmanızı öneririz. Bu, karışıklığı önler.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={handleClearAdminSession}
+                  className="w-full rounded-lg bg-red-600 text-white py-3 font-medium hover:bg-red-700 transition-colors"
+                >
+                  Admin Oturumunu Kapat ve Devam Et
+                </button>
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="w-full rounded-lg bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Admin Paneline Git
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -28,9 +28,27 @@ function App() {
         setCurrentUser(user)
         
         if (user) {
-          const adminStatus = await isAdmin()
+          // Admin kontrolü: önce sessionStorage'a bak, sonra role'a bak
+          let adminStatus = false
+          
+          // 1. sessionStorage kontrolü (hızlı)
+          const sessionAdmin = sessionStorage.getItem('isAdmin') === 'true'
+          if (sessionAdmin) {
+            adminStatus = true
+          } else {
+            // 2. Role kontrolü (yavaş ama kesin)
+            adminStatus = await isAdmin()
+            // Sonucu sessionStorage'a kaydet
+            if (adminStatus) {
+              sessionStorage.setItem('isAdmin', 'true')
+            }
+          }
+          
           setUserIsAdmin(adminStatus)
-          console.log('✅ User session restored:', user.full_name, `(${user.auth_type} auth)`)
+          console.log('✅ User session restored:', user.full_name, `(${user.auth_type} auth, admin: ${adminStatus})`)
+        } else {
+          // Kullanıcı yoksa admin flag'ini temizle
+          sessionStorage.removeItem('isAdmin')
         }
         
         // OneSignal user sync kurulumu

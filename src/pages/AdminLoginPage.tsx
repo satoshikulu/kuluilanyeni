@@ -16,6 +16,8 @@ function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [checkingSession, setCheckingSession] = useState(true)
 
   // Quicksand font yükleme - sadece bir kez
   useEffect(() => {
@@ -57,26 +59,47 @@ function AdminLoginPage() {
     }
   }, [])
 
-  // Zaten giriş yapmışsa admin paneline yönlendir
+  // Zaten giriş yapmışsa kontrol et
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        // Admin kontrolü yap - profiles tablosundan
-        const { data: userRecord } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        
-        if (userRecord?.role === 'admin') {
-          navigate('/admin')
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          // Admin kontrolü yap - profiles tablosundan
+          const { data: userRecord } = await supabase
+            .from('profiles')
+            .select('role, full_name')
+            .eq('id', user.id)
+            .single()
+          
+          if (userRecord?.role === 'admin') {
+            // Admin zaten giriş yapmış, uyarı göster
+            setCurrentUser({
+              ...user,
+              full_name: userRecord.full_name,
+              role: userRecord.role
+            })
+          }
         }
+      } catch (error) {
+        console.error('Session check error:', error)
+      } finally {
+        setCheckingSession(false)
       }
     }
     
     checkAuth()
   }, [navigate])
+
+  const handleSupabaseLogout = async () => {
+    try {
+      await supabase.auth.signOut()
+      setCurrentUser(null)
+      window.location.reload()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -119,7 +142,10 @@ function AdminLoginPage() {
         return
       }
 
-      // 3. Admin paneline yönlendir
+      // 3. SessionStorage'a admin flag'ini kaydet
+      sessionStorage.setItem('isAdmin', 'true')
+      
+      // 4. Admin paneline yönlendir
       console.log('✅ Admin girişi başarılı')
       navigate('/admin')
 
@@ -129,6 +155,62 @@ function AdminLoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 admin-login-quicksand">
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-sm w-full mx-4">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Oturum kontrol ediliyor...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Admin oturumu varsa uyarı göster
+  if (currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 admin-login-quicksand">
+        <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full mx-4">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">👑</span>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Admin Oturumu Aktif
+            </h2>
+            <p className="text-gray-600 mb-2">
+              <strong>{currentUser.full_name || currentUser.email || 'Admin'}</strong> olarak giriş yapmış durumdasınız.
+            </p>
+            <p className="text-gray-500 text-sm">
+              Farklı bir admin hesabıyla giriş yapmak için önce mevcut oturumunuzu kapatın.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleSupabaseLogout}
+              className="w-full rounded-lg bg-red-600 text-white py-3 font-medium hover:bg-red-700 transition-colors"
+            >
+              Oturumu Kapat
+            </button>
+            <button
+              onClick={() => navigate('/admin')}
+              className="w-full rounded-lg bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors"
+            >
+              Admin Paneline Git
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full rounded-lg bg-gray-100 text-gray-700 py-3 font-medium hover:bg-gray-200 transition-colors"
+            >
+              Ana Sayfaya Git
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

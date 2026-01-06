@@ -24,8 +24,8 @@ export async function migrateToSupabaseAuth(customUser: any): Promise<MigrationR
       }
     }
 
-    // 2. Email adresi oluştur (telefon@kuluilani.com formatında)
-    const email = `${normalizedPhone}@kuluilani.com`
+    // 2. Email adresi oluştur (telefon-kuluilani.com formatında)
+    const email = `tel-${normalizedPhone}@kuluilani.com`
 
     // 3. Geçici şifre oluştur (kullanıcı daha sonra değiştirebilir)
     const tempPassword = generateTempPassword()

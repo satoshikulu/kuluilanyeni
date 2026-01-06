@@ -33,6 +33,8 @@ export interface AuthResponse {
   error?: string
   user?: User
   migration_available?: boolean // Kullanıcı Supabase Auth'a geçebilir mi?
+  migration_completed?: boolean // Migration tamamlandı mı?
+  migration_failed?: boolean // Migration başarısız mı?
 }
 
 /**
@@ -136,12 +138,43 @@ export async function loginUser(
 
   // ADIM 2: Custom Auth ile dene
   const customResult = await tryCustomAuth(phoneOrEmail, password)
-  if (customResult.success) {
+  if (customResult.success && customResult.user) {
     console.log('✅ Custom Auth ile giriş başarılı')
-    // Migration seçeneği sun
-    customResult.migration_available = true
-    customResult.message = 'Giriş başarılı! Daha güvenli sisteme geçmek ister misiniz?'
-    return customResult
+    
+    // ADIM 3: Otomatik migration yap
+    console.log('🔄 Otomatik migration başlatılıyor...')
+    try {
+      const { migrateToSupabaseAuth } = await import('./migration')
+      const migrationResult = await migrateToSupabaseAuth(customResult.user)
+      
+      if (migrationResult.success) {
+        console.log('✅ Otomatik migration başarılı')
+        return {
+          success: true,
+          user: migrationResult.user,
+          message: 'Giriş başarılı! Hesabınız güvenli sisteme taşındı.',
+          migration_completed: true
+        }
+      } else {
+        console.warn('⚠️ Migration başarısız, custom auth ile devam:', migrationResult.error)
+        // Migration başarısız olsa bile custom auth ile devam et
+        return {
+          success: true,
+          user: customResult.user,
+          message: 'Giriş başarılı!',
+          migration_failed: true
+        }
+      }
+    } catch (migrationError) {
+      console.warn('⚠️ Migration hatası, custom auth ile devam:', migrationError)
+      // Migration hatası olsa bile custom auth ile devam et
+      return {
+        success: true,
+        user: customResult.user,
+        message: 'Giriş başarılı!',
+        migration_failed: true
+      }
+    }
   }
 
   console.log('❌ Her iki auth sistemi de başarısız')

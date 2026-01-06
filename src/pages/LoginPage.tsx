@@ -95,8 +95,12 @@ function LoginPage() {
       if (result.success && result.user) {
         console.log("✅ Hibrit login başarılı");
         
-        // Migration seçeneği varsa göster
-        if (result.migration_available) {
+        // Migration durumuna göre mesaj göster
+        if (result.migration_completed) {
+          setMessage(result.message || 'Giriş başarılı! Hesabınız güvenli sisteme taşındı.')
+        } else if (result.migration_failed) {
+          setMessage('Giriş başarılı!')
+        } else if (result.migration_available) {
           setMigrationAvailable(true)
           setError('') // Hata mesajını temizle
           setMessage(result.message || 'Giriş başarılı! Güvenli sisteme geçmek ister misiniz?')

@@ -256,16 +256,19 @@ function LoginPage() {
                 </div>
               )}
               
-              {message && (
+                  {message && (
                 <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm">
                   {message}
                   {migrationAvailable && (
                     <div className="mt-2">
+                      <p className="text-xs text-gray-600 mb-2">
+                        Hesabınızı daha güvenli yeni sisteme taşıyabilirsiniz.
+                      </p>
                       <button 
-                        className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                        className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors"
                         onClick={() => {
-                          // TODO: Migration modal açılacak
-                          alert('Migration özelliği yakında eklenecek!')
+                          // Migration modal App.tsx'te gösterilecek
+                          window.location.reload()
                         }}
                       >
                         Güvenli Sisteme Geç

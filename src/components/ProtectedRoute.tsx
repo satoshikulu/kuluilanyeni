@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { getCurrentUser, isAuthenticated } from '../lib/hybridAuth'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -12,6 +12,7 @@ interface UserProfile {
   id: string
   role: 'user' | 'admin'
   status: 'pending' | 'approved' | 'rejected'
+  auth_type?: 'supabase' | 'custom'
 }
 
 function ProtectedRoute({ 
@@ -34,59 +35,49 @@ function ProtectedRoute({
       setLoading(true)
       setError('')
 
-      // 1. Supabase session kontrolü
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      // 1. Hibrit auth ile kullanıcı kontrolü
+      const currentUser = await getCurrentUser()
       
-      if (sessionError) {
-        throw sessionError
-      }
-
       // 2. Authentication gerekli mi?
-      if (requireAuth && !session?.user) {
+      if (requireAuth && !currentUser) {
         setLoading(false)
         return // Navigate to login will happen in render
       }
 
-      // 3. User varsa profile bilgilerini al
-      if (session?.user) {
-        setUser(session.user)
-
-        // Profile bilgilerini al
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, role, status')
-          .eq('id', session.user.id)
-          .single()
-
-        if (profileError) {
-          console.error('Profile fetch error:', profileError)
-          setError('Kullanıcı profili bulunamadı')
-          // Admin gerekiyorsa session'ı temizle
-          if (requireAdmin) {
-            await supabase.auth.signOut()
-          }
-          setLoading(false)
-          return
-        }
-
-        setProfile(profileData)
+      // 3. User varsa bilgileri set et
+      if (currentUser) {
+        setUser(currentUser)
+        setProfile({
+          id: currentUser.id,
+          role: currentUser.role || 'user',
+          status: currentUser.status || 'pending',
+          auth_type: currentUser.auth_type
+        })
 
         // 4. Admin kontrolü
         if (requireAdmin) {
-          if (profileData.role !== 'admin') {
+          if (currentUser.role !== 'admin') {
             setError('Bu sayfaya erişim yetkiniz yok. Admin hesabı gerekli.')
-            // Non-admin user session'ını temizle
-            await supabase.auth.signOut()
             setLoading(false)
             return
           }
         }
 
-        // 5. User status kontrolü
-        if (profileData.status !== 'approved' && profileData.role !== 'admin') {
+        // 5. User status kontrolü (sadece Supabase auth için)
+        if (currentUser.auth_type === 'supabase' && currentUser.status !== 'approved' && currentUser.role !== 'admin') {
           setError('Hesabınız henüz onaylanmamış')
           setLoading(false)
           return
+        }
+
+        // 6. Custom auth için authenticated kontrolü
+        if (currentUser.auth_type === 'custom') {
+          const authenticated = await isAuthenticated()
+          if (!authenticated) {
+            setError('Oturum süresi dolmuş')
+            setLoading(false)
+            return
+          }
         }
       }
 
@@ -124,8 +115,14 @@ function ProtectedRoute({
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-y-3">
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => window.location.href = '/giris'}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Giriş Yap
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Ana Sayfaya Dön
             </button>

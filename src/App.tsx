@@ -3,6 +3,7 @@ import { getCurrentUser, logoutUser, isAdmin } from './lib/hybridAuth'
 import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
+import MigrationModal from './components/MigrationModal'
 import { setupOneSignalUserSync } from './lib/oneSignalUserSync'
 import { initStorage } from './lib/persistentStorage'
 import { useEffect, useState } from 'react'
@@ -12,6 +13,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [userIsAdmin, setUserIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showMigrationModal, setShowMigrationModal] = useState(false)
   
   // Kullanıcı adını title case yap
   const displayName = currentUser?.full_name ? toTitleCase(currentUser.full_name) : ''
@@ -46,9 +48,20 @@ function App() {
           
           setUserIsAdmin(adminStatus)
           console.log('✅ User session restored:', user.full_name, `(${user.auth_type} auth, admin: ${adminStatus})`)
+          
+          // Migration kontrolü - custom auth kullanıcıları için
+          if (user.auth_type === 'custom') {
+            // Migration modal'ını göster (sadece bir kez)
+            const migrationShown = sessionStorage.getItem('migration_modal_shown')
+            if (!migrationShown) {
+              setShowMigrationModal(true)
+              sessionStorage.setItem('migration_modal_shown', 'true')
+            }
+          }
         } else {
           // Kullanıcı yoksa admin flag'ini temizle
           sessionStorage.removeItem('isAdmin')
+          sessionStorage.removeItem('migration_modal_shown')
         }
         
         // OneSignal user sync kurulumu
@@ -62,6 +75,24 @@ function App() {
 
     initApp()
   }, [])
+
+  // Migration modal handlers
+  const handleMigrationSuccess = async () => {
+    setShowMigrationModal(false)
+    // Kullanıcı bilgilerini yenile
+    const user = await getCurrentUser()
+    setCurrentUser(user)
+    // Sayfayı yenile
+    window.location.reload()
+  }
+
+  const handleMigrationSkip = () => {
+    setShowMigrationModal(false)
+    // 24 saat sonra tekrar göster
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    sessionStorage.setItem('migration_modal_next_show', tomorrow.toISOString())
+  }
 
   // Loading state
   if (loading) {
@@ -79,6 +110,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      {/* Migration Modal */}
+      {showMigrationModal && currentUser?.auth_type === 'custom' && (
+        <MigrationModal
+          user={currentUser}
+          onSuccess={handleMigrationSuccess}
+          onSkip={handleMigrationSkip}
+        />
+      )}
+
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b">
         <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
           <Link to="/" className="font-semibold text-lg tracking-tight">

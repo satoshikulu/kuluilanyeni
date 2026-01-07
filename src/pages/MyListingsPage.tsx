@@ -18,6 +18,7 @@ type Listing = {
   is_for: 'satilik' | 'kiralik'
   description: string | null
   status: 'pending' | 'approved' | 'rejected'
+  images?: string[]
 }
 
 function MyListingsPage() {
@@ -156,7 +157,33 @@ function MyListingsPage() {
               className="group bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-300 transition-all duration-300 cursor-pointer"
               onClick={() => navigate(`/ilan/${listing.id}`)}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-6">
+                {/* Görsel Thumbnail */}
+                <div className="flex-shrink-0">
+                  {listing.images && listing.images.length > 0 ? (
+                    <div className="w-32 h-24 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                      <img
+                        src={listing.images[0]}
+                        alt={listing.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          target.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                      <div className="hidden w-full h-full flex items-center justify-center text-gray-400">
+                        <span className="text-2xl">🖼️</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-32 h-24 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center">
+                      <span className="text-2xl text-gray-400">🏠</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* İlan Bilgileri */}
                 <div className="flex-1">
                   <div className="flex items-start gap-3 mb-3">
                     <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
@@ -209,13 +236,18 @@ function MyListingsPage() {
                   </div>
 
                   {listing.description && (
-                    <p className="mt-3 text-sm text-gray-700 line-clamp-2">
+                    <p className="mt-3 text-sm text-gray-700 overflow-hidden" style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical'
+                    }}>
                       {listing.description}
                     </p>
                   )}
                 </div>
 
-                <div className="text-right">
+                {/* Detay Butonu */}
+                <div className="flex-shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()

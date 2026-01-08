@@ -1,14 +1,14 @@
 export const NEIGHBORHOODS = [
-  'ACIKUYU MAHALLESİ', 'ALPARSLAN MAHALLESİ', 'ALTILAR MAHALLESİ', 'ARŞINCI MAHALLESİ', 'BAHADIRLI MAHALLESİ',
-  'BEŞKARDEŞ MAHALLESİ', 'BOZAN MAHALLESİ', 'BURUNAĞIL MAHALLESİ', 'CAMİKEBİR MAHALLESİ', 'CANIMANA MAHALLESİ',
-  'CELEP MAHALLESİ', 'CUMHURİYET MAHALLESİ', 'DEĞİRMENÖZÜ MAHALLESİ', 'DİNEK MAHALLESİ', 'DİPDEDE MAHALLESİ',
-  'DOĞUTEPE MAHALLESİ', 'FATİH SULTAN MEHMET MAHALLESİ', 'FEVZİYE MAHALLESİ', 'GÖKLER MAHALLESİ', 'GÜZELYAYLA MAHALLESİ',
-  'HİSARKÖY MAHALLESİ', 'KARACADAĞ MAHALLESİ', 'KARACADERE MAHALLESİ', 'KARAPINAR MAHALLESİ', 'KARŞIYAKA MAHALLESİ',
-  'KEMALİYE MAHALLESİ', 'KIRKKUYU MAHALLESİ', 'KIRKPINAR MAHALLESİ', 'KOZANLI MAHALLESİ', 'KÖMÜŞİNİ MAHALLESİ',
-  'KÖSTENGİL MAHALLESİ', 'KÖŞKER MAHALLESİ', 'MANDIRA MAHALLESİ', 'ÖMERANLI MAHALLESİ', 'SARIYAYLA MAHALLESİ',
-  'SEYİTAHMETLİ MAHALLESİ', 'SOĞUKKUYU MAHALLESİ', 'ŞEREFLİ MAHALLESİ', 'TAVLIÖREN MAHALLESİ', 'TUZYAKA MAHALLESİ',
-  'YARAŞLI MAHALLESİ', 'YAZIÇAYIR MAHALLESİ', 'YENİ MAHALLESİ', 'YEŞİLTEPE MAHALLESİ', 'YEŞİLYURT MAHALLESİ',
-  'ZİNCİRLİKUYU MAHALLESİ'
+  'Açıkuyu Mahallesi', 'Alparslan Mahallesi', 'Altılar Mahallesi', 'Arşıncı Mahallesi', 'Bahadırlı Mahallesi',
+  'Beşkardeş Mahallesi', 'Bozan Mahallesi', 'Burunağıl Mahallesi', 'Camikebir Mahallesi', 'Canımana Mahallesi',
+  'Celep Mahallesi', 'Cumhuriyet Mahallesi', 'Değirmenözü Mahallesi', 'Dinek Mahallesi', 'Dipdede Mahallesi',
+  'Doğutepe Mahallesi', 'Fatih Sultan Mehmet Mahallesi', 'Fevziye Mahallesi', 'Gökler Mahallesi', 'Güzelyayla Mahallesi',
+  'Hisarköy Mahallesi', 'Karacadağ Mahallesi', 'Karacadere Mahallesi', 'Karapınar Mahallesi', 'Karşıyaka Mahallesi',
+  'Kemaliye Mahallesi', 'Kırkkuyu Mahallesi', 'Kırkpınar Mahallesi', 'Kozanlı Mahallesi', 'Kömüşini Mahallesi',
+  'Köstengil Mahallesi', 'Köşker Mahallesi', 'Mandıra Mahallesi', 'Ömeranlı Mahallesi', 'Sarıyayla Mahallesi',
+  'Seyitahmetli Mahallesi', 'Soğukkuyu Mahallesi', 'Şerefli Mahallesi', 'Tavliören Mahallesi', 'Tuzyaka Mahallesi',
+  'Yaraşlı Mahallesi', 'Yazıçayır Mahallesi', 'Yeni Mahallesi', 'Yeşiltepe Mahallesi', 'Yeşilyurt Mahallesi',
+  'Zincirlikuyu Mahallesi'
 ]
 
 

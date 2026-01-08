@@ -95,18 +95,18 @@ function App() {
                   alert('Bu tarayıcıda PWA yüklemesi desteklenmiyor. Chrome, Edge veya Firefox kullanın.');
                 }
               }}
-              className="relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 overflow-hidden group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/50 hover:border-blue-300/60 shadow-sm hover:shadow-md transform hover:scale-105 animate-download-cycle"
+              className="relative inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-all duration-300 overflow-hidden group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/50 hover:border-blue-300/60 shadow-sm hover:shadow-md transform hover:scale-105 animate-download-cycle"
               title="Uygulamayı Telefonuna İndir - PWA olarak yükle"
             >
               {/* Download Icon - Smaller */}
-              <div className="relative z-10 flex items-center justify-center w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded shadow-sm group-hover:shadow-md transition-all duration-300">
-                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="relative z-10 flex items-center justify-center w-3 h-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded shadow-sm group-hover:shadow-md transition-all duration-300">
+                <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
               </div>
               
               {/* Compact Text */}
-              <span className="relative z-10 text-sm font-medium text-blue-700 group-hover:text-blue-800 transition-colors duration-300">
+              <span className="relative z-10 text-xs font-medium text-blue-700 group-hover:text-blue-800 transition-colors duration-300">
                 Telefona İndir
               </span>
             </button>

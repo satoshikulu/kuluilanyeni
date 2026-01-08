@@ -3,8 +3,9 @@ import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
-import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
+import { checkPhoneExists, isValidPhoneFormat, formatPhone, normalizePhone } from '../lib/phoneValidation'
 import { toTitleCase } from '../lib/textUtils'
+import { getCurrentUser } from '../lib/hybridAuth'
 import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
 import MembershipRequiredModal from '../components/MembershipRequiredModal'
 
@@ -88,8 +89,39 @@ function SellPage() {
         return
       }
       
-      // ÜYELİK KONTROLÜ - HİBRİT SİSTEM
-      const membershipCheck = await checkApprovedMembership(ownerPhone)
+      // ÜYELİK KONTROLÜ - HİBRİT SİSTEM (GÜVENLİK FİKSİ)
+      // 1. Önce giriş yapmış kullanıcıyı kontrol et
+      const currentUser = await getCurrentUser()
+      let finalUserId: string | null = null
+      let isMemberUser = false
+      
+      if (currentUser && currentUser.status === 'approved') {
+        // Giriş yapmış onaylı üye var - bu kullanıcıyı önceleyeceğiz
+        finalUserId = currentUser.id
+        isMemberUser = true
+        console.log('✅ Giriş yapmış üye tespit edildi:', currentUser.full_name)
+        
+        // Güvenlik uyarısı: Farklı telefon numarası yazılmışsa uyar
+        const currentUserPhone = currentUser.phone?.replace(/\D/g, '') || ''
+        const formPhone = normalizePhone(ownerPhone)
+        
+        if (currentUserPhone !== formPhone) {
+          console.warn('⚠️ Güvenlik: Giriş yapmış kullanıcının telefonu farklı!', {
+            currentUserPhone,
+            formPhone,
+            user: currentUser.full_name
+          })
+        }
+      } else {
+        // Giriş yapmış kullanıcı yok - telefon numarasına göre üyelik kontrol et
+        const membershipCheck = await checkApprovedMembership(ownerPhone)
+        if (membershipCheck.isMember) {
+          finalUserId = membershipCheck.userId
+          isMemberUser = true
+          console.log('✅ Telefon numarasına göre üye tespit edildi:', membershipCheck.userName)
+        }
+      }
+      
       const pendingCheck = await checkPendingMembership(ownerPhone)
       
       // 1) İlanı önce oluştur ve id al
@@ -101,7 +133,7 @@ function SellPage() {
         .insert({
           title,
           owner_name: ownerName,
-          owner_phone: ownerPhone,
+          owner_phone: normalizePhone(ownerPhone), // Telefon numarasını normalize et
           neighborhood: neighborhood || null,
           property_type: propertyType,
           rooms,
@@ -114,8 +146,8 @@ function SellPage() {
           longitude: longitude,
           location_type: locationType,
           status: 'pending',
-          user_id: membershipCheck.userId, // Üye ise user_id ekle
-          requires_membership: !membershipCheck.isMember, // Üye değilse üyelik gerektiğini işaretle
+          user_id: finalUserId, // Giriş yapmış kullanıcı öncelikli
+          requires_membership: !isMemberUser, // Üye durumuna göre
         })
         .select('id')
         .single()
@@ -153,7 +185,7 @@ function SellPage() {
       }
 
       // Başarı mesajı ve modal göster
-      if (membershipCheck.isMember) {
+      if (isMemberUser) {
         setMessage(`✅ İlanınız başarıyla gönderildi! Admin onayından sonra yayınlanacak.`)
       } else {
         setMessage('✅ İlanınız alındı!')
@@ -238,9 +270,9 @@ function SellPage() {
                   <input 
                     id="phone" 
                     className={inputClass} 
-                    placeholder="5xx xxx xx xx" 
+                    placeholder="555 123 45 67" 
                     value={ownerPhone} 
-                    onChange={(e) => setOwnerPhone(e.target.value)}
+                    onChange={(e) => setOwnerPhone(formatPhone(e.target.value))}
                     onBlur={async () => {
                       if (ownerPhone && isValidPhoneFormat(ownerPhone)) {
                         setPhoneChecking(true)
@@ -303,7 +335,15 @@ function SellPage() {
                 </div>
                 <div>
                   <label className="block text-sm mb-1" htmlFor="rooms">Oda Sayısı</label>
-                  <input id="rooms" className={inputClass} placeholder="3+1" value={rooms} onChange={(e) => setRooms(e.target.value)} />
+                  <select id="rooms" className={inputClass} value={rooms} onChange={(e) => setRooms(e.target.value)}>
+                    <option value="">Oda sayısı seçin</option>
+                    <option value="1+1">1+1</option>
+                    <option value="2+1">2+1</option>
+                    <option value="3+1">3+1</option>
+                    <option value="4+1">4+1</option>
+                    <option value="5+1">5+1</option>
+                    <option value="6 üstü">6 üstü</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm mb-1" htmlFor="area">Brüt m²</label>

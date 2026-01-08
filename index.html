@@ -109,12 +109,15 @@
           console.log('🔔 OneSignal: Login işlemi başlatılıyor...', userId);
           
           OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.login(userId);
-            console.log('🔔 OneSignal: Login başarılı:', userId);
+            // Telefon numarasını external_id olarak kullan
+            const phoneNumber = userInfo.phone ? userInfo.phone.replace(/\D/g, '') : userId;
+            
+            await OneSignal.login(phoneNumber); // Telefon numarası external_id olarak
+            console.log('🔔 OneSignal: Login başarılı (telefon numarası):', phoneNumber);
             
             // Kullanıcı bilgilerini tags olarak ekle
             if (userInfo) {
-              await addUserTags(userInfo);
+              await addUserTags(userInfo, phoneNumber);
             }
           });
         } catch (error) {
@@ -140,12 +143,15 @@
       async function handleUserLogin(userId, userInfo) {
         OneSignalDeferred.push(async function(OneSignal) {
           try {
-            await OneSignal.login(userId);
-            console.log('🔔 OneSignal: Internal login başarılı:', userId);
+            // Telefon numarasını external_id olarak kullan (sizin istediğiniz format)
+            const phoneNumber = userInfo.phone ? userInfo.phone.replace(/\D/g, '') : userId;
+            
+            await OneSignal.login(phoneNumber); // Telefon numarası external_id olarak
+            console.log('🔔 OneSignal: Login başarılı (telefon numarası):', phoneNumber);
             
             // Kullanıcı bilgilerini tags olarak ekle
             if (userInfo) {
-              await addUserTags(userInfo);
+              await addUserTags(userInfo, phoneNumber);
             }
           } catch (error) {
             console.error('🔔 OneSignal: Internal login hatası:', error);
@@ -154,56 +160,33 @@
       }
 
       // Kullanıcı bilgilerini tags olarak ekle
-      async function addUserTags(user) {
+      async function addUserTags(user, phoneNumber) {
         try {
           const nameParts = user.full_name.trim().split(' ');
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
-          const phoneNumber = user.phone.startsWith('+90') 
-            ? user.phone 
-            : `+90${user.phone.replace(/\\D/g, '')}`;
+          const formattedPhone = phoneNumber.startsWith('+90') 
+            ? phoneNumber 
+            : `+90${phoneNumber}`;
 
           OneSignalDeferred.push(function(OneSignal) {
-            // External ID olarak Supabase user ID'sini kullan
-            OneSignal.User.addAlias('external_id', user.id);
+            // 1. Login ile telefon numarası external_id olarak ayarlandı
             
-            // Kullanıcı bilgilerini tags olarak ekle
+            // 2. Kullanıcı bilgilerini tag olarak ekle
             OneSignal.User.addTags({
-              'first_name': firstName,
-              'last_name': lastName,
-              'phone_number': phoneNumber,
-              'user_id': user.id,
-              'user_status': user.status,
-              'user_role': user.role,
-              'sync_source': 'hibrit_login',
-              'last_sync': new Date().toISOString()
+              "first_name": firstName,
+              "last_name": lastName,
+              "phone": phoneNumber // Orijinal telefon numarası
             });
 
-            // Email subscription ekle (eğer email varsa)
-            if (user.email && user.email.trim()) {
-              try {
-                OneSignal.User.addEmail(user.email.trim());
-                console.log('🔔 OneSignal: Email subscription eklendi:', user.email);
-              } catch (emailError) {
-                console.warn('🔔 OneSignal: Email subscription hatası:', emailError);
-              }
-            }
-
-            // SMS subscription ekle (telefon numarası ile)
-            if (phoneNumber) {
-              try {
-                OneSignal.User.addSms(phoneNumber);
-                console.log('🔔 OneSignal: SMS subscription eklendi:', phoneNumber);
-              } catch (smsError) {
-                console.warn('🔔 OneSignal: SMS subscription hatası:', smsError);
-              }
-            }
+            // 3. SMS subscription ekle (E.164 formatında) - Phone Number kolonunda görünür
+            OneSignal.User.addSms(formattedPhone);
             
-            console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi (hibrit)', {
-              firstName,
-              lastName,
-              phoneNumber,
-              userId: user.id
+            console.log('🔔 OneSignal: Kullanıcı bilgileri eklendi (istenen format)', {
+              external_id: phoneNumber,
+              first_name: firstName,
+              last_name: lastName,
+              phone_number_column: formattedPhone
             });
           });
         } catch (error) {

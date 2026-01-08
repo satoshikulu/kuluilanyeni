@@ -3,8 +3,9 @@ import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import LocationPickerWrapper from '../components/LocationPickerWrapper'
-import { checkPhoneExists, isValidPhoneFormat } from '../lib/phoneValidation'
+import { checkPhoneExists, isValidPhoneFormat, formatPhone, normalizePhone } from '../lib/phoneValidation'
 import { toTitleCase } from '../lib/textUtils'
+import { getCurrentUser } from '../lib/hybridAuth'
 import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
 import MembershipRequiredModal from '../components/MembershipRequiredModal'
 
@@ -74,8 +75,39 @@ function RentPage() {
         return
       }
       
-      // ÜYELİK KONTROLÜ - HİBRİT SİSTEM
-      const membershipCheck = await checkApprovedMembership(formData.owner_phone)
+      // ÜYELİK KONTROLÜ - HİBRİT SİSTEM (GÜVENLİK FİKSİ)
+      // 1. Önce giriş yapmış kullanıcıyı kontrol et
+      const currentUser = await getCurrentUser()
+      let finalUserId: string | null = null
+      let isMemberUser = false
+      
+      if (currentUser && currentUser.status === 'approved') {
+        // Giriş yapmış onaylı üye var - bu kullanıcıyı önceleyeceğiz
+        finalUserId = currentUser.id
+        isMemberUser = true
+        console.log('✅ Giriş yapmış üye tespit edildi:', currentUser.full_name)
+        
+        // Güvenlik uyarısı: Farklı telefon numarası yazılmışsa uyar
+        const currentUserPhone = currentUser.phone?.replace(/\D/g, '') || ''
+        const formPhone = normalizePhone(formData.owner_phone)
+        
+        if (currentUserPhone !== formPhone) {
+          console.warn('⚠️ Güvenlik: Giriş yapmış kullanıcının telefonu farklı!', {
+            currentUserPhone,
+            formPhone,
+            user: currentUser.full_name
+          })
+        }
+      } else {
+        // Giriş yapmış kullanıcı yok - telefon numarasına göre üyelik kontrol et
+        const membershipCheck = await checkApprovedMembership(formData.owner_phone)
+        if (membershipCheck.isMember) {
+          finalUserId = membershipCheck.userId
+          isMemberUser = true
+          console.log('✅ Telefon numarasına göre üye tespit edildi:', membershipCheck.userName)
+        }
+      }
+      
       const pendingCheck = await checkPendingMembership(formData.owner_phone)
       
       // 1) İlanı önce oluştur ve id al
@@ -85,6 +117,7 @@ function RentPage() {
         .from('listings')
         .insert([{
           ...formData,
+          owner_phone: normalizePhone(formData.owner_phone), // Telefon numarasını normalize et
           price_tl: formData.price_tl ? parseInt(formData.price_tl) : null,
           area_m2: formData.area_m2 ? parseInt(formData.area_m2) : null,
           address: finalAddress,
@@ -92,8 +125,8 @@ function RentPage() {
           longitude: longitude,
           location_type: locationType,
           status: 'pending',
-          user_id: membershipCheck.userId, // Üye ise user_id ekle
-          requires_membership: !membershipCheck.isMember, // Üye değilse üyelik gerektiğini işaretle
+          user_id: finalUserId, // Giriş yapmış kullanıcı öncelikli
+          requires_membership: !isMemberUser, // Üye durumuna göre
         }])
         .select('id')
         .single()
@@ -128,7 +161,7 @@ function RentPage() {
       }
 
       // Başarı mesajı ve modal göster
-      if (membershipCheck.isMember) {
+      if (isMemberUser) {
         setMessage(`✅ İlanınız başarıyla gönderildi! Admin onayından sonra yayınlanacak.`)
       } else {
         setMessage('✅ İlanınız alındı!')
@@ -164,6 +197,17 @@ function RentPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+    
+    // Telefon numarası özel işleme
+    if (name === 'owner_phone') {
+      // Sadece rakamları al ve formatla
+      const formatted = formatPhone(value)
+      setFormData(prev => ({
+        ...prev,
+        [name]: formatted
+      }))
+      return
+    }
     
     // Otomatik büyük harf yapılacak alanlar
     const titleCaseFields = ['title', 'owner_name', 'description']
@@ -318,14 +362,20 @@ function RentPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Oda Sayısı
                 </label>
-                <input
-                  type="text"
+                <select
                   name="rooms"
                   value={formData.rooms}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Örn: 3+1, 2+1"
-                />
+                >
+                  <option value="">Oda sayısı seçin</option>
+                  <option value="1+1">1+1</option>
+                  <option value="2+1">2+1</option>
+                  <option value="3+1">3+1</option>
+                  <option value="4+1">4+1</option>
+                  <option value="5+1">5+1</option>
+                  <option value="6 üstü">6 üstü</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -496,9 +546,8 @@ function RentPage() {
               <li><span className="text-gray-500">m²:</span> {formData.area_m2 ? formatTL(formData.area_m2) : '-'}</li>
               <li><span className="text-gray-500">Kira:</span> {formData.price_tl ? `${formatTL(formData.price_tl)} TL` : '-'}</li>
             </ul>
-            <div className="mt-3 flex flex-col gap-4">
-              <button onClick={(e) => { e.preventDefault(); void (document.querySelector('form') as HTMLFormElement)?.requestSubmit() }} className="rounded-lg bg-blue-600 text-white px-6 py-3 text-base font-semibold hover:bg-blue-700">İlanı Gönder</button>
-              <a href={waLink} target="_blank" rel="noreferrer" className="rounded-lg bg-green-700 text-white px-5 py-2 text-center text-sm font-medium hover:bg-green-800">WhatsApp ile hızlı iletişim</a>
+            <div className="mt-3">
+              <a href={waLink} target="_blank" rel="noreferrer" className="block rounded-lg bg-green-700 text-white px-5 py-2 text-center text-sm font-medium hover:bg-green-800">WhatsApp ile hızlı iletişim</a>
             </div>
           </div>
 

@@ -38,7 +38,82 @@ export interface AuthResponse {
 }
 
 /**
- * Kullanıcı kaydı - Basit telefon + şifre sistemi (Eski sistem gibi)
+ * Kullanıcı kayıt başvurusu (user_requests tablosuna)
+ * YENİ SİSTEM: Auth signup kullanmaz, sadece başvuru yapar
+ */
+export async function registerUserRequest(
+  fullName: string,
+  phone: string,
+  password: string
+): Promise<AuthResponse> {
+  try {
+    // 1. Telefon numarasını temizle
+    const cleanPhone = phone.replace(/\D/g, '')
+    
+    if (cleanPhone.length < 10) {
+      return {
+        success: false,
+        error: 'Geçerli bir telefon numarası girin (10 haneli)'
+      }
+    }
+
+    // 2. Şifre hash'le (basit hash - gerçek projede bcrypt kullan)
+    const passwordHash = btoa(password) // Base64 encoding (geçici)
+    
+    // 3. User request oluştur
+    const { data, error } = await supabase
+      .from('user_requests')
+      .insert({
+        full_name: fullName,
+        phone: cleanPhone,
+        password_hash: passwordHash,
+        status: 'pending'
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('User request hatası:', error)
+      
+      if (error.code === '23505') { // Unique constraint violation
+        return {
+          success: false,
+          error: 'Bu telefon numarası ile zaten bir başvuru yapılmış'
+        }
+      }
+      
+      return {
+        success: false,
+        error: 'Başvuru sırasında bir hata oluştu'
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Başvurunuz alındı! Admin onayından sonra giriş yapabilirsiniz.',
+      user: {
+        id: data.id,
+        email: `${cleanPhone}@pending.local`,
+        full_name: fullName,
+        phone: cleanPhone,
+        role: 'user',
+        status: 'pending',
+        auth_type: 'supabase',
+        created_at: data.created_at,
+        updated_at: data.updated_at || data.created_at
+      }
+    }
+  } catch (error: any) {
+    console.error('Kayıt başvuru hatası:', error)
+    return {
+      success: false,
+      error: error?.message || 'Başvuru sırasında bir hata oluştu'
+    }
+  }
+}
+
+/**
+ * Kullanıcı kaydı - Basit telefon + şifre sistemi (ESKİ SİSTEM - DEPRECATED)
  */
 export async function registerUser(
   fullName: string,

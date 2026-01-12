@@ -517,8 +517,8 @@ function AdminPage() {
     const newPassword = prompt(`${phone} için yeni şifre girin:`)
     if (!newPassword) return
     
-    if (newPassword.length < 4) {
-      alert('Şifre en az 4 karakter olmalıdır')
+    if (newPassword.length < 6) {
+      alert('Şifre en az 6 karakter olmalıdır')
       return
     }
     

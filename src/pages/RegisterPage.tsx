@@ -127,8 +127,8 @@ function RegisterPage() {
         return
       }
 
-      if (password.length < 4) {
-        setError('Şifre en az 4 karakter olmalıdır.')
+      if (password.length < 6) {
+        setError('Şifre en az 6 karakter olmalıdır.')
         return
       }
 

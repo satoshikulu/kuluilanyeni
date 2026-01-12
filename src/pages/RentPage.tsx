@@ -8,19 +8,42 @@ import { toTitleCase } from '../lib/textUtils'
 import { getCurrentUser } from '../lib/hybridAuth'
 import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
 import MembershipRequiredModal from '../components/MembershipRequiredModal'
+import { 
+  HEATING_OPTIONS, 
+  FURNISHED_OPTIONS, 
+  USAGE_OPTIONS,
+  validateListingForm,
+  isApartment,
+  isDetached
+} from '../types/listing'
+import type { ListingFormData } from '../types/listing'
 
 function RentPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ListingFormData>({
     title: '',
     owner_name: '',
     owner_phone: '',
     neighborhood: '',
     property_type: 'Daire',
     rooms: '',
-    area_m2: '', // only digits as string
-    price_tl: '', // only digits as string
+    area_m2: '',
+    price_tl: '',
     description: '',
-    is_for: 'kiralik' as const
+    is_for: 'kiralik' as const,
+    // Yeni alanlar
+    floor_number: '',
+    total_floors: '',
+    heating_type: '',
+    building_age: '',
+    furnished_status: '', // Kiralık için ZORUNLU
+    usage_status: '',
+    has_elevator: false,
+    monthly_fee: '',
+    has_balcony: false,
+    garden_area_m2: '', // Müstakil için
+    deed_status: '', // Satılık için (kiralıkta kullanılmaz)
+    deposit_amount: '', // Kiralık için
+    advance_payment_months: 0 // Kiralık için
   })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -61,6 +84,14 @@ function RentPage() {
     setMessage('')
 
     try {
+      // Form validasyonu
+      const validationErrors = validateListingForm(formData)
+      if (validationErrors.length > 0) {
+        setMessage('Hata: ' + validationErrors.join(', '))
+        setLoading(false)
+        return
+      }
+
       // Telefon numarası kontrolü
       if (!isValidPhoneFormat(formData.owner_phone)) {
         setMessage('Hata: Geçerli bir telefon numarası girin (10 veya 11 haneli).')
@@ -113,21 +144,38 @@ function RentPage() {
       // 1) İlanı önce oluştur ve id al
       const finalAddress = address || `${formData.neighborhood || 'Kulu'}, Konya`
       
+      // Form verilerini database formatına çevir
+      const listingData = {
+        ...formData,
+        owner_phone: normalizePhone(formData.owner_phone),
+        price_tl: formData.price_tl ? parseInt(formData.price_tl) : null,
+        area_m2: formData.area_m2 ? parseInt(formData.area_m2) : null,
+        // Yeni alanlar
+        floor_number: formData.floor_number ? parseInt(formData.floor_number) : null,
+        total_floors: formData.total_floors ? parseInt(formData.total_floors) : null,
+        heating_type: formData.heating_type || null,
+        building_age: formData.building_age ? parseInt(formData.building_age) : null,
+        furnished_status: formData.furnished_status || null,
+        usage_status: formData.usage_status || null,
+        has_elevator: formData.has_elevator,
+        monthly_fee: formData.monthly_fee ? parseFloat(formData.monthly_fee) : null,
+        has_balcony: formData.has_balcony,
+        garden_area_m2: formData.garden_area_m2 ? parseInt(formData.garden_area_m2) : null,
+        deposit_amount: formData.deposit_amount ? parseFloat(formData.deposit_amount) : null,
+        advance_payment_months: formData.advance_payment_months || null,
+        // Konum ve durum
+        address: finalAddress,
+        latitude: latitude,
+        longitude: longitude,
+        location_type: locationType,
+        status: 'pending',
+        user_id: finalUserId,
+        requires_membership: !isMemberUser
+      }
+
       const { data: inserted, error: insertError } = await supabase
         .from('listings')
-        .insert([{
-          ...formData,
-          owner_phone: normalizePhone(formData.owner_phone), // Telefon numarasını normalize et
-          price_tl: formData.price_tl ? parseInt(formData.price_tl) : null,
-          area_m2: formData.area_m2 ? parseInt(formData.area_m2) : null,
-          address: finalAddress,
-          latitude: latitude,
-          longitude: longitude,
-          location_type: locationType,
-          status: 'pending',
-          user_id: finalUserId, // Giriş yapmış kullanıcı öncelikli
-          requires_membership: !isMemberUser, // Üye durumuna göre
-        }])
+        .insert([listingData])
         .select('id')
         .single()
 
@@ -179,7 +227,21 @@ function RentPage() {
         area_m2: '',
         price_tl: '',
         description: '',
-        is_for: 'kiralik'
+        is_for: 'kiralik',
+        // Yeni alanları da temizle
+        floor_number: '',
+        total_floors: '',
+        heating_type: '',
+        building_age: '',
+        furnished_status: '',
+        usage_status: '',
+        has_elevator: false,
+        monthly_fee: '',
+        has_balcony: false,
+        garden_area_m2: '',
+        deed_status: '',
+        deposit_amount: '',
+        advance_payment_months: 0
       })
       setSelectedFiles([])
       setPreviews([])
@@ -196,15 +258,34 @@ function RentPage() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
+    const { name, value, type } = e.target
     
     // Telefon numarası özel işleme
     if (name === 'owner_phone') {
-      // Sadece rakamları al ve formatla
       const formatted = formatPhone(value)
       setFormData(prev => ({
         ...prev,
         [name]: formatted
+      }))
+      return
+    }
+    
+    // Checkbox işleme
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }))
+      return
+    }
+    
+    // Number input işleme (advance_payment_months)
+    if (name === 'advance_payment_months') {
+      const numValue = parseInt(value) || 0
+      setFormData(prev => ({
+        ...prev,
+        [name]: numValue
       }))
       return
     }
@@ -413,10 +494,240 @@ function RentPage() {
               />
             </div>
 
-            {/* 6) Açıklama */}
+            {/* 6) Profesyonel Detaylar */}
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">6</span>
+              Profesyonel Detaylar
+            </div>
+
+            {/* Kat Bilgileri - Sadece Daire için */}
+            {isApartment(formData.property_type) && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kat
+                  </label>
+                  <input
+                    type="number"
+                    name="floor_number"
+                    value={formData.floor_number}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="3"
+                    min="-5"
+                    max="50"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Bodrum için negatif (-1, -2)</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Toplam Kat
+                  </label>
+                  <input
+                    type="number"
+                    name="total_floors"
+                    value={formData.total_floors}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="5"
+                    min="1"
+                    max="50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Asansör
+                  </label>
+                  <div className="flex items-center space-x-4 pt-3">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="has_elevator"
+                        checked={formData.has_elevator}
+                        onChange={handleChange}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Asansör var</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bahçe Alanı - Sadece Müstakil için */}
+            {isDetached(formData.property_type) && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bahçe Alanı (m²)
+                </label>
+                <input
+                  type="number"
+                  name="garden_area_m2"
+                  value={formData.garden_area_m2}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="200"
+                  min="0"
+                />
+              </div>
+            )}
+
+            {/* Genel Detaylar */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Isıtma Türü
+                </label>
+                <select
+                  name="heating_type"
+                  value={formData.heating_type}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">Isıtma türü seçin</option>
+                  {HEATING_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bina Yaşı
+                </label>
+                <input
+                  type="number"
+                  name="building_age"
+                  value={formData.building_age}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="5"
+                  min="0"
+                  max="200"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Eşya Durumu *
+                </label>
+                <select
+                  name="furnished_status"
+                  value={formData.furnished_status}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">Eşya durumu seçin</option>
+                  {FURNISHED_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-orange-600 font-medium">Kiralık ilanlar için zorunlu</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kullanım Durumu
+                </label>
+                <select
+                  name="usage_status"
+                  value={formData.usage_status}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">Kullanım durumu seçin</option>
+                  {USAGE_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Aidat ve Balkon */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {isApartment(formData.property_type) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Aylık Aidat (TL)
+                  </label>
+                  <input
+                    type="text"
+                    name="monthly_fee"
+                    value={formatTL(formData.monthly_fee)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '')
+                      setFormData(prev => ({ ...prev, monthly_fee: digits }))
+                    }}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="500"
+                    inputMode="numeric"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Balkon
+                </label>
+                <div className="flex items-center space-x-4 pt-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="has_balcony"
+                      checked={formData.has_balcony}
+                      onChange={handleChange}
+                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Balkon var</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* 7) Kiralık Özel Alanlar */}
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs">7</span>
+              Kiralık Özel Bilgiler
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Depozito (TL)
+                </label>
+                <input
+                  type="text"
+                  name="deposit_amount"
+                  value={formatTL(formData.deposit_amount)}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '')
+                    setFormData(prev => ({ ...prev, deposit_amount: digits }))
+                  }}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="10.000"
+                  inputMode="numeric"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Peşinat (Ay)
+                </label>
+                <select
+                  name="advance_payment_months"
+                  value={formData.advance_payment_months}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  {Array.from({ length: 13 }, (_, i) => (
+                    <option key={i} value={i}>{i} ay</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 8) Açıklama */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">6</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">8</span>
                 Açıklama
               </label>
               <textarea
@@ -430,10 +741,10 @@ function RentPage() {
               <p className="mt-1 text-xs text-gray-500">Her cümlenin ilk harfi otomatik büyük yapılır</p>
             </div>
 
-            {/* 7) Konum Bilgileri */}
+            {/* 9) Konum Bilgileri */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">7</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">9</span>
                 Konum Bilgileri
               </label>
               <LocationPickerWrapper
@@ -449,10 +760,10 @@ function RentPage() {
               />
             </div>
 
-            {/* 8) Görsel Yükleme */}
+            {/* 10) Görsel Yükleme */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">8</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">10</span>
                 Görseller (İsteğe Bağlı)
               </label>
               <div
@@ -520,9 +831,9 @@ function RentPage() {
               </div>
             )}
 
-            {/* 9) Gönder */}
+            {/* 11) Gönder */}
             <div className="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">9</span>
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs">11</span>
               Gönder
             </div>
             <div className="flex flex-col sm:flex-row justify-end gap-3">
@@ -545,6 +856,22 @@ function RentPage() {
               <li><span className="text-gray-500">Oda:</span> {formData.rooms || '-'}</li>
               <li><span className="text-gray-500">m²:</span> {formData.area_m2 ? formatTL(formData.area_m2) : '-'}</li>
               <li><span className="text-gray-500">Kira:</span> {formData.price_tl ? `${formatTL(formData.price_tl)} TL` : '-'}</li>
+              {/* Yeni alanlar */}
+              {isApartment(formData.property_type) && formData.floor_number && (
+                <li><span className="text-gray-500">Kat:</span> {formData.floor_number}{formData.total_floors ? `/${formData.total_floors}` : ''}</li>
+              )}
+              {formData.heating_type && (
+                <li><span className="text-gray-500">Isıtma:</span> {formData.heating_type}</li>
+              )}
+              {formData.furnished_status && (
+                <li><span className="text-gray-500">Eşya:</span> {formData.furnished_status}</li>
+              )}
+              {formData.deposit_amount && (
+                <li><span className="text-gray-500">Depozito:</span> {formatTL(formData.deposit_amount)} TL</li>
+              )}
+              {formData.advance_payment_months > 0 && (
+                <li><span className="text-gray-500">Peşinat:</span> {formData.advance_payment_months} ay</li>
+              )}
             </ul>
             <div className="mt-3">
               <a href={waLink} target="_blank" rel="noreferrer" className="block rounded-lg bg-green-700 text-white px-5 py-2 text-center text-sm font-medium hover:bg-green-800">WhatsApp ile hızlı iletişim</a>

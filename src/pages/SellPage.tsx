@@ -8,19 +8,44 @@ import { toTitleCase } from '../lib/textUtils'
 import { getCurrentUser } from '../lib/hybridAuth'
 import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
 import MembershipRequiredModal from '../components/MembershipRequiredModal'
+import { 
+  HEATING_OPTIONS, 
+  FURNISHED_OPTIONS, 
+  USAGE_OPTIONS,
+  DEED_OPTIONS,
+  isApartment,
+  isDetached
+} from '../types/listing'
 
 function SellPage() {
   const whatsappPhone = (import.meta.env.VITE_WHATSAPP_PHONE as string) || '+905556874803'
+  
+  // Mevcut state'ler
   const [title, setTitle] = useState<string>('')
   const [ownerName, setOwnerName] = useState<string>('')
   const [ownerPhone, setOwnerPhone] = useState<string>('')
   const [neighborhood, setNeighborhood] = useState<string>('')
   const [propertyType, setPropertyType] = useState<string>('Daire')
-  const [rooms, setRooms] = useState<string>('3+1')
+  const [rooms, setRooms] = useState<string>('')
   const [area, setArea] = useState<string>('')
   const [price, setPrice] = useState<string>('') // yalnizca rakamlar (örn: "2000000")
   const [isFor, setIsFor] = useState<'satilik' | 'kiralik'>('satilik')
   const [description, setDescription] = useState<string>('')
+  
+  // Yeni alanlar
+  const [floorNumber, setFloorNumber] = useState<string>('')
+  const [totalFloors, setTotalFloors] = useState<string>('')
+  const [heatingType, setHeatingType] = useState<string>('')
+  const [buildingAge, setBuildingAge] = useState<string>('')
+  const [furnishedStatus, setFurnishedStatus] = useState<string>('')
+  const [usageStatus, setUsageStatus] = useState<string>('')
+  const [hasElevator, setHasElevator] = useState<boolean>(false)
+  const [monthlyFee, setMonthlyFee] = useState<string>('')
+  const [hasBalcony, setHasBalcony] = useState<boolean>(false)
+  const [gardenArea, setGardenArea] = useState<string>('')
+  const [deedStatus, setDeedStatus] = useState<string>('')
+  
+  // Diğer state'ler
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
@@ -141,6 +166,19 @@ function SellPage() {
           price_tl: price ? Number(price) : null, // price yalnizca rakamlar oldugu icin dogrudan Number()
           is_for: isFor,
           description: description || null,
+          // Yeni alanlar
+          floor_number: floorNumber ? parseInt(floorNumber) : null,
+          total_floors: totalFloors ? parseInt(totalFloors) : null,
+          heating_type: heatingType || null,
+          building_age: buildingAge ? parseInt(buildingAge) : null,
+          furnished_status: furnishedStatus || null,
+          usage_status: usageStatus || null,
+          has_elevator: hasElevator,
+          monthly_fee: monthlyFee ? parseFloat(monthlyFee) : null,
+          has_balcony: hasBalcony,
+          garden_area_m2: gardenArea ? parseInt(gardenArea) : null,
+          deed_status: deedStatus || null, // Satılık için
+          // Konum ve durum
           address: finalAddress,
           latitude: latitude,
           longitude: longitude,
@@ -199,11 +237,24 @@ function SellPage() {
       setOwnerPhone('')
       setNeighborhood('')
       setPropertyType('Daire')
-      setRooms('3+1')
+      setRooms('')
       setArea('')
       setPrice('')
       setIsFor('satilik')
       setDescription('')
+      // Yeni alanları da temizle
+      setFloorNumber('')
+      setTotalFloors('')
+      setHeatingType('')
+      setBuildingAge('')
+      setFurnishedStatus('')
+      setUsageStatus('')
+      setHasElevator(false)
+      setMonthlyFee('')
+      setHasBalcony(false)
+      setGardenArea('')
+      setDeedStatus('')
+      // Diğer alanlar
       setFiles(null)
       setSelectedFiles([])
       setPreviews([])
@@ -389,9 +440,185 @@ function SellPage() {
               </div>
             </div>
 
+            {/* Profesyonel Detaylar */}
             <div className="rounded-2xl border bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-gray-800">
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">5</span>
+                <h2 className="font-semibold">Profesyonel Detaylar</h2>
+              </div>
+
+              {/* Kat Bilgileri - Sadece Daire için */}
+              {isApartment(propertyType) && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm mb-1">Kat</label>
+                    <input
+                      type="number"
+                      className={inputClass}
+                      placeholder="3"
+                      value={floorNumber}
+                      onChange={(e) => setFloorNumber(e.target.value)}
+                      min="-5"
+                      max="50"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Bodrum için negatif (-1, -2)</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Toplam Kat</label>
+                    <input
+                      type="number"
+                      className={inputClass}
+                      placeholder="5"
+                      value={totalFloors}
+                      onChange={(e) => setTotalFloors(e.target.value)}
+                      min="1"
+                      max="50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Asansör</label>
+                    <div className="flex items-center space-x-4 pt-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={hasElevator}
+                          onChange={(e) => setHasElevator(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Asansör var</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bahçe Alanı - Sadece Müstakil için */}
+              {isDetached(propertyType) && (
+                <div className="mb-6">
+                  <label className="block text-sm mb-1">Bahçe Alanı (m²)</label>
+                  <input
+                    type="number"
+                    className={inputClass}
+                    placeholder="200"
+                    value={gardenArea}
+                    onChange={(e) => setGardenArea(e.target.value)}
+                    min="0"
+                  />
+                </div>
+              )}
+
+              {/* Genel Detaylar */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm mb-1">Isıtma Türü</label>
+                  <select
+                    className={selectClass}
+                    value={heatingType}
+                    onChange={(e) => setHeatingType(e.target.value)}
+                  >
+                    <option value="">Isıtma türü seçin</option>
+                    {HEATING_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Bina Yaşı</label>
+                  <input
+                    type="number"
+                    className={inputClass}
+                    placeholder="5"
+                    value={buildingAge}
+                    onChange={(e) => setBuildingAge(e.target.value)}
+                    min="0"
+                    max="200"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm mb-1">Eşya Durumu</label>
+                  <select
+                    className={selectClass}
+                    value={furnishedStatus}
+                    onChange={(e) => setFurnishedStatus(e.target.value)}
+                  >
+                    <option value="">Eşya durumu seçin</option>
+                    {FURNISHED_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Satılık için opsiyonel</p>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Kullanım Durumu</label>
+                  <select
+                    className={selectClass}
+                    value={usageStatus}
+                    onChange={(e) => setUsageStatus(e.target.value)}
+                  >
+                    <option value="">Kullanım durumu seçin</option>
+                    {USAGE_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Aidat ve Balkon */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {isApartment(propertyType) && (
+                  <div>
+                    <label className="block text-sm mb-1">Aylık Aidat (TL)</label>
+                    <input
+                      type="text"
+                      className={inputClass}
+                      placeholder="500"
+                      value={formatTL(monthlyFee)}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '')
+                        setMonthlyFee(digits)
+                      }}
+                      inputMode="numeric"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm mb-1">Balkon</label>
+                  <div className="flex items-center space-x-4 pt-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={hasBalcony}
+                        onChange={(e) => setHasBalcony(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Balkon var</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tapu Durumu - Sadece Satılık için */}
+              <div className="mb-6">
+                <label className="block text-sm mb-1">Tapu Durumu</label>
+                <select
+                  className={selectClass}
+                  value={deedStatus}
+                  onChange={(e) => setDeedStatus(e.target.value)}
+                >
+                  <option value="">Tapu durumu seçin</option>
+                  {DEED_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2 text-gray-800">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">6</span>
                 <h2 className="font-semibold">Konum Bilgileri</h2>
               </div>
               <LocationPickerWrapper
@@ -409,7 +636,7 @@ function SellPage() {
 
             <div className="rounded-2xl border bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-gray-800">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">6</span>
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs">7</span>
                 <h2 className="font-semibold">Görseller</h2>
               </div>
               <label className="block text-sm mb-1">Görsel(ler)</label>
@@ -483,6 +710,19 @@ function SellPage() {
                   <li><span className="text-gray-500">Oda:</span> {rooms || '-'}</li>
                   <li><span className="text-gray-500">m²:</span> {area ? formatTL(area) : '-'}</li>
                   <li><span className="text-gray-500">Fiyat:</span> {price ? `${formatTL(price)} TL` : '-'}</li>
+                  {/* Yeni alanlar */}
+                  {isApartment(propertyType) && floorNumber && (
+                    <li><span className="text-gray-500">Kat:</span> {floorNumber}{totalFloors ? `/${totalFloors}` : ''}</li>
+                  )}
+                  {heatingType && (
+                    <li><span className="text-gray-500">Isıtma:</span> {heatingType}</li>
+                  )}
+                  {furnishedStatus && (
+                    <li><span className="text-gray-500">Eşya:</span> {furnishedStatus}</li>
+                  )}
+                  {deedStatus && (
+                    <li><span className="text-gray-500">Tapu:</span> {deedStatus}</li>
+                  )}
                 </ul>
               </div>
               {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}

@@ -38,7 +38,7 @@ export interface AuthResponse {
 }
 
 /**
- * Kullanıcı kaydı - Sadece Supabase Auth kullan
+ * Kullanıcı kaydı - Basit telefon + şifre sistemi (Eski sistem gibi)
  */
 export async function registerUser(
   fullName: string,
@@ -46,28 +46,67 @@ export async function registerUser(
   password: string
 ): Promise<AuthResponse> {
   try {
-    // Email formatında telefon numarası kullan
-    const email = `${phone.replace(/\D/g, '')}@kuluilani.local`
+    // Telefon numarasını temizle (sadece rakamlar)
+    const cleanPhone = phone.replace(/\D/g, '')
     
-    // 1. Supabase Auth ile kayıt
+    if (cleanPhone.length < 10) {
+      return {
+        success: false,
+        error: 'Geçerli bir telefon numarası girin (10 haneli)'
+      }
+    }
+
+    // 1. Önce telefon numarası zaten kayıtlı mı kontrol et (profiles tablosunda)
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('phone')
+      .eq('phone', cleanPhone)
+      .single()
+
+    if (existingProfile) {
+      return {
+        success: false,
+        error: 'Bu telefon numarası zaten kayıtlı'
+      }
+    }
+
+    // 2. Geçerli email formatı oluştur (gmail benzeri)
+    const email = `user${cleanPhone}@temp-kuluilani.com`
+    
+    // 3. Supabase Auth ile kayıt
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
       options: {
         data: {
           full_name: fullName,
-          phone: phone
+          phone: cleanPhone,
+          display_phone: cleanPhone // Görüntüleme için
         }
       }
     })
 
     if (authError) {
       console.error('Auth kayıt hatası:', authError)
+      
+      // Farklı hata mesajları
+      if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+        return {
+          success: false,
+          error: 'Bu telefon numarası zaten kayıtlı'
+        }
+      }
+      
+      if (authError.message.includes('invalid')) {
+        return {
+          success: false,
+          error: 'Kayıt bilgilerinde hata var, lütfen tekrar deneyin'
+        }
+      }
+      
       return {
         success: false,
-        error: authError.message === 'User already registered' 
-          ? 'Bu telefon numarası zaten kayıtlı' 
-          : 'Kayıt sırasında bir hata oluştu'
+        error: 'Kayıt sırasında bir hata oluştu: ' + authError.message
       }
     }
 
@@ -78,20 +117,7 @@ export async function registerUser(
       }
     }
 
-    // 2. Profile bilgilerini güncelle
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        full_name: fullName,
-        phone: phone,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', authData.user.id)
-
-    if (profileError) {
-      console.error('Profile güncelleme hatası:', profileError)
-    }
-
+    // 4. Başarılı kayıt
     return {
       success: true,
       message: 'Kayıt başarılı! Admin onayından sonra giriş yapabilirsiniz.',
@@ -99,7 +125,7 @@ export async function registerUser(
         id: authData.user.id,
         email: authData.user.email,
         full_name: fullName,
-        phone: phone,
+        phone: cleanPhone,
         role: 'user',
         status: 'pending',
         auth_type: 'supabase',
@@ -111,7 +137,7 @@ export async function registerUser(
     console.error('Kayıt hatası:', error)
     return {
       success: false,
-      error: error?.message || 'Kayıt sırasında bir hata oluştu'
+      error: 'Kayıt sırasında beklenmeyen bir hata oluştu'
     }
   }
 }
@@ -194,7 +220,7 @@ async function trySupabaseAuth(phoneOrEmail: string, password: string): Promise<
     // Telefon numarası ise email formatına çevir
     if (!/[@.]/.test(phoneOrEmail)) {
       const phone = phoneOrEmail.replace(/\D/g, '')
-      email = `${phone}@kuluilani.local`
+      email = `user${phone}@temp-kuluilani.com`
     }
 
     // Supabase Auth ile giriş

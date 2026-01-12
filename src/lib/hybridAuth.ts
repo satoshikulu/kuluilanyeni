@@ -70,8 +70,8 @@ export async function registerUser(
       }
     }
 
-    // 2. Geçerli email formatı oluştur (kuluilani.local domain)
-    const email = `${cleanPhone}@kuluilani.local`
+    // 2. Geçerli email formatı oluştur (example.com domain)
+    const email = `${cleanPhone}@example.com`
     
     // 3. Supabase Auth ile kayıt
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -220,7 +220,7 @@ async function trySupabaseAuth(phoneOrEmail: string, password: string): Promise<
     // Telefon numarası ise email formatına çevir
     if (!/[@.]/.test(phoneOrEmail)) {
       const phone = phoneOrEmail.replace(/\D/g, '')
-      email = `${phone}@kuluilani.local`
+      email = `${phone}@example.com`
     }
 
     // Supabase Auth ile giriş

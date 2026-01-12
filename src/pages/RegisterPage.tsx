@@ -209,11 +209,11 @@ function RegisterPage() {
               <input 
                 type={showPassword ? 'text' : 'password'}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                placeholder="En az 4 karakter" 
+                placeholder="En az 6 karakter" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={4}
+                minLength={6}
               />
               <button
                 type="button"
@@ -223,8 +223,8 @@ function RegisterPage() {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            <div className="text-xs text-orange-600 mt-1 font-medium">
-              ⚠️ Şifrenizi unutmayın! Giriş yaparken kullanacaksınız.
+            <div className="text-xs text-blue-600 mt-1 font-medium">
+              ℹ️ Şifreniz en az 6 karakter olmalıdır. Giriş yaparken kullanacaksınız.
             </div>
           </div>
           

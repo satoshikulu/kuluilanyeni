@@ -59,6 +59,7 @@ function AdminPage() {
   // Data state
   const [listings, setListings] = useState<Listing[]>([])
   const [totalCount, setTotalCount] = useState<number>(0)
+  const [userRequests, setUserRequests] = useState<any[]>([]) // Yeni: Kayıt başvuruları
   const [pendingUsers, setPendingUsers] = useState<UserMin[]>([])
   const [approvedUsers, setApprovedUsers] = useState<UserMin[]>([])
   const [rejectedUsers, setRejectedUsers] = useState<UserMin[]>([])
@@ -119,6 +120,15 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
+      // User requests yükle (kayıt başvuruları)
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('user_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (requestsError) throw requestsError
+      setUserRequests(requestsData || [])
+
       // Initial load for users (static on mount)
       const { data: usersData, error: usersError } = await supabase
         .from('users') // users_min yerine users tablosundan oku
@@ -376,6 +386,48 @@ function AdminPage() {
     } catch (e: any) {
       console.error('deleteListing error:', e)
       alert('Hata: ' + (e.message || 'İlan silinemedi'))
+    }
+  }
+
+  // User request onaylama/reddetme
+  async function handleUserRequest(requestId: string, decision: 'approved' | 'rejected') {
+    try {
+      const request = userRequests.find(r => r.id === requestId)
+      if (!request) return
+
+      if (decision === 'approved') {
+        // TODO: Edge Function ile auth.admin.createUser çağrısı yapılacak
+        // Şimdilik sadece status güncelle
+        const { error } = await supabase
+          .from('user_requests')
+          .update({ 
+            status: 'approved',
+            approved_at: new Date().toISOString()
+          })
+          .eq('id', requestId)
+
+        if (error) throw error
+        
+        alert('✅ Kullanıcı başvurusu onaylandı! (Auth kullanıcısı oluşturma Edge Function ile yapılacak)')
+      } else {
+        const { error } = await supabase
+          .from('user_requests')
+          .update({ 
+            status: 'rejected'
+          })
+          .eq('id', requestId)
+
+        if (error) throw error
+        
+        alert('❌ Kullanıcı başvurusu reddedildi.')
+      }
+
+      // UI'dan kaldır
+      setUserRequests(prev => prev.filter(r => r.id !== requestId))
+      
+    } catch (error: any) {
+      console.error('User request error:', error)
+      alert('Hata: ' + (error.message || 'İşlem başarısız'))
     }
   }
 

@@ -129,8 +129,10 @@ function AdminPage() {
       if (requestsError) throw requestsError
       setUserRequests(requestsData || [])
 
-      // Initial load for users - try simple_users first, fallback to profiles
+      // Load users from both simple_users and profiles tables
       let usersData: any[] = []
+      
+      // 1. simple_users tablosundan yükle
       try {
         const { data: simpleUsersData, error: simpleUsersError } = await supabase
           .from('simple_users')
@@ -138,21 +140,32 @@ function AdminPage() {
           .order('created_at', { ascending: false })
         
         if (!simpleUsersError && simpleUsersData) {
-          usersData = simpleUsersData
+          usersData = [...usersData, ...simpleUsersData]
+          console.log(`✅ ${simpleUsersData.length} kullanıcı simple_users'dan yüklendi`)
         }
       } catch (simpleError) {
-        console.log('simple_users tablosu erişilemez, profiles kullanılıyor')
-        
-        // Fallback to profiles
+        console.log('simple_users tablosu erişilemez:', simpleError)
+      }
+      
+      // 2. profiles tablosundan da yükle
+      try {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false })
         
-        if (!profilesError) {
-          usersData = profilesData || []
+        if (!profilesError && profilesData) {
+          // Duplicate'leri önlemek için phone numarasına göre filtrele
+          const existingPhones = new Set(usersData.map(u => u.phone))
+          const newProfiles = profilesData.filter(p => !existingPhones.has(p.phone))
+          usersData = [...usersData, ...newProfiles]
+          console.log(`✅ ${newProfiles.length} yeni kullanıcı profiles'dan yüklendi`)
         }
+      } catch (profilesError) {
+        console.log('profiles tablosu erişilemez:', profilesError)
       }
+      
+      console.log(`📊 Toplam ${usersData.length} kullanıcı yüklendi`)
       
       const all = (usersData as UserMin[]) || []
       setPendingUsers(all.filter((u) => u.status === 'pending'))

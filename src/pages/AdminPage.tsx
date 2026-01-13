@@ -396,9 +396,8 @@ function AdminPage() {
       if (!request) return
 
       if (decision === 'approved') {
-        // TODO: Edge Function ile auth.admin.createUser çağrısı yapılacak
-        // Şimdilik sadece status güncelle
-        const { error } = await supabase
+        // 1. Önce user_requests'i onayla
+        const { error: updateError } = await supabase
           .from('user_requests')
           .update({ 
             status: 'approved',
@@ -406,9 +405,48 @@ function AdminPage() {
           })
           .eq('id', requestId)
 
-        if (error) throw error
+        if (updateError) throw updateError
+
+        // 2. Şifreyi decode et (Base64'ten)
+        const plainPassword = atob(request.password_hash)
+        const email = `${request.phone}@example.com`
+
+        // 3. Manuel olarak auth kullanıcısı oluştur (geçici çözüm)
+        try {
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: email,
+            password: plainPassword,
+            options: {
+              data: {
+                full_name: request.full_name,
+                phone: request.phone
+              }
+            }
+          })
+
+          if (authError) {
+            console.error('Auth kullanıcısı oluşturma hatası:', authError)
+            alert('⚠️ Başvuru onaylandı ama auth kullanıcısı oluşturulamadı. Edge Function gerekli.')
+          } else {
+            // 4. Profile güncelle
+            if (authData.user) {
+              await supabase
+                .from('profiles')
+                .update({
+                  role: 'user',
+                  status: 'approved',
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', authData.user.id)
+            }
+            
+            alert('✅ Kullanıcı başvurusu onaylandı ve giriş yapabilir!')
+          }
+        } catch (authCreateError) {
+          console.error('Auth oluşturma hatası:', authCreateError)
+          alert('⚠️ Başvuru onaylandı ama auth kullanıcısı oluşturulamadı.')
+        }
         
-        alert('✅ Kullanıcı başvurusu onaylandı! (Auth kullanıcısı oluşturma Edge Function ile yapılacak)')
       } else {
         const { error } = await supabase
           .from('user_requests')
@@ -878,9 +916,9 @@ function AdminPage() {
           >
             <span className="flex items-center justify-center gap-2">
               👥 Üyeler
-              {pendingUsers.length > 0 && (
+              {(pendingUsers.length > 0 || userRequests.filter(r => r.status === 'pending').length > 0) && (
                 <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse">
-                  {pendingUsers.length}
+                  {pendingUsers.length + userRequests.filter(r => r.status === 'pending').length}
                 </span>
               )}
             </span>

@@ -59,7 +59,7 @@ function AdminPage() {
   // Data state
   const [listings, setListings] = useState<Listing[]>([])
   const [totalCount, setTotalCount] = useState<number>(0)
-  const [userRequests, setUserRequests] = useState<any[]>([]) // Yeni: Kayıt başvuruları
+  // const [userRequests, setUserRequests] = useState<any[]>([]) // TODO: Admin UI'da kullanılacak
   const [pendingUsers, setPendingUsers] = useState<UserMin[]>([])
   const [approvedUsers, setApprovedUsers] = useState<UserMin[]>([])
   const [rejectedUsers, setRejectedUsers] = useState<UserMin[]>([])
@@ -120,14 +120,14 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      // User requests yükle (kayıt başvuruları)
-      const { data: requestsData, error: requestsError } = await supabase
-        .from('user_requests')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (requestsError) throw requestsError
-      setUserRequests(requestsData || [])
+      // TODO: User requests yükle (kayıt başvuruları)
+      // const { data: requestsData, error: requestsError } = await supabase
+      //   .from('user_requests')
+      //   .select('*')
+      //   .order('created_at', { ascending: false })
+      // 
+      // if (requestsError) throw requestsError
+      // setUserRequests(requestsData || [])
 
       // Initial load for users (static on mount)
       const { data: usersData, error: usersError } = await supabase

@@ -49,7 +49,15 @@ const router = createBrowserRouter([
         element: <SellPage />
       },
       { 
+        path: 'satilik-ilan-ver', 
+        element: <SellPage />
+      },
+      { 
         path: 'kiralamak', 
+        element: <RentPage />
+      },
+      { 
+        path: 'kiralik-ilan-ver', 
         element: <RentPage />
       },
       { path: 'firsatlar', element: <OpportunitiesPage /> },

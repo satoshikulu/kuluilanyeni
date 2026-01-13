@@ -396,7 +396,7 @@ function AdminPage() {
       if (!request) return
 
       if (decision === 'approved') {
-        // 1. Önce user_requests'i onayla
+        // 1. User_requests'i onayla
         const { error: updateError } = await supabase
           .from('user_requests')
           .update({ 
@@ -407,44 +407,22 @@ function AdminPage() {
 
         if (updateError) throw updateError
 
-        // 2. Şifreyi decode et (Base64'ten)
-        const plainPassword = atob(request.password_hash)
-        const email = `${request.phone}@example.com`
-
-        // 3. Manuel olarak auth kullanıcısı oluştur (geçici çözüm)
-        try {
-          const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: email,
-            password: plainPassword,
-            options: {
-              data: {
-                full_name: request.full_name,
-                phone: request.phone
-              }
-            }
+        // 2. Simple_users tablosuna ekle
+        const { error: insertError } = await supabase
+          .from('simple_users')
+          .insert({
+            full_name: request.full_name,
+            phone: request.phone,
+            password_hash: request.password_hash,
+            role: 'user',
+            status: 'approved'
           })
 
-          if (authError) {
-            console.error('Auth kullanıcısı oluşturma hatası:', authError)
-            alert('⚠️ Başvuru onaylandı ama auth kullanıcısı oluşturulamadı. Edge Function gerekli.')
-          } else {
-            // 4. Profile güncelle
-            if (authData.user) {
-              await supabase
-                .from('profiles')
-                .update({
-                  role: 'user',
-                  status: 'approved',
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', authData.user.id)
-            }
-            
-            alert('✅ Kullanıcı başvurusu onaylandı ve giriş yapabilir!')
-          }
-        } catch (authCreateError) {
-          console.error('Auth oluşturma hatası:', authCreateError)
-          alert('⚠️ Başvuru onaylandı ama auth kullanıcısı oluşturulamadı.')
+        if (insertError) {
+          console.error('Simple user oluşturma hatası:', insertError)
+          alert('⚠️ Başvuru onaylandı ama kullanıcı oluşturulamadı: ' + insertError.message)
+        } else {
+          alert('✅ Kullanıcı başvurusu onaylandı! Artık giriş yapabilir.')
         }
         
       } else {

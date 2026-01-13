@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { loginUser } from '../lib/hybridAuth'
+import { loginUser } from '../lib/simpleAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 

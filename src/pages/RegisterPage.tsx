@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { registerUserRequest } from '../lib/hybridAuth'
+import { registerUser } from '../lib/simpleAuth'
 import { supabase } from '../lib/supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import { toTitleCase } from '../lib/textUtils'
@@ -132,7 +132,7 @@ function RegisterPage() {
         return
       }
 
-      const result = await registerUserRequest(fullName, phone, password)
+      const result = await registerUser(fullName, phone, password)
       
       if (result.success) {
         // Kayıt başarılı olduğunda OneSignal'a kaydet (onay bekliyor durumunda)

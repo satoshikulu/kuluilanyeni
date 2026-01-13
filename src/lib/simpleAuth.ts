@@ -1,12 +1,12 @@
-import { supabase } from './supabaseClient'
-import { syncUserToOneSignal, clearOneSignalUserData } from './oneSignalUserSync'
-import { saveUser, getUser, removeUser } from './persistentStorage'
+// ============================================
+// BASİT ÜYELİK SİSTEMİ
+// ============================================
+// Sadece telefon + şifre
+// Email yok, doğrulama yok, SMS yok
+// Admin onaylı sistem
+// ============================================
 
-// Basit şifre hash (production'da daha güvenli bir yöntem kullanın)
-function simpleHash(password: string): string {
-  // Şimdilik plain text, isterseniz crypto-js ekleyebiliriz
-  return password
-}
+import { supabase } from './supabaseClient'
 
 export interface User {
   id: string
@@ -14,7 +14,8 @@ export interface User {
   phone: string
   role: 'user' | 'admin'
   status: 'pending' | 'approved' | 'rejected'
-  email?: string // Optional email field for admin users and future email functionality
+  created_at: string
+  updated_at: string
 }
 
 export interface AuthResponse {
@@ -25,7 +26,25 @@ export interface AuthResponse {
 }
 
 /**
- * Kullanıcı kaydı
+ * Basit şifre hash (production'da bcrypt kullan)
+ */
+function hashPassword(password: string): string {
+  return btoa(password) // Base64 encoding (geçici)
+}
+
+/**
+ * Şifre doğrulama
+ */
+function verifyPassword(password: string, hash: string): boolean {
+  try {
+    return atob(hash) === password
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Kullanıcı kayıt başvurusu
  */
 export async function registerUser(
   fullName: string,
@@ -33,32 +52,63 @@ export async function registerUser(
   password: string
 ): Promise<AuthResponse> {
   try {
+    // Telefon numarasını temizle
+    const cleanPhone = phone.replace(/\D/g, '')
+    
+    if (cleanPhone.length < 10) {
+      return {
+        success: false,
+        error: 'Geçerli bir telefon numarası girin (10 haneli)'
+      }
+    }
+
+    if (password.length < 6) {
+      return {
+        success: false,
+        error: 'Şifre en az 6 karakter olmalıdır'
+      }
+    }
+
+    // Şifreyi hash'le
+    const passwordHash = hashPassword(password)
+    
+    // User request oluştur
     const { data, error } = await supabase
-      .rpc('register_user', {
-        p_full_name: fullName,
-        p_phone: phone,
-        p_password: simpleHash(password)
+      .from('user_requests')
+      .insert({
+        full_name: fullName,
+        phone: cleanPhone,
+        password_hash: passwordHash,
+        status: 'pending'
       })
+      .select()
+      .single()
 
     if (error) {
       console.error('Kayıt hatası:', error)
+      
+      if (error.code === '23505') {
+        return {
+          success: false,
+          error: 'Bu telefon numarası ile zaten bir başvuru yapılmış'
+        }
+      }
+      
       return {
         success: false,
         error: 'Kayıt sırasında bir hata oluştu'
       }
     }
 
-    const result = data as any
     return {
-      success: result.success || false,
-      message: result.message,
-      error: result.error
+      success: true,
+      message: 'Başvurunuz alındı! Admin onayından sonra giriş yapabilirsiniz.'
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Kayıt hatası:', error)
     return {
       success: false,
-      error: 'Kayıt sırasında bir hata oluştu'
+      error: error?.message || 'Kayıt sırasında bir hata oluştu'
     }
   }
 }
@@ -71,47 +121,60 @@ export async function loginUser(
   password: string
 ): Promise<AuthResponse> {
   try {
-    const { data, error } = await supabase
-      .rpc('login_user', {
-        p_password: simpleHash(password),
-        p_phone_or_email: phone
-      })
+    // Telefon numarasını temizle
+    const cleanPhone = phone.replace(/\D/g, '')
+    
+    console.log('Giriş denemesi:', cleanPhone)
 
-    if (error) {
-      console.error('Giriş hatası:', error)
+    // Kullanıcıyı bul
+    const { data: userData, error: userError } = await supabase
+      .from('simple_users')
+      .select('*')
+      .eq('phone', cleanPhone)
+      .eq('status', 'approved')
+      .single()
+
+    if (userError || !userData) {
+      console.error('Kullanıcı bulunamadı:', userError)
       return {
         success: false,
-        error: 'Giriş sırasında bir hata oluştu'
+        error: 'Telefon numarası veya şifre hatalı'
       }
     }
 
-    const result = data as any
-    
-    if (result.success && result.user) {
-      // Kullanıcıyı kalıcı storage'a kaydet (iOS PWA uyumlu)
-      await saveUser(result.user)
-      
-      // OneSignal'a kullanıcı bilgilerini senkronize et
-      setTimeout(() => {
-        syncUserToOneSignal()
-      }, 1500) // OneSignal'ın hazır olması için bekle
-      
+    console.log('Kullanıcı bulundu:', userData)
+
+    // Şifre kontrolü
+    if (!verifyPassword(password, userData.password_hash)) {
       return {
-        success: true,
-        message: result.message,
-        user: result.user
+        success: false,
+        error: 'Telefon numarası veya şifre hatalı'
       }
     }
+
+    const user: User = {
+      id: userData.id,
+      full_name: userData.full_name,
+      phone: userData.phone,
+      role: userData.role,
+      status: userData.status,
+      created_at: userData.created_at,
+      updated_at: userData.updated_at
+    }
+
+    // Session'a kaydet
+    localStorage.setItem('simple_auth_user', JSON.stringify(user))
 
     return {
-      success: false,
-      error: result.error || 'Giriş başarısız'
+      success: true,
+      message: 'Giriş başarılı',
+      user: user
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Giriş hatası:', error)
     return {
       success: false,
-      error: 'Giriş sırasında bir hata oluştu'
+      error: error?.message || 'Giriş sırasında bir hata oluştu'
     }
   }
 }
@@ -120,19 +183,7 @@ export async function loginUser(
  * Çıkış yap
  */
 export async function logoutUser(): Promise<void> {
-  // OneSignal kullanıcı bilgilerini temizle
-  const currentUser = await getCurrentUser();
-  if (currentUser) {
-    try {
-      await clearOneSignalUserData()
-      console.log('✅ OneSignal kullanıcı bilgileri temizlendi');
-    } catch (error) {
-      console.warn('⚠️ OneSignal temizliği başarısız:', error);
-    }
-  }
-  
-  // Kalıcı storage'dan kullanıcıyı sil
-  await removeUser()
+  localStorage.removeItem('simple_auth_user')
   window.location.href = '/'
 }
 
@@ -141,7 +192,10 @@ export async function logoutUser(): Promise<void> {
  */
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    return await getUser()
+    const userStr = localStorage.getItem('simple_auth_user')
+    if (!userStr) return null
+    
+    return JSON.parse(userStr)
   } catch {
     return null
   }
@@ -152,14 +206,13 @@ export async function getCurrentUser(): Promise<User | null> {
  */
 export async function isAuthenticated(): Promise<boolean> {
   const user = await getCurrentUser()
-  return user !== null
+  return user !== null && user.status === 'approved'
 }
 
 /**
- * Kullanıcı admin mi? (Custom auth için - deprecated)
- * NOT: Bu fonksiyon artık kullanılmıyor. Admin kontrolü Supabase Auth ile yapılıyor.
+ * Kullanıcı admin mi?
  */
 export async function isAdmin(): Promise<boolean> {
-  console.warn('⚠️ isAdmin() deprecated - Use Supabase Auth admin check instead')
-  return false
+  const user = await getCurrentUser()
+  return user !== null && user.role === 'admin'
 }

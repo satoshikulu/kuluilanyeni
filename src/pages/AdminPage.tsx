@@ -389,48 +389,6 @@ function AdminPage() {
     }
   }
 
-  // User request onaylama/reddetme
-  async function handleUserRequest(requestId: string, decision: 'approved' | 'rejected') {
-    try {
-      const request = userRequests.find(r => r.id === requestId)
-      if (!request) return
-
-      if (decision === 'approved') {
-        // TODO: Edge Function ile auth.admin.createUser çağrısı yapılacak
-        // Şimdilik sadece status güncelle
-        const { error } = await supabase
-          .from('user_requests')
-          .update({ 
-            status: 'approved',
-            approved_at: new Date().toISOString()
-          })
-          .eq('id', requestId)
-
-        if (error) throw error
-        
-        alert('✅ Kullanıcı başvurusu onaylandı! (Auth kullanıcısı oluşturma Edge Function ile yapılacak)')
-      } else {
-        const { error } = await supabase
-          .from('user_requests')
-          .update({ 
-            status: 'rejected'
-          })
-          .eq('id', requestId)
-
-        if (error) throw error
-        
-        alert('❌ Kullanıcı başvurusu reddedildi.')
-      }
-
-      // UI'dan kaldır
-      setUserRequests(prev => prev.filter(r => r.id !== requestId))
-      
-    } catch (error: any) {
-      console.error('User request error:', error)
-      alert('Hata: ' + (error.message || 'İşlem başarısız'))
-    }
-  }
-
   async function decideUser(id: string, decision: 'approved' | 'rejected') {
     try {
       // Kullanıcı bilgilerini al (push notification için)

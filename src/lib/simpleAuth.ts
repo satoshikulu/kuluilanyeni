@@ -117,20 +117,20 @@ export async function registerUser(
  * Kullanıcı girişi
  */
 export async function loginUser(
-  phone: string,
+  phoneOrEmail: string,
   password: string
 ): Promise<AuthResponse> {
   try {
-    // Telefon numarasını temizle
-    const cleanPhone = phone.replace(/\D/g, '')
-    
-    console.log('Giriş denemesi:', cleanPhone)
+    console.log('Giriş denemesi:', phoneOrEmail)
+
+    // Telefon numarası ise temizle, email ise olduğu gibi bırak
+    const identifier = phoneOrEmail.includes('@') ? phoneOrEmail : phoneOrEmail.replace(/\D/g, '')
 
     // Kullanıcıyı bul
     const { data: userData, error: userError } = await supabase
       .from('simple_users')
       .select('*')
-      .eq('phone', cleanPhone)
+      .eq('phone', identifier)
       .eq('status', 'approved')
       .single()
 
@@ -138,7 +138,7 @@ export async function loginUser(
       console.error('Kullanıcı bulunamadı:', userError)
       return {
         success: false,
-        error: 'Telefon numarası veya şifre hatalı'
+        error: 'Telefon/email veya şifre hatalı'
       }
     }
 
@@ -148,7 +148,7 @@ export async function loginUser(
     if (!verifyPassword(password, userData.password_hash)) {
       return {
         success: false,
-        error: 'Telefon numarası veya şifre hatalı'
+        error: 'Telefon/email veya şifre hatalı'
       }
     }
 

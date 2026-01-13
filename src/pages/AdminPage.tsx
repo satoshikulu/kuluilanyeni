@@ -59,7 +59,7 @@ function AdminPage() {
   // Data state
   const [listings, setListings] = useState<Listing[]>([])
   const [totalCount, setTotalCount] = useState<number>(0)
-  // const [userRequests, setUserRequests] = useState<any[]>([]) // TODO: Admin UI'da kullanılacak
+  const [userRequests, setUserRequests] = useState<any[]>([]) // Kayıt başvuruları
   const [pendingUsers, setPendingUsers] = useState<UserMin[]>([])
   const [approvedUsers, setApprovedUsers] = useState<UserMin[]>([])
   const [rejectedUsers, setRejectedUsers] = useState<UserMin[]>([])
@@ -120,14 +120,14 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      // TODO: User requests yükle (kayıt başvuruları)
-      // const { data: requestsData, error: requestsError } = await supabase
-      //   .from('user_requests')
-      //   .select('*')
-      //   .order('created_at', { ascending: false })
-      // 
-      // if (requestsError) throw requestsError
-      // setUserRequests(requestsData || [])
+      // User requests yükle (kayıt başvuruları)
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('user_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (requestsError) throw requestsError
+      setUserRequests(requestsData || [])
 
       // Initial load for users (static on mount)
       const { data: usersData, error: usersError } = await supabase
@@ -386,6 +386,48 @@ function AdminPage() {
     } catch (e: any) {
       console.error('deleteListing error:', e)
       alert('Hata: ' + (e.message || 'İlan silinemedi'))
+    }
+  }
+
+  // User request onaylama/reddetme
+  async function handleUserRequest(requestId: string, decision: 'approved' | 'rejected') {
+    try {
+      const request = userRequests.find(r => r.id === requestId)
+      if (!request) return
+
+      if (decision === 'approved') {
+        // TODO: Edge Function ile auth.admin.createUser çağrısı yapılacak
+        // Şimdilik sadece status güncelle
+        const { error } = await supabase
+          .from('user_requests')
+          .update({ 
+            status: 'approved',
+            approved_at: new Date().toISOString()
+          })
+          .eq('id', requestId)
+
+        if (error) throw error
+        
+        alert('✅ Kullanıcı başvurusu onaylandı! (Auth kullanıcısı oluşturma Edge Function ile yapılacak)')
+      } else {
+        const { error } = await supabase
+          .from('user_requests')
+          .update({ 
+            status: 'rejected'
+          })
+          .eq('id', requestId)
+
+        if (error) throw error
+        
+        alert('❌ Kullanıcı başvurusu reddedildi.')
+      }
+
+      // UI'dan kaldır
+      setUserRequests(prev => prev.filter(r => r.id !== requestId))
+      
+    } catch (error: any) {
+      console.error('User request error:', error)
+      alert('Hata: ' + (error.message || 'İşlem başarısız'))
     }
   }
 
@@ -1131,6 +1173,51 @@ function AdminPage() {
       {/* Üyeler Tab */}
       {activeTab === 'users' && (
         <div>
+          {/* User Requests Bölümü */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">📝 Kayıt Başvuruları ({userRequests.filter(r => r.status === 'pending').length})</h2>
+            {userRequests.filter(r => r.status === 'pending').length === 0 ? (
+              <div className="text-gray-600 bg-gray-50 rounded-lg p-4 text-center">Bekleyen kayıt başvurusu yok.</div>
+            ) : (
+              <div className="space-y-3">
+                {userRequests.filter(r => r.status === 'pending').map((request) => (
+                  <div key={request.id} className="rounded-xl border border-yellow-200 p-4 bg-gradient-to-br from-white to-yellow-50 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-gray-900">{request.full_name}</h3>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            📝 Başvuru
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <div>📞 <span className="font-medium">{request.phone}</span></div>
+                          <div>📅 <span className="font-medium">{new Date(request.created_at).toLocaleDateString('tr-TR')}</span></div>
+                          <div>🔐 Şifre Hash: <span className="font-mono text-xs">{request.password_hash}</span></div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
+                        <button 
+                          onClick={() => handleUserRequest(request.id, 'approved')}
+                          className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        >
+                          ✅ Onayla
+                        </button>
+                        <button 
+                          onClick={() => handleUserRequest(request.id, 'rejected')}
+                          className="rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        >
+                          ❌ Reddet
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <h2 className="text-xl font-semibold mb-4">Üye Yönetimi</h2>
           {loading ? (
             <div className="flex items-center gap-3 text-gray-600">

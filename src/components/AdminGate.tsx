@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { getCurrentUser, isAdmin } from '../lib/simpleAuth'
 
 type Props = { children: React.ReactNode }
 
@@ -48,15 +48,25 @@ function AdminGate({ children }: Props) {
   }, [])
 
   useEffect(() => {
-    getCurrentUser()
+    checkAdminAuth()
   }, [])
 
-  async function getCurrentUser() {
+  async function checkAdminAuth() {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user || null)
+      const user = await getCurrentUser()
+      const adminCheck = await isAdmin()
+
+      if (user && adminCheck) {
+        setUser(user)
+      } else {
+        // Admin değilse login sayfasına yönlendir
+        window.location.href = '/admin/login'
+        return
+      }
     } catch (error) {
-      console.error('Get current user error:', error)
+      console.error('Admin auth error:', error)
+      window.location.href = '/admin/login'
+      return
     } finally {
       setLoading(false)
     }
@@ -64,7 +74,7 @@ function AdminGate({ children }: Props) {
 
   async function handleLogout() {
     try {
-      await supabase.auth.signOut()
+      localStorage.removeItem('simple_auth_user')
       window.location.href = '/'
     } catch (error) {
       console.error('Logout error:', error)

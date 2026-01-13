@@ -1,12 +1,12 @@
 // ============================================
 // ADMIN GİRİŞ SAYFASI
 // ============================================
-// Supabase Auth ile email/şifre girişi
+// Simple Auth ile email/şifre girişi
 // ============================================
 
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { loginUser, getCurrentUser, isAdmin } from '../lib/simpleAuth'
 import { Eye, EyeOff } from 'lucide-react'
 
 function AdminLoginPage() {
@@ -63,23 +63,13 @@ function AdminLoginPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          // Admin kontrolü yap - profiles tablosundan
-          const { data: userRecord } = await supabase
-            .from('profiles')
-            .select('id, full_name, role')
-            .eq('id', user.id)
-            .single()
-          
-          if (userRecord?.role === 'admin') {
-            // Admin zaten giriş yapmış, uyarı göster
-            setCurrentUser({
-              ...user,
-              full_name: userRecord.full_name,
-              role: userRecord.role
-            })
-          }
+        const user = await getCurrentUser()
+        const adminCheck = await isAdmin()
+        
+        if (user && adminCheck) {
+          // Admin zaten giriş yapmış, admin panele yönlendir
+          navigate('/admin')
+          return
         }
       } catch (error) {
         console.error('Session check error:', error)
@@ -91,9 +81,9 @@ function AdminLoginPage() {
     checkAuth()
   }, [navigate])
 
-  const handleSupabaseLogout = async () => {
+  const handleLogout = async () => {
     try {
-      await supabase.auth.signOut()
+      localStorage.removeItem('simple_auth_user')
       setCurrentUser(null)
       window.location.reload()
     } catch (error) {
@@ -107,48 +97,21 @@ function AdminLoginPage() {
     setError('')
 
     try {
-      // 1. Supabase Auth ile giriş yap
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password
-      })
+      // Simple Auth ile giriş yap
+      const result = await loginUser(email.trim(), password)
 
-      if (authError) {
-        setError('Email veya şifre hatalı')
-        return
+      if (result.success && result.user) {
+        // Admin kontrolü
+        if (result.user.role !== 'admin') {
+          setError('Bu sayfaya erişim yetkiniz yok. Admin hesabı gerekli.')
+          return
+        }
+
+        console.log('✅ Admin girişi başarılı')
+        navigate('/admin')
+      } else {
+        setError(result.error || 'Giriş başarısız')
       }
-
-      if (!data.user) {
-        setError('Giriş başarısız')
-        return
-      }
-
-      // 2. Admin kontrolü yap - profiles tablosundan
-      const { data: userRecord, error: userError } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('id', data.user.id)
-        .single()
-
-      if (userError || !userRecord) {
-        setError('Admin kullanıcısı bulunamadı')
-        await supabase.auth.signOut()
-        return
-      }
-
-      if (userRecord.role !== 'admin') {
-        setError('Bu sayfaya erişim yetkiniz yok. Admin hesabı gerekli.')
-        await supabase.auth.signOut()
-        return
-      }
-
-      // 3. SessionStorage'a admin flag'ini kaydet
-      sessionStorage.setItem('isAdmin', 'true')
-      
-      // 4. Admin paneline yönlendir
-      console.log('✅ Admin girişi başarılı')
-      navigate('/admin')
-
     } catch (error) {
       console.error('❌ Admin login error:', error)
       setError('Giriş sırasında bir hata oluştu')
@@ -190,7 +153,7 @@ function AdminLoginPage() {
 
           <div className="space-y-3">
             <button
-              onClick={handleSupabaseLogout}
+              onClick={handleLogout}
               className="w-full rounded-lg bg-red-600 text-white py-3 font-medium hover:bg-red-700 transition-colors"
             >
               Oturumu Kapat

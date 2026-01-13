@@ -28,6 +28,13 @@ export async function initOneSignal(): Promise<boolean> {
       return;
     }
 
+    // Development ortamında OneSignal'ı devre dışı bırak
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log('OneSignal development ortamında devre dışı');
+      resolve(false);
+      return;
+    }
+
     if (isOneSignalReady()) {
       resolve(true);
       return;

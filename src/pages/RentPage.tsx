@@ -5,7 +5,7 @@ import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import LocationPickerWrapper from '../components/LocationPickerWrapper'
 import { checkPhoneExists, isValidPhoneFormat, formatPhone, normalizePhone } from '../lib/phoneValidation'
 import { toTitleCase } from '../lib/textUtils'
-import { getCurrentUser } from '../lib/hybridAuth'
+import { getCurrentUser } from '../lib/simpleAuth'
 import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
 import MembershipRequiredModal from '../components/MembershipRequiredModal'
 import { 

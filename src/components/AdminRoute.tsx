@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { getCurrentUser, isAdmin } from '../lib/simpleAuth'
 
 interface AdminRouteProps {
   children: React.ReactNode
@@ -19,52 +19,21 @@ function AdminRoute({ children }: AdminRouteProps) {
       setLoading(true)
       setError('')
 
-      // 1. Session kontrolü
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
-      if (sessionError) {
-        throw sessionError
+      const user = await getCurrentUser()
+      const adminCheck = await isAdmin()
+
+      if (user && adminCheck) {
+        setIsAuthorized(true)
+      } else {
+        setError('Admin yetkisi gerekli')
+        // Admin login sayfasına yönlendir
+        window.location.href = '/admin/login'
       }
-
-      if (!session?.user) {
-        setError('Giriş yapmanız gerekiyor')
-        setLoading(false)
-        return
-      }
-
-      // 2. Admin role kontrolü
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single()
-
-      if (profileError) {
-        console.error('Profile fetch error:', profileError)
-        setError('Kullanıcı profili bulunamadı')
-        // Session'ı temizle
-        await supabase.auth.signOut()
-        setLoading(false)
-        return
-      }
-
-      // 3. Admin yetkisi kontrolü
-      if (profile.role !== 'admin') {
-        setError('Bu sayfaya erişim yetkiniz yok. Admin hesabı gerekli.')
-        console.log('🚫 Non-admin user attempted admin access:', session.user.email)
-        // Non-admin session'ını temizle
-        await supabase.auth.signOut()
-        setLoading(false)
-        return
-      }
-
-      console.log('✅ Admin access granted:', session.user.email)
-      setIsAuthorized(true)
-      setLoading(false)
-
-    } catch (error: any) {
-      console.error('Admin access check error:', error)
-      setError('Erişim kontrolü başarısız')
+    } catch (error) {
+      console.error('Admin kontrol hatası:', error)
+      setError('Yetki kontrolü başarısız')
+      window.location.href = '/admin/login'
+    } finally {
       setLoading(false)
     }
   }

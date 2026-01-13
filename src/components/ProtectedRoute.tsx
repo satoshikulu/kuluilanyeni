@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { getCurrentUser, isAuthenticated } from '../lib/hybridAuth'
+import { getCurrentUser, isAuthenticated } from '../lib/simpleAuth'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -12,7 +12,6 @@ interface UserProfile {
   id: string
   role: 'user' | 'admin'
   status: 'pending' | 'approved' | 'rejected'
-  auth_type?: 'supabase' | 'custom'
 }
 
 function ProtectedRoute({ 
@@ -50,8 +49,7 @@ function ProtectedRoute({
         setProfile({
           id: currentUser.id,
           role: currentUser.role || 'user',
-          status: currentUser.status || 'pending',
-          auth_type: currentUser.auth_type
+          status: currentUser.status || 'pending'
         })
 
         // 4. Admin kontrolü
@@ -63,21 +61,19 @@ function ProtectedRoute({
           }
         }
 
-        // 5. User status kontrolü (sadece Supabase auth için)
-        if (currentUser.auth_type === 'supabase' && currentUser.status !== 'approved' && currentUser.role !== 'admin') {
+        // 5. User status kontrolü
+        if (currentUser.status !== 'approved' && currentUser.role !== 'admin') {
           setError('Hesabınız henüz onaylanmamış')
           setLoading(false)
           return
         }
 
-        // 6. Custom auth için authenticated kontrolü
-        if (currentUser.auth_type === 'custom') {
-          const authenticated = await isAuthenticated()
-          if (!authenticated) {
-            setError('Oturum süresi dolmuş')
-            setLoading(false)
-            return
-          }
+        // 6. Authentication kontrolü
+        const authenticated = await isAuthenticated()
+        if (!authenticated) {
+          setError('Oturum süresi dolmuş')
+          setLoading(false)
+          return
         }
       }
 

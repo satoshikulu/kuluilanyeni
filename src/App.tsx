@@ -1,5 +1,5 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
-import { getCurrentUser, logoutUser, isAdmin } from './lib/hybridAuth'
+import { getCurrentUser, logoutUser, isAdmin } from './lib/simpleAuth'
 import { LogOut, User } from 'lucide-react'
 import { toTitleCase } from './lib/textUtils'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
@@ -45,7 +45,7 @@ function App() {
           }
           
           setUserIsAdmin(adminStatus)
-          console.log('✅ User session restored:', user.full_name, `(${user.auth_type} auth, admin: ${adminStatus})`)
+          console.log('✅ User session restored:', user.full_name, `(admin: ${adminStatus})`)
         } else {
           // Kullanıcı yoksa admin flag'ini temizle
           sessionStorage.removeItem('isAdmin')

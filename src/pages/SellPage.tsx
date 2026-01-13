@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { uploadListingImage } from '../lib/storage'
 import { checkPhoneExists, isValidPhoneFormat, formatPhone, normalizePhone } from '../lib/phoneValidation'
 import { toTitleCase } from '../lib/textUtils'
-import { getCurrentUser } from '../lib/hybridAuth'
+import { getCurrentUser } from '../lib/simpleAuth'
 import { checkApprovedMembership, checkPendingMembership } from '../lib/membershipCheck'
 import MembershipRequiredModal from '../components/MembershipRequiredModal'
 import { 

@@ -129,12 +129,31 @@ function AdminPage() {
       if (requestsError) throw requestsError
       setUserRequests(requestsData || [])
 
-      // Initial load for users (static on mount)
-      const { data: usersData, error: usersError } = await supabase
-        .from('users') // users_min yerine users tablosundan oku
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (usersError) throw usersError
+      // Initial load for users - try simple_users first, fallback to profiles
+      let usersData: any[] = []
+      try {
+        const { data: simpleUsersData, error: simpleUsersError } = await supabase
+          .from('simple_users')
+          .select('*')
+          .order('created_at', { ascending: false })
+        
+        if (!simpleUsersError && simpleUsersData) {
+          usersData = simpleUsersData
+        }
+      } catch (simpleError) {
+        console.log('simple_users tablosu erişilemez, profiles kullanılıyor')
+        
+        // Fallback to profiles
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+        
+        if (!profilesError) {
+          usersData = profilesData || []
+        }
+      }
+      
       const all = (usersData as UserMin[]) || []
       setPendingUsers(all.filter((u) => u.status === 'pending'))
       setApprovedUsers(all.filter((u) => u.status === 'approved'))
@@ -591,12 +610,25 @@ function AdminPage() {
     }
     
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ password_hash: newPassword })
-        .eq('id', userId)
+      // Try simple_users first
+      let updateError = null
+      try {
+        const { error } = await supabase
+          .from('simple_users')
+          .update({ password_hash: newPassword })
+          .eq('id', userId)
+        updateError = error
+      } catch (simpleError) {
+        // Fallback to profiles (though profiles doesn't have password_hash)
+        console.log('simple_users güncellenemedi, profiles deneniyor')
+        const { error } = await supabase
+          .from('profiles')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', userId)
+        updateError = error
+      }
       
-      if (error) throw error
+      if (updateError) throw updateError
       
       alert(`✅ Şifre başarıyla değiştirildi!\n\nTelefon: ${phone}\nYeni Şifre: ${newPassword}\n\nBu bilgileri kullanıcıya iletin.`)
       

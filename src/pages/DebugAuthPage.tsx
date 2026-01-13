@@ -66,10 +66,26 @@ function DebugAuthPage() {
     setLoading(true)
     setResult(null)
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // Try simple_users first
+      let data = null
+      let error = null
+      
+      try {
+        const result = await supabase
+          .from('simple_users')
+          .select('*')
+          .order('created_at', { ascending: false })
+        data = result.data
+        error = result.error
+      } catch (simpleError) {
+        console.log('simple_users erişilemez, profiles deneniyor')
+        const result = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+        data = result.data
+        error = result.error
+      }
 
       setResult({
         type: 'users',

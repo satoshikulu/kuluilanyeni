@@ -14,9 +14,29 @@ export async function checkApprovedMembership(phone: string): Promise<{
     // Telefon numarasını temizle
     const cleanPhone = phone.replace(/\D/g, '')
     
-    // Onaylı üye kontrolü
+    // Önce simple_users tablosunda ara
+    try {
+      const { data: simpleUserData, error: simpleUserError } = await supabase
+        .from('simple_users')
+        .select('id, full_name, status')
+        .eq('phone', cleanPhone)
+        .eq('status', 'approved')
+        .single()
+
+      if (!simpleUserError && simpleUserData) {
+        return {
+          isMember: true,
+          userId: simpleUserData.id,
+          userName: simpleUserData.full_name
+        }
+      }
+    } catch (simpleError) {
+      console.log('simple_users tablosu erişilemez:', simpleError)
+    }
+
+    // Fallback: profiles tablosunda ara
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id, full_name, status')
       .eq('phone', cleanPhone)
       .eq('status', 'approved')
@@ -54,8 +74,9 @@ export async function checkPendingMembership(phone: string): Promise<boolean> {
   try {
     const cleanPhone = phone.replace(/\D/g, '')
     
+    // user_requests tablosunda bekleyen başvuru ara
     const { data, error } = await supabase
-      .from('users')
+      .from('user_requests')
       .select('id')
       .eq('phone', cleanPhone)
       .eq('status', 'pending')

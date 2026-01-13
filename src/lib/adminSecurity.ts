@@ -1,10 +1,10 @@
 // ============================================
-// ADMIN GÜVENLİK SİSTEMİ (BASIT YAKLAŞIM)
+// ADMIN GÜVENLİK SİSTEMİ (SIMPLE AUTH)
 // ============================================
-// profiles tablosundaki role alanını kullanır
+// simpleAuth sistemini kullanır
 // ============================================
 
-import { supabase } from './supabaseClient'
+import { getCurrentUser, isAdmin, logoutUser } from './simpleAuth'
 
 export interface UserProfile {
   id: string
@@ -20,32 +20,9 @@ export interface UserProfile {
  */
 export async function isUserAdmin(): Promise<boolean> {
   try {
-    // 1. Kullanıcı giriş yapmış mı?
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      console.warn('❌ Auth error or no user:', authError?.message)
-      return false
-    }
-
-    // 2. profiles tablosundan kullanıcı bilgilerini al
-    const { data: userRecord, error: userError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (userError || !userRecord) {
-      console.warn('❌ User record error or no user:', userError?.message)
-      return false
-    }
-
-    // 3. Role kontrolü
-    const isAdmin = userRecord.role === 'admin'
-    console.log(`🔍 User role check: ${userRecord.role} → Admin: ${isAdmin}`)
-    
-    return isAdmin
-
+    const adminCheck = await isAdmin()
+    console.log(`🔍 User admin check: ${adminCheck}`)
+    return adminCheck
   } catch (error) {
     console.error('❌ Admin check error:', error)
     return false
@@ -58,29 +35,18 @@ export async function isUserAdmin(): Promise<boolean> {
  */
 export async function getUserProfile(): Promise<UserProfile | null> {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     
-    if (authError || !user) {
-      return null
-    }
-
-    const { data: userRecord, error: userError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
-    if (userError || !userRecord) {
-      console.warn('❌ User record fetch error:', userError?.message)
+    if (!user) {
       return null
     }
 
     return {
-      id: userRecord.id,
-      full_name: userRecord.full_name,
-      role: userRecord.role || 'user',
-      phone: userRecord.phone,
-      status: userRecord.status
+      id: user.id,
+      full_name: user.full_name,
+      role: user.role || 'user',
+      phone: user.phone,
+      status: user.status
     } as UserProfile
 
   } catch (error) {
@@ -99,19 +65,15 @@ export async function enforceAdminAccess(redirectPath: string = '/admin/login'):
     console.log('🔐 Admin access control başlatılıyor...')
 
     // 1. Admin kontrolü
-    const isAdmin = await isUserAdmin()
+    const isAdminUser = await isUserAdmin()
     
-    if (!isAdmin) {
+    if (!isAdminUser) {
       console.warn('⚠️ Yetkisiz admin erişimi tespit edildi!')
       
       // 2. Kullanıcıyı çıkar
-      const { error: signOutError } = await supabase.auth.signOut()
+      await logoutUser()
       
-      if (signOutError) {
-        console.error('❌ Sign out error:', signOutError.message)
-      } else {
-        console.log('✅ Kullanıcı güvenlik nedeniyle çıkarıldı')
-      }
+      console.log('✅ Kullanıcı güvenlik nedeniyle çıkarıldı')
       
       // 3. Admin login sayfasına yönlendir
       window.location.href = redirectPath
@@ -124,7 +86,7 @@ export async function enforceAdminAccess(redirectPath: string = '/admin/login'):
     console.error('❌ Admin access control error:', error)
     
     // Hata durumunda güvenlik için çıkar
-    await supabase.auth.signOut()
+    await logoutUser()
     window.location.href = redirectPath
   }
 }
@@ -150,7 +112,7 @@ export function setupAdminRoleWatcher(onRoleChange?: (role: string | null) => vo
       // Admin değilse çıkar
       if (currentRole !== 'admin') {
         console.warn('⚠️ Admin rolü kaldırıldı, kullanıcı çıkarılıyor...')
-        await supabase.auth.signOut()
+        await logoutUser()
         window.location.href = '/admin/login'
       }
       

@@ -73,7 +73,7 @@ export async function registerUser(
     const passwordHash = hashPassword(password)
     
     // User request oluştur
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('user_requests')
       .insert({
         full_name: fullName,
@@ -81,8 +81,6 @@ export async function registerUser(
         password_hash: passwordHash,
         status: 'pending'
       })
-      .select()
-      .single()
 
     if (error) {
       console.error('Kayıt hatası:', error)

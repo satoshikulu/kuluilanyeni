@@ -12,7 +12,6 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [migrationAvailable, setMigrationAvailable] = useState(false)
   const [loading, setLoading] = useState(true)
   const [adminSessionWarning, setAdminSessionWarning] = useState(false)
   const [adminSessionUser, setAdminSessionUser] = useState<any>(null)
@@ -93,18 +92,9 @@ function LoginPage() {
       const result = await loginUser(phone, password)
       
       if (result.success && result.user) {
-        console.log("✅ Hibrit login başarılı");
+        console.log("✅ Login başarılı");
         
-        // Migration durumuna göre mesaj göster
-        if (result.migration_completed) {
-          setMessage(result.message || 'Giriş başarılı! Hesabınız güvenli sisteme taşındı.')
-        } else if (result.migration_failed) {
-          setMessage('Giriş başarılı!')
-        } else if (result.migration_available) {
-          setMigrationAvailable(true)
-          setError('') // Hata mesajını temizle
-          setMessage(result.message || 'Giriş başarılı! Güvenli sisteme geçmek ister misiniz?')
-        }
+        setMessage(result.message || 'Giriş başarılı!')
         
         // Ana sayfaya yönlendir
         console.log("🔄 Ana sayfaya yönlendiriliyor...");

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import AdminGate from '../components/AdminGate'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
+import { getCurrentUser } from '../lib/simpleAuth'
 import { 
   sendOneSignalNotification,
   OneSignalNotificationTemplates
@@ -312,18 +313,17 @@ function AdminPage() {
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_listing' : 'reject_listing'
       
-      // Supabase session'dan admin ID'yi al - Single source of truth
-      const { data: { session } } = await supabase.auth.getSession()
+      // simpleAuth'dan admin ID'yi al
+      const currentUser = await getCurrentUser()
       
-      if (!session?.user) {
-        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+      if (!currentUser || currentUser.role !== 'admin') {
+        alert('Admin yetkisi bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
         window.location.href = '/admin/login'
         return
       }
       
-      // Sadece Supabase user ID kullan - no hybrid system
-      const adminId = session.user.id
-      console.log('✅ Using Supabase admin ID:', adminId)
+      const adminId = currentUser.id
+      console.log('✅ Using admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc(rpcFunction, {
@@ -382,18 +382,17 @@ function AdminPage() {
     if (!confirmed) return
     
     try {
-      // Supabase session'dan admin ID'yi al - Single source of truth
-      const { data: { session } } = await supabase.auth.getSession()
+      // simpleAuth'dan admin ID'yi al
+      const currentUser = await getCurrentUser()
       
-      if (!session?.user) {
-        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+      if (!currentUser || currentUser.role !== 'admin') {
+        alert('Admin yetkisi bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
         window.location.href = '/admin/login'
         return
       }
       
-      // Sadece Supabase user ID kullan - no hybrid system
-      const adminId = session.user.id
-      console.log('✅ Using Supabase admin ID:', adminId)
+      const adminId = currentUser.id
+      console.log('✅ Using admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc('delete_listing', {
@@ -487,18 +486,17 @@ function AdminPage() {
       // RPC fonksiyonunu kullan (RLS bypass için)
       const rpcFunction = decision === 'approved' ? 'approve_user' : 'reject_user'
       
-      // Supabase session'dan admin ID'yi al - Single source of truth
-      const { data: { session } } = await supabase.auth.getSession()
+      // simpleAuth'dan admin ID'yi al
+      const currentUser = await getCurrentUser()
       
-      if (!session?.user) {
-        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+      if (!currentUser || currentUser.role !== 'admin') {
+        alert('Admin yetkisi bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
         window.location.href = '/admin/login'
         return
       }
       
-      // Sadece Supabase user ID kullan - no hybrid system
-      const adminId = session.user.id
-      console.log('✅ Using Supabase admin ID:', adminId)
+      const adminId = currentUser.id
+      console.log('✅ Using admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc(rpcFunction, {
@@ -565,18 +563,17 @@ function AdminPage() {
     if (!confirmed) return
     
     try {
-      // Supabase session'dan admin ID'yi al - Single source of truth
-      const { data: { session } } = await supabase.auth.getSession()
+      // simpleAuth'dan admin ID'yi al
+      const currentUser = await getCurrentUser()
       
-      if (!session?.user) {
-        alert('Admin session bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
+      if (!currentUser || currentUser.role !== 'admin') {
+        alert('Admin yetkisi bulunamadı. Lütfen /admin/login sayfasından tekrar giriş yapın.')
         window.location.href = '/admin/login'
         return
       }
       
-      // Sadece Supabase user ID kullan - no hybrid system
-      const adminId = session.user.id
-      console.log('✅ Using Supabase admin ID:', adminId)
+      const adminId = currentUser.id
+      console.log('✅ Using admin ID:', adminId)
       
       const { data, error } = await supabase
         .rpc('delete_user', {

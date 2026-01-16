@@ -123,8 +123,25 @@ export async function loginUser(
 
     // Admin credentials check
     if (phoneOrEmail === 'satoshinakamototokyo42@gmail.com' && password === 'Sevimbebe4242.') {
+      // Önce simple_users tablosunda admin kullanıcısını ara
+      const { data: adminData, error: adminError } = await supabase
+        .from('simple_users')
+        .select('*')
+        .eq('phone', 'satoshinakamototokyo42@gmail.com')
+        .eq('role', 'admin')
+        .single()
+      
+      let adminId = '00000000-0000-0000-0000-000000000001' // Fallback UUID
+      
+      if (!adminError && adminData) {
+        adminId = adminData.id
+        console.log('✅ Admin kullanıcısı simple_users tablosunda bulundu:', adminId)
+      } else {
+        console.log('⚠️ Admin kullanıcısı simple_users tablosunda bulunamadı, fallback UUID kullanılıyor')
+      }
+      
       const adminUser: User = {
-        id: 'admin-user-id',
+        id: adminId,
         full_name: 'Admin Kullanıcı',
         phone: 'satoshinakamototokyo42@gmail.com',
         role: 'admin',

@@ -78,9 +78,10 @@ export async function getMultipleListingInterestCounts(
   listingIds: string[]
 ): Promise<Record<string, number>> {
   try {
+    // View yerine doğrudan listing_interests tablosundan aggregate et
     const { data, error } = await supabase
-      .from('listing_interest_counts')
-      .select('listing_id, interest_count')
+      .from('listing_interests')
+      .select('listing_id')
       .in('listing_id', listingIds)
 
     if (error) {
@@ -88,9 +89,17 @@ export async function getMultipleListingInterestCounts(
       return {}
     }
 
+    // Manuel olarak count'ları hesapla
     const result: Record<string, number> = {}
+    
+    // Önce tüm listing_id'leri 0 ile initialize et
+    listingIds.forEach(id => {
+      result[id] = 0
+    })
+    
+    // Sonra gerçek count'ları hesapla
     data?.forEach((item) => {
-      result[item.listing_id] = item.interest_count || 0
+      result[item.listing_id] = (result[item.listing_id] || 0) + 1
     })
 
     return result

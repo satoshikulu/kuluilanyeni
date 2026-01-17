@@ -187,24 +187,12 @@ function AdminPage() {
 
   async function loadOneSignalData() {
     try {
-      // GEÇICI ÇÖZÜM: OneSignal tablosu ilişki sorunu var, şimdilik sessizleştir
-      console.log('⚠️ OneSignal data loading temporarily disabled due to database relationship issues')
-      
-      // Boş stats set et
-      setOneSignalUsers([])
-      setOneSignalStats({
-        total: 0,
-        pending: 0,
-        success: 0,
-        failed: 0
-      })
-      
-      /* ASIL KOD - İlişki sorunu çözülünce aktif edilecek:
+      // OneSignal kullanıcı verilerini yükle - simple_users ile JOIN
       const { data: oneSignalData, error: oneSignalError } = await supabase
         .from('onesignal_users')
         .select(`
           *,
-          users!inner(full_name, phone, status)
+          simple_users!inner(full_name, phone, status)
         `)
         .order('created_at', { ascending: false })
       
@@ -220,9 +208,9 @@ function AdminPage() {
         success: oneSignalUsers.filter(u => u.sync_status === 'success').length,
         failed: oneSignalUsers.filter(u => u.sync_status === 'failed').length
       })
-      */
+      
     } catch (e: any) {
-      console.error('OneSignal data load error (silenced):', e)
+      console.error('OneSignal data load error:', e)
       // Hata durumunda boş stats
       setOneSignalUsers([])
       setOneSignalStats({ total: 0, pending: 0, success: 0, failed: 0 })
@@ -353,9 +341,8 @@ function AdminPage() {
           await sendOneSignalNotification(template);
           console.log('✅ İlan onayı bildirimi gönderildi');
         } catch (notificationError) {
-          console.warn('⚠️ OneSignal bildirim hatası (sessizleştirildi):', notificationError);
-          // GEÇICI: Bildirim hatası ana işlemi etkilemesin
-          // Edge Function 500 hatası var, şimdilik sessizleştir
+          console.error('❌ OneSignal bildirim hatası:', notificationError);
+          // Bildirim hatası ana işlemi etkilemesin
         }
       }
       
@@ -908,19 +895,19 @@ function AdminPage() {
 
       {/* Modern Tab Navigation */}
       <div className="mb-8">
-        <div className="flex gap-3 bg-gray-100 p-1.5 rounded-xl">
+        <div className="flex gap-4 bg-gradient-to-r from-gray-50 to-gray-100 p-2 rounded-2xl shadow-lg border border-gray-200">
           <button
             onClick={() => setActiveTab('listings')}
-            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
+            className={`flex-1 px-8 py-4 font-bold text-base rounded-xl transition-all duration-300 relative transform hover:scale-105 ${
               activeTab === 'listings'
-                ? 'bg-white text-blue-600 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-xl shadow-blue-200 border-2 border-blue-300'
+                : 'bg-white text-gray-700 hover:text-blue-600 hover:bg-blue-50 shadow-md hover:shadow-lg border-2 border-transparent hover:border-blue-200'
             }`}
           >
-            <span className="flex items-center justify-center gap-2">
+            <span className="flex items-center justify-center gap-3 text-lg">
               📋 İlanlar
               {status === 'pending' && listings.length > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse">
+                <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg">
                   {totalCount}
                 </span>
               )}
@@ -928,16 +915,16 @@ function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
+            className={`flex-1 px-8 py-4 font-bold text-base rounded-xl transition-all duration-300 relative transform hover:scale-105 ${
               activeTab === 'users'
-                ? 'bg-white text-blue-600 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-xl shadow-green-200 border-2 border-green-300'
+                : 'bg-white text-gray-700 hover:text-green-600 hover:bg-green-50 shadow-md hover:shadow-lg border-2 border-transparent hover:border-green-200'
             }`}
           >
-            <span className="flex items-center justify-center gap-2">
+            <span className="flex items-center justify-center gap-3 text-lg">
               👥 Üyeler
               {(pendingUsers.length > 0 || userRequests.filter(r => r.status === 'pending').length > 0) && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse">
+                <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg">
                   {pendingUsers.length + userRequests.filter(r => r.status === 'pending').length}
                 </span>
               )}
@@ -945,16 +932,16 @@ function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab('onesignal')}
-            className={`flex-1 px-6 py-3 font-semibold text-sm rounded-lg transition-all duration-200 relative ${
+            className={`flex-1 px-8 py-4 font-bold text-base rounded-xl transition-all duration-300 relative transform hover:scale-105 ${
               activeTab === 'onesignal'
-                ? 'bg-white text-blue-600 shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-xl shadow-purple-200 border-2 border-purple-300'
+                : 'bg-white text-gray-700 hover:text-purple-600 hover:bg-purple-50 shadow-md hover:shadow-lg border-2 border-transparent hover:border-purple-200'
             }`}
           >
-            <span className="flex items-center justify-center gap-2">
+            <span className="flex items-center justify-center gap-3 text-lg">
               🔔 OneSignal
               {oneSignalStats.failed > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse">
+                <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg">
                   {oneSignalStats.failed}
                 </span>
               )}
@@ -1505,13 +1492,13 @@ function AdminPage() {
                   <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
                     <div className="flex-1 w-full lg:pr-24">
                       <div className="font-bold text-xl text-gray-900 mb-3">
-                        {osUser.users?.full_name || 'Bilinmeyen Kullanıcı'}
+                        {osUser.simple_users?.full_name || 'Bilinmeyen Kullanıcı'}
                       </div>
                       
                       <div className="flex flex-col gap-2 mb-3">
                         <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
                           <span className="text-sm font-medium text-gray-700">📞 Telefon:</span>
-                          <span className="text-sm text-gray-900 font-semibold">{osUser.users?.phone}</span>
+                          <span className="text-sm text-gray-900 font-semibold">{osUser.simple_users?.phone}</span>
                         </div>
                         <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100">
                           <span className="text-sm font-medium text-gray-700">🆔 External ID:</span>
@@ -1537,7 +1524,7 @@ function AdminPage() {
                           <span>🔄 Son Sync: {formatDate(osUser.last_sync_at)}</span>
                         )}
                         <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-medium">
-                          👤 {osUser.users?.status || 'Bilinmiyor'}
+                          👤 {osUser.simple_users?.status || 'Bilinmiyor'}
                         </span>
                       </div>
                     </div>
@@ -1551,8 +1538,8 @@ function AdminPage() {
                               const { error } = await supabase.functions.invoke('create-onesignal-user', {
                                 body: {
                                   user_id: osUser.user_id,
-                                  full_name: osUser.users?.full_name,
-                                  phone: osUser.users?.phone
+                                  full_name: osUser.simple_users?.full_name,
+                                  phone: osUser.simple_users?.phone
                                 }
                               })
                               
@@ -1574,7 +1561,7 @@ function AdminPage() {
                         onClick={async () => {
                           const confirmed = window.confirm(
                             `OneSignal senkronizasyon kaydını silmek istediğinize emin misiniz?\n\n` +
-                            `Kullanıcı: ${osUser.users?.full_name}\n` +
+                            `Kullanıcı: ${osUser.simple_users?.full_name}\n` +
                             `Bu işlem geri alınamaz!`
                           )
                           

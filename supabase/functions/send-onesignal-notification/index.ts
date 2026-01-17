@@ -51,9 +51,9 @@ serve(async (req) => {
 
     // OneSignal API configuration
     const ONESIGNAL_APP_ID = Deno.env.get('ONESIGNAL_APP_ID')
-    const ONESIGNAL_REST_API_KEY = Deno.env.get('ONESIGNAL_REST_API_KEY')
+    const ONESIGNAL_API_KEY = Deno.env.get('ONESIGNAL_API_KEY') // Updated variable name
 
-    if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+    if (!ONESIGNAL_APP_ID || !ONESIGNAL_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'OneSignal configuration missing' }),
         { 
@@ -119,12 +119,12 @@ serve(async (req) => {
         notificationData.included_segments = ['All']
     }
 
-    // Send notification via OneSignal API
-    const oneSignalResponse = await fetch('https://onesignal.com/api/v1/notifications', {
+    // Send notification via OneSignal API - Updated endpoint and auth format
+    const oneSignalResponse = await fetch('https://api.onesignal.com/notifications', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`,
+        'Authorization': `key ${ONESIGNAL_API_KEY}`, // Updated auth format
       },
       body: JSON.stringify(notificationData),
     })

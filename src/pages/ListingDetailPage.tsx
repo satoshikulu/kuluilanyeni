@@ -24,6 +24,21 @@ type Listing = {
   address?: string | null
   latitude?: number | null
   longitude?: number | null
+  
+  // Profesyonel Detaylar
+  floor_number?: number | null
+  total_floors?: number | null
+  heating_type?: string | null
+  building_age?: number | null
+  furnished_status?: string | null
+  usage_status?: string | null
+  has_elevator?: boolean | null
+  monthly_fee?: number | null
+  has_balcony?: boolean | null
+  garden_area_m2?: number | null
+  deed_status?: string | null
+  deposit_amount?: number | null
+  advance_payment_months?: number | null
 }
 
 function parseImages(images: any, propertyType?: string | null): string[] {
@@ -287,6 +302,217 @@ ${item.area_m2 ? `📐 Alan: ${item.area_m2} m²` : ''}
                 <div className="text-lg font-semibold text-gray-900">{item.area_m2} m²</div>
               </div>
             )}
+            {item.property_type && (
+              <div className="rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-2 text-gray-500 mb-2">
+                  <Home className="w-5 h-5" />
+                  <span className="text-xs font-medium">Emlak Türü</span>
+                </div>
+                <div className="text-lg font-semibold text-gray-900">{item.property_type}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Emlak Detayları */}
+          <div className="rounded-2xl border bg-white p-6 shadow-lg">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Home className="w-4 h-4 text-white" />
+              </div>
+              Emlak Detayları
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Kat Bilgileri */}
+              {item.floor_number !== null && item.floor_number !== undefined && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold text-sm">KAT</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Bulunduğu Kat</div>
+                    <div className="font-semibold text-gray-900">
+                      {item.floor_number === 0 ? 'Zemin Kat' : 
+                       item.floor_number < 0 ? `${Math.abs(item.floor_number)}. Bodrum` : 
+                       `${item.floor_number}. Kat`}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {item.total_floors && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <span className="text-green-600 font-semibold text-sm">TOP</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Toplam Kat</div>
+                    <div className="font-semibold text-gray-900">{item.total_floors} Kat</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Asansör */}
+              {item.has_elevator !== null && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <span className="text-purple-600 font-semibold text-xs">ASN</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Asansör</div>
+                    <div className="font-semibold text-gray-900">
+                      {item.has_elevator ? '✅ Var' : '❌ Yok'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Balkon */}
+              {item.has_balcony !== null && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <span className="text-teal-600 font-semibold text-xs">BLK</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Balkon</div>
+                    <div className="font-semibold text-gray-900">
+                      {item.has_balcony ? '✅ Var' : '❌ Yok'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bahçe Alanı */}
+              {item.garden_area_m2 && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <span className="text-green-600 font-semibold text-xs">BAH</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Bahçe Alanı</div>
+                    <div className="font-semibold text-gray-900">{item.garden_area_m2} m²</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Aylık Aidat */}
+              {item.monthly_fee && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <span className="text-orange-600 font-semibold text-xs">AİD</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Aylık Aidat</div>
+                    <div className="font-semibold text-gray-900">{item.monthly_fee.toLocaleString('tr-TR')} TL</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Profesyonel Detaylar */}
+          <div className="rounded-2xl border bg-white p-6 shadow-lg">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xs">PRO</span>
+              </div>
+              Profesyonel Detaylar
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Isıtma Türü */}
+              {item.heating_type && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <span className="text-red-600 font-semibold text-xs">ISI</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Isıtma Türü</div>
+                    <div className="font-semibold text-gray-900">{item.heating_type}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bina Yaşı */}
+              {item.building_age !== null && item.building_age !== undefined && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <span className="text-yellow-600 font-semibold text-xs">YAŞ</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Bina Yaşı</div>
+                    <div className="font-semibold text-gray-900">
+                      {item.building_age === 0 ? 'Sıfır Bina' : `${item.building_age} Yıl`}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Eşya Durumu */}
+              {item.furnished_status && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                    <span className="text-pink-600 font-semibold text-xs">EŞY</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Eşya Durumu</div>
+                    <div className="font-semibold text-gray-900">{item.furnished_status}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Kullanım Durumu */}
+              {item.usage_status && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                    <span className="text-cyan-600 font-semibold text-xs">KUL</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Kullanım Durumu</div>
+                    <div className="font-semibold text-gray-900">{item.usage_status}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tapu Durumu */}
+              {item.deed_status && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <span className="text-emerald-600 font-semibold text-xs">TAP</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Tapu Durumu</div>
+                    <div className="font-semibold text-gray-900">{item.deed_status}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Depozito (Kiralık için) */}
+              {item.deposit_amount && item.is_for === 'kiralik' && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold text-xs">DEP</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Depozito</div>
+                    <div className="font-semibold text-gray-900">{item.deposit_amount.toLocaleString('tr-TR')} TL</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Peşin Ödeme (Kiralık için) */}
+              {item.advance_payment_months && item.is_for === 'kiralik' && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
+                    <span className="text-violet-600 font-semibold text-xs">PEŞ</span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Peşin Ödeme</div>
+                    <div className="font-semibold text-gray-900">{item.advance_payment_months} Ay</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Açıklama */}

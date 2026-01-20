@@ -49,25 +49,34 @@ function MyListingsPage() {
     setError('')
     
     try {
+      console.log('🔍 MyListingsPage - User bilgileri:', user)
+      
       let query = supabase.from('listings').select('*')
       
-      // Auth tipine göre farklı sorgulama
-      if (user.auth_type === 'supabase' && user.id) {
-        // Supabase Auth kullanıcısı - user_id ile sorgula
-        query = query.eq('user_id', user.id)
-      } else if (user.auth_type === 'custom' && user.phone) {
-        // Custom Auth kullanıcısı - phone ile sorgula
+      // Simple auth sistemi - phone ile sorgula
+      if (user.phone) {
+        console.log('📞 Phone ile sorgulama:', user.phone)
         query = query.eq('owner_phone', user.phone)
+      } else if (user.id) {
+        console.log('🆔 ID ile sorgulama:', user.id)
+        // Fallback: user_id ile sorgula
+        query = query.eq('user_id', user.id)
       } else {
+        console.error('❌ Kullanıcı bilgileri eksik:', user)
         throw new Error('Kullanıcı bilgileri eksik')
       }
       
       const { data, error: fetchError } = await query.order('created_at', { ascending: false })
 
-      if (fetchError) throw fetchError
+      if (fetchError) {
+        console.error('❌ Supabase sorgu hatası:', fetchError)
+        throw fetchError
+      }
 
+      console.log('✅ İlanlar yüklendi:', data?.length || 0, 'adet')
       setListings(data as Listing[])
     } catch (e: any) {
+      console.error('❌ loadMyListings hatası:', e)
       setError(e.message || 'İlanlar yüklenemedi')
     } finally {
       setLoading(false)

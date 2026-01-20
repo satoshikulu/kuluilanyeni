@@ -9,6 +9,7 @@ import 'yet-another-react-lightbox/styles.css'
 import { MapPin, Home, Maximize2, Share2, ArrowLeft, MessageCircle, Eye } from 'lucide-react'
 import LocationMap from '../components/LocationMap'
 import { recordListingInterest, getListingInterestCount } from '../lib/listingInterests'
+import { isLand } from '../types/listing'
 
 type Listing = {
   id: string
@@ -39,6 +40,15 @@ type Listing = {
   deed_status?: string | null
   deposit_amount?: number | null
   advance_payment_months?: number | null
+  
+  // Tarla Detayları
+  land_type?: string | null
+  irrigation_status?: string | null
+  electricity_status?: string | null
+  well_status?: string | null
+  road_condition?: string | null
+  machinery_access?: string | null
+  zoning_status?: string | null
 }
 
 function parseImages(images: any, propertyType?: string | null): string[] {
@@ -514,6 +524,125 @@ ${item.area_m2 ? `📐 Alan: ${item.area_m2} m²` : ''}
               )}
             </div>
           </div>
+
+          {/* 🌾 Tarla Detayları - Sadece Tarla/Arsa için */}
+          {isLand(item.property_type || '') && (
+            <div className="rounded-2xl border bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 p-6 shadow-lg">
+              <h2 className="text-xl font-semibold text-green-800 mb-6 flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white text-lg">🌾</span>
+                </div>
+                Tarla Detayları
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Tarla Türü */}
+                {item.land_type && (
+                  <div className="flex items-center gap-3 p-4 bg-white/70 rounded-lg border border-green-100">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <span className="text-green-600 text-lg">🌱</span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-green-600 font-medium">Tarla Türü</div>
+                      <div className="font-semibold text-green-800">{item.land_type}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sulama Durumu */}
+                {item.irrigation_status && (
+                  <div className="flex items-center gap-3 p-4 bg-white/70 rounded-lg border border-green-100">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span className="text-blue-600 text-lg">💧</span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-green-600 font-medium">Sulama Durumu</div>
+                      <div className="font-semibold text-green-800">{item.irrigation_status}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Elektrik Durumu */}
+                {item.electricity_status && (
+                  <div className="flex items-center gap-3 p-4 bg-white/70 rounded-lg border border-green-100">
+                    <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <span className="text-yellow-600 text-lg">⚡</span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-green-600 font-medium">Elektrik Durumu</div>
+                      <div className="font-semibold text-green-800">{item.electricity_status}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Su Kuyusu */}
+                {item.well_status && (
+                  <div className="flex items-center gap-3 p-4 bg-white/70 rounded-lg border border-green-100">
+                    <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                      <span className="text-cyan-600 text-lg">🚰</span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-green-600 font-medium">Su Kuyusu</div>
+                      <div className="font-semibold text-green-800">{item.well_status}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Yol Durumu */}
+                {item.road_condition && (
+                  <div className="flex items-center gap-3 p-4 bg-white/70 rounded-lg border border-green-100">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-600 text-lg">🛣️</span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-green-600 font-medium">Yol Durumu</div>
+                      <div className="font-semibold text-green-800">{item.road_condition}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Makine Erişimi */}
+                {item.machinery_access && (
+                  <div className="flex items-center gap-3 p-4 bg-white/70 rounded-lg border border-green-100">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <span className="text-orange-600 text-lg">🚜</span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-green-600 font-medium">Makine Erişimi</div>
+                      <div className="font-semibold text-green-800">{item.machinery_access}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* İmar Durumu */}
+                {item.zoning_status && (
+                  <div className="flex items-center gap-3 p-4 bg-white/70 rounded-lg border border-green-100">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <span className="text-indigo-600 text-lg">📋</span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-green-600 font-medium">İmar Durumu</div>
+                      <div className="font-semibold text-green-800">{item.zoning_status}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Tarla için özel not */}
+              <div className="mt-6 p-4 bg-green-100 rounded-lg border border-green-200">
+                <div className="flex items-start gap-3">
+                  <span className="text-green-600 text-xl">🌾</span>
+                  <div>
+                    <div className="font-semibold text-green-800 mb-1">Tarım Arazisi Bilgilendirmesi</div>
+                    <div className="text-sm text-green-700 leading-relaxed">
+                      Bu ilan tarım arazisi kategorisindedir. Satın alma öncesinde tapu durumu, imar planı ve 
+                      tarım mevzuatı hakkında yetkili kurumlardan bilgi almanız önerilir.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Açıklama */}
           {item.description && (

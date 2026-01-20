@@ -373,12 +373,56 @@ function RentPage() {
                   onBlur={async () => {
                     if (formData.owner_phone && isValidPhoneFormat(formData.owner_phone)) {
                       setPhoneChecking(true)
-                      const check = await checkPhoneExists(formData.owner_phone)
-                      setPhoneChecking(false)
-                      if (check.message) {
-                        setPhoneWarning(check.message)
-                      } else {
-                        setPhoneWarning('')
+                      setPhoneWarning('')
+                      
+                      try {
+                        // 1. Mevcut giriş yapmış kullanıcıyı kontrol et
+                        const currentUser = await getCurrentUser()
+                        const currentUserPhone = currentUser?.phone?.replace(/\D/g, '')
+                        const inputPhone = normalizePhone(formData.owner_phone)
+                        
+                        // 2. Üyelik durumunu kontrol et
+                        const membershipCheck = await checkApprovedMembership(formData.owner_phone)
+                        const pendingMembership = await checkPendingMembership(formData.owner_phone)
+                        
+                        // 3. İlan sayısını kontrol et
+                        const phoneCheck = await checkPhoneExists(formData.owner_phone)
+                        
+                        // 4. Uyarı mesajlarını oluştur
+                        let warnings: string[] = []
+                        
+                        // Mevcut üye kontrolü
+                        if (membershipCheck.isMember) {
+                          if (currentUser && currentUserPhone === inputPhone) {
+                            // Aynı kullanıcı, sorun yok
+                            warnings.push(`✅ Üye olarak giriş yapmışsınız: ${membershipCheck.userName}`)
+                          } else {
+                            // Farklı üye veya giriş yapmamış
+                            warnings.push(`⚠️ Bu telefon "${membershipCheck.userName}" adına kayıtlı üye! Giriş yapmanız önerilir.`)
+                          }
+                        } else if (pendingMembership) {
+                          warnings.push(`⏳ Bu telefon numarasıyla bekleyen üyelik başvurusu var.`)
+                        }
+                        
+                        // İlan sayısı kontrolü
+                        if (phoneCheck.pendingCount > 0) {
+                          warnings.push(`⏳ ${phoneCheck.pendingCount} adet bekleyen ilan var.`)
+                        } else if (phoneCheck.approvedCount >= 5) {
+                          warnings.push(`📊 ${phoneCheck.approvedCount} adet aktif ilan var. Çok fazla ilan spam olarak algılanabilir.`)
+                        } else if (phoneCheck.approvedCount > 0) {
+                          warnings.push(`📊 ${phoneCheck.approvedCount} adet aktif ilan mevcut.`)
+                        }
+                        
+                        // En önemli uyarıyı göster
+                        if (warnings.length > 0) {
+                          setPhoneWarning(warnings[0])
+                        }
+                        
+                      } catch (error) {
+                        console.error('Telefon kontrolü hatası:', error)
+                        setPhoneWarning('Kontrol yapılamadı')
+                      } finally {
+                        setPhoneChecking(false)
                       }
                     }
                   }}
@@ -386,13 +430,34 @@ function RentPage() {
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   placeholder="0555 123 45 67"
                 />
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs">
                   {phoneChecking ? (
-                    <span className="text-blue-600">Kontrol ediliyor...</span>
+                    <span className="text-blue-600 flex items-center gap-1">
+                      <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                      Kontrol ediliyor...
+                    </span>
                   ) : phoneWarning ? (
-                    <span className="text-orange-600 font-medium">⚠️ {phoneWarning}</span>
+                    <div className={`p-2 rounded-lg border ${
+                      phoneWarning.includes('✅') 
+                        ? 'bg-green-50 border-green-200 text-green-700' 
+                        : phoneWarning.includes('⚠️')
+                        ? 'bg-orange-50 border-orange-200 text-orange-700'
+                        : 'bg-yellow-50 border-yellow-200 text-yellow-700'
+                    }`}>
+                      <span className="font-medium">{phoneWarning}</span>
+                      {phoneWarning.includes('Giriş yapmanız önerilir') && (
+                        <div className="mt-1">
+                          <a href="/giris" className="text-blue-600 hover:text-blue-700 underline text-xs">
+                            → Giriş yapmak için tıklayın
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    'Telefon numaranızı girin'
+                    <span className="text-gray-500">Telefon numaranızı girin</span>
                   )}
                 </div>
               </div>

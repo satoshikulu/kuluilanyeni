@@ -200,7 +200,18 @@ function LoginPage() {
           </div>
 
           {/* Login Card */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6 relative">
+            {/* Close Button */}
+            <button
+              onClick={() => navigate('/')}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+              title="Ana sayfaya dön"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
             <div className="mb-5">
               <h2 className="text-xl font-semibold text-gray-900 mb-1">Giriş Yap</h2>
               <p className="text-gray-600 text-sm">Hesabınıza erişim sağlayın</p>
@@ -246,7 +257,15 @@ function LoginPage() {
               
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-                  {error}
+                  <div className="flex items-center justify-between">
+                    <span>{error}</span>
+                    <button
+                      onClick={() => navigate('/')}
+                      className="ml-2 text-red-500 hover:text-red-700 text-xs underline"
+                    >
+                      Ana sayfaya dön
+                    </button>
+                  </div>
                 </div>
               )}
               

@@ -4,6 +4,7 @@ import AdminGate from '../components/AdminGate'
 import NeighborhoodSelect from '../components/NeighborhoodSelect'
 import { enforceAdminAccess, setupAdminRoleWatcher } from '../lib/adminSecurity'
 import { getCurrentUser } from '../lib/simpleAuth'
+import { requireAdmin } from '../lib/simpleAuth'
 import { 
   sendOneSignalNotification,
   OneSignalNotificationTemplates
@@ -294,6 +295,9 @@ function AdminPage() {
   }, [])
 
   async function decide(id: string, decision: 'approved' | 'rejected') {
+    // Güvenlik kontrolü
+    if (!(await requireAdmin())) return;
+    
     try {
       // İlan bilgilerini al (push notification için)
       const listing = listings.find(l => l.id === id)
@@ -466,6 +470,9 @@ function AdminPage() {
   }
 
   async function decideUser(id: string, decision: 'approved' | 'rejected') {
+    // Güvenlik kontrolü
+    if (!(await requireAdmin())) return;
+    
     try {
       // Kullanıcı bilgilerini al (push notification için)
       const user = pendingUsers.find(u => u.id === id)

@@ -133,8 +133,9 @@ export async function loginUser(
         updated_at: new Date().toISOString()
       }
 
-      // Session'a kaydet
-      localStorage.setItem('simple_auth_user', JSON.stringify(adminUser))
+      // Session'a kaydet (login time ile)
+      const adminUserWithTime = { ...adminUser, loginTime: Date.now() }
+      localStorage.setItem('simple_auth_user', JSON.stringify(adminUserWithTime))
 
       console.log('✅ Admin girişi başarılı (optimized):', adminUser.id)
 
@@ -170,8 +171,9 @@ export async function loginUser(
         updated_at: profileData.updated_at
       }
 
-      // Session'a kaydet
-      localStorage.setItem('simple_auth_user', JSON.stringify(user))
+      // Session'a kaydet (login time ile)
+      const userWithTime = { ...user, loginTime: Date.now() }
+      localStorage.setItem('simple_auth_user', JSON.stringify(userWithTime))
 
       return {
         success: true,
@@ -208,8 +210,9 @@ export async function loginUser(
           updated_at: userData.updated_at
         }
 
-        // Session'a kaydet
-        localStorage.setItem('simple_auth_user', JSON.stringify(user))
+        // Session'a kaydet (login time ile)
+        const userWithTime = { ...user, loginTime: Date.now() }
+        localStorage.setItem('simple_auth_user', JSON.stringify(userWithTime))
 
         return {
           success: true,
@@ -265,9 +268,73 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 /**
- * Kullanıcı admin mi?
+ * Kullanıcı admin mi? (Backend doğrulaması ile)
  */
 export async function isAdmin(): Promise<boolean> {
-  const user = await getCurrentUser()
-  return user !== null && user.role === 'admin'
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'admin') {
+      return false
+    }
+
+    // Backend'den de admin kontrolü yap
+    const { data, error } = await supabase
+      .from('simple_users')
+      .select('role, status')
+      .eq('id', user.id)
+      .eq('role', 'admin')
+      .eq('status', 'approved')
+      .single()
+
+    if (error || !data) {
+      console.error('Admin backend kontrolü başarısız:', error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error('Admin kontrol hatası:', error)
+    return false
+  }
+}
+
+/**
+ * Admin işlemleri için güvenlik kontrolü
+ */
+export async function requireAdmin(): Promise<boolean> {
+  const adminCheck = await isAdmin()
+  if (!adminCheck) {
+    alert('Bu işlem için admin yetkisi gerekli!')
+    window.location.href = '/admin/login'
+    return false
+  }
+  return true
+}
+
+/**
+ * Session timeout kontrolü (24 saat)
+ */
+export function checkSessionTimeout(): boolean {
+  const userStr = localStorage.getItem('simple_auth_user')
+  if (!userStr) return false
+
+  try {
+    const userData = JSON.parse(userStr)
+    const loginTime = userData.loginTime || Date.now()
+    const now = Date.now()
+    const hoursPassed = (now - loginTime) / (1000 * 60 * 60)
+
+    // 24 saat geçmişse session'ı temizle
+    if (hoursPassed > 24) {
+      localStorage.removeItem('simple_auth_user')
+      alert('Oturumunuz sona erdi. Lütfen tekrar giriş yapın.')
+      window.location.href = '/admin/login'
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error('Session timeout kontrolü hatası:', error)
+    return false
+  }
 }

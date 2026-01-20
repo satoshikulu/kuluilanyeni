@@ -193,12 +193,6 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
             >
               Giriş Yap
             </Link>
-            <Link
-              to="/uye-ol"
-              className="inline-flex items-center rounded-xl border-2 border-white/80 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-black/10 hover:border-orange-400 hover:bg-orange-500/10 hover:text-orange-200 transition-colors"
-            >
-              Üye Ol
-            </Link>
           </div>
         </div>
       </section>

@@ -161,20 +161,6 @@ function App() {
             ) : (
               <>
                 <NavLink
-                  to="/giris"
-                  className={({ isActive }) => [
-                    'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-all duration-300',
-                    'bg-gradient-to-r from-orange-100/80 to-amber-100/80 backdrop-blur-md',
-                    'text-orange-700 hover:from-orange-200/90 hover:to-amber-200/90 hover:text-orange-800',
-                    'border border-orange-200/50 hover:border-orange-300/60',
-                    'shadow-lg hover:shadow-xl hover:shadow-orange-200/25',
-                    'hover:scale-105 transform',
-                    isActive ? 'ring-2 ring-orange-300/50 shadow-orange-200/30' : ''
-                  ].join(' ')}
-                >
-                  Giriş Yap
-                </NavLink>
-                <NavLink
                   to="/uye-ol"
                   className={({ isActive }) => [
                     'inline-flex items-center rounded-xl px-4 py-2 font-medium transition-all duration-300',

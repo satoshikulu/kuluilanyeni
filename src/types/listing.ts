@@ -182,6 +182,110 @@ export const DEED_OPTIONS: DeedStatus[] = [
   'Diğer'
 ]
 
+// TARLA İÇİN ÖZEL SEÇENEKLER
+export type LandType = 
+  | 'Buğday Tarlası'
+  | 'Arpa Tarlası'
+  | 'Mısır Tarlası'
+  | 'Sebze Tarlası'
+  | 'Meyve Bahçesi'
+  | 'Boş Tarla'
+  | 'Çayır/Mera'
+  | 'Diğer'
+
+export type IrrigationStatus = 
+  | 'Sulu'
+  | 'Kuru'
+  | 'Kısmen Sulu'
+  | 'Damla Sulama'
+
+export type ElectricityStatus = 
+  | 'Var'
+  | 'Yok'
+  | 'Yakında (500m içinde)'
+  | 'Uzak (500m+)'
+
+export type WellStatus = 
+  | 'Su Kuyusu Var'
+  | 'Su Kuyusu Yok'
+  | 'Artezyen Var'
+  | 'Sondaj Gerekli'
+
+export type RoadCondition = 
+  | 'Asfalt Yol'
+  | 'Stabilize Yol'
+  | 'Toprak Yol'
+  | 'Patika'
+
+export type MachineryAccess = 
+  | 'Kolay Erişim'
+  | 'Orta Erişim'
+  | 'Zor Erişim'
+  | 'Erişim Yok'
+
+export type ZoningStatus = 
+  | 'Tarım Arazisi'
+  | 'İmarlı Arazi'
+  | 'Sit Alanı'
+  | 'Orman Alanı'
+  | 'Mera Alanı'
+  | 'Diğer'
+
+export const LAND_TYPE_OPTIONS: LandType[] = [
+  'Buğday Tarlası',
+  'Arpa Tarlası',
+  'Mısır Tarlası',
+  'Sebze Tarlası',
+  'Meyve Bahçesi',
+  'Boş Tarla',
+  'Çayır/Mera',
+  'Diğer'
+]
+
+export const IRRIGATION_OPTIONS: IrrigationStatus[] = [
+  'Sulu',
+  'Kuru',
+  'Kısmen Sulu',
+  'Damla Sulama'
+]
+
+export const ELECTRICITY_OPTIONS: ElectricityStatus[] = [
+  'Var',
+  'Yok',
+  'Yakında (500m içinde)',
+  'Uzak (500m+)'
+]
+
+export const WELL_OPTIONS: WellStatus[] = [
+  'Su Kuyusu Var',
+  'Su Kuyusu Yok',
+  'Artezyen Var',
+  'Sondaj Gerekli'
+]
+
+export const ROAD_OPTIONS: RoadCondition[] = [
+  'Asfalt Yol',
+  'Stabilize Yol',
+  'Toprak Yol',
+  'Patika'
+]
+
+export const MACHINERY_OPTIONS: MachineryAccess[] = [
+  'Kolay Erişim',
+  'Orta Erişim',
+  'Zor Erişim',
+  'Erişim Yok'
+]
+
+export const ZONING_OPTIONS: ZoningStatus[] = [
+  'Tarım Arazisi',
+  'İmarlı Arazi',
+  'Sit Alanı',
+  'Orman Alanı',
+  'Mera Alanı',
+  'Diğer'
+]
+
 // Koşullu Gösterim Kuralları
 export const CONDITIONAL_FIELDS = {
   // Daire için gösterilecek alanlar
@@ -207,6 +311,10 @@ export function isApartment(propertyType: string): boolean {
 
 export function isDetached(propertyType: string): boolean {
   return propertyType === 'Müstakil'
+}
+
+export function isLand(propertyType: string): boolean {
+  return propertyType === 'Tarla' || propertyType === 'Arsa'
 }
 
 export function isSale(isFor: string): boolean {

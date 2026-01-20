@@ -13,8 +13,16 @@ import {
   FURNISHED_OPTIONS, 
   USAGE_OPTIONS,
   DEED_OPTIONS,
+  LAND_TYPE_OPTIONS,
+  IRRIGATION_OPTIONS,
+  ELECTRICITY_OPTIONS,
+  WELL_OPTIONS,
+  ROAD_OPTIONS,
+  MACHINERY_OPTIONS,
+  ZONING_OPTIONS,
   isApartment,
-  isDetached
+  isDetached,
+  isLand
 } from '../types/listing'
 
 function SellPage() {
@@ -44,6 +52,15 @@ function SellPage() {
   const [hasBalcony, setHasBalcony] = useState<boolean>(false)
   const [gardenArea, setGardenArea] = useState<string>('')
   const [deedStatus, setDeedStatus] = useState<string>('')
+  
+  // TARLA İÇİN ÖZEL ALANLAR
+  const [landType, setLandType] = useState<string>('')
+  const [irrigationStatus, setIrrigationStatus] = useState<string>('')
+  const [electricityStatus, setElectricityStatus] = useState<string>('')
+  const [wellStatus, setWellStatus] = useState<string>('')
+  const [roadCondition, setRoadCondition] = useState<string>('')
+  const [machineryAccess, setMachineryAccess] = useState<string>('')
+  const [zoningStatus, setZoningStatus] = useState<string>('')
   
   // Diğer state'ler
   const [submitting, setSubmitting] = useState(false)
@@ -178,6 +195,14 @@ function SellPage() {
           has_balcony: hasBalcony,
           garden_area_m2: gardenArea ? parseInt(gardenArea) : null,
           deed_status: deedStatus || null, // Satılık için
+          // Tarla alanları (sadece tarla/arsa için)
+          land_type: isLand(propertyType) ? landType || null : null,
+          irrigation_status: isLand(propertyType) ? irrigationStatus || null : null,
+          electricity_status: isLand(propertyType) ? electricityStatus || null : null,
+          well_status: isLand(propertyType) ? wellStatus || null : null,
+          road_condition: isLand(propertyType) ? roadCondition || null : null,
+          machinery_access: isLand(propertyType) ? machineryAccess || null : null,
+          zoning_status: isLand(propertyType) ? zoningStatus || null : null,
           // Konum ve durum
           address: finalAddress,
           latitude: latitude,
@@ -254,6 +279,14 @@ function SellPage() {
       setHasBalcony(false)
       setGardenArea('')
       setDeedStatus('')
+      // Tarla alanlarını temizle
+      setLandType('')
+      setIrrigationStatus('')
+      setElectricityStatus('')
+      setWellStatus('')
+      setRoadCondition('')
+      setMachineryAccess('')
+      setZoningStatus('')
       // Diğer alanlar
       setFiles(null)
       setSelectedFiles([])
@@ -384,18 +417,20 @@ function SellPage() {
                     <option value="Dükkan">Dükkan</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm mb-1" htmlFor="rooms">Oda Sayısı</label>
-                  <select id="rooms" className={inputClass} value={rooms} onChange={(e) => setRooms(e.target.value)}>
-                    <option value="">Oda sayısı seçin</option>
-                    <option value="1+1">1+1</option>
-                    <option value="2+1">2+1</option>
-                    <option value="3+1">3+1</option>
-                    <option value="4+1">4+1</option>
-                    <option value="5+1">5+1</option>
-                    <option value="6 üstü">6 üstü</option>
-                  </select>
-                </div>
+                {!isLand(propertyType) && (
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="rooms">Oda Sayısı</label>
+                    <select id="rooms" className={inputClass} value={rooms} onChange={(e) => setRooms(e.target.value)}>
+                      <option value="">Oda sayısı seçin</option>
+                      <option value="1+1">1+1</option>
+                      <option value="2+1">2+1</option>
+                      <option value="3+1">3+1</option>
+                      <option value="4+1">4+1</option>
+                      <option value="5+1">5+1</option>
+                      <option value="6 üstü">6 üstü</option>
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm mb-1" htmlFor="area">Brüt m²</label>
                   <div className="relative">
@@ -507,98 +542,224 @@ function SellPage() {
                 </div>
               )}
 
-              {/* Genel Detaylar */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm mb-1">Isıtma Türü</label>
-                  <select
-                    className={selectClass}
-                    value={heatingType}
-                    onChange={(e) => setHeatingType(e.target.value)}
-                  >
-                    <option value="">Isıtma türü seçin</option>
-                    {HEATING_OPTIONS.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm mb-1">Bina Yaşı</label>
-                  <input
-                    type="number"
-                    className={inputClass}
-                    placeholder="5"
-                    value={buildingAge}
-                    onChange={(e) => setBuildingAge(e.target.value)}
-                    min="0"
-                    max="200"
-                  />
-                </div>
-              </div>
+              {/* TARLA İÇİN ÖZEL DETAYLAR */}
+              {isLand(propertyType) && (
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">🌾</span>
+                      <h3 className="font-semibold text-green-800">Tarla Detayları</h3>
+                    </div>
+                    <p className="text-sm text-green-700">Tarlanızın özelliklerini belirtin. Bu bilgiler alıcılar için çok önemlidir.</p>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm mb-1">Eşya Durumu</label>
-                  <select
-                    className={selectClass}
-                    value={furnishedStatus}
-                    onChange={(e) => setFurnishedStatus(e.target.value)}
-                  >
-                    <option value="">Eşya durumu seçin</option>
-                    {FURNISHED_OPTIONS.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">Satılık için opsiyonel</p>
-                </div>
-                <div>
-                  <label className="block text-sm mb-1">Kullanım Durumu</label>
-                  <select
-                    className={selectClass}
-                    value={usageStatus}
-                    onChange={(e) => setUsageStatus(e.target.value)}
-                  >
-                    <option value="">Kullanım durumu seçin</option>
-                    {USAGE_OPTIONS.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                  {/* Tarla Türü ve Sulama */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm mb-1 font-medium">🌱 Tarla Türü</label>
+                      <select
+                        className={selectClass}
+                        value={landType}
+                        onChange={(e) => setLandType(e.target.value)}
+                      >
+                        <option value="">Tarla türünü seçin</option>
+                        {LAND_TYPE_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-1 font-medium">💧 Sulama Durumu</label>
+                      <select
+                        className={selectClass}
+                        value={irrigationStatus}
+                        onChange={(e) => setIrrigationStatus(e.target.value)}
+                      >
+                        <option value="">Sulama durumunu seçin</option>
+                        {IRRIGATION_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-              {/* Aidat ve Balkon */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {isApartment(propertyType) && (
+                  {/* Elektrik ve Su Kuyusu */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm mb-1 font-medium">⚡ Elektrik Durumu</label>
+                      <select
+                        className={selectClass}
+                        value={electricityStatus}
+                        onChange={(e) => setElectricityStatus(e.target.value)}
+                      >
+                        <option value="">Elektrik durumunu seçin</option>
+                        {ELECTRICITY_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-1 font-medium">🚰 Su Kuyusu</label>
+                      <select
+                        className={selectClass}
+                        value={wellStatus}
+                        onChange={(e) => setWellStatus(e.target.value)}
+                      >
+                        <option value="">Su durumunu seçin</option>
+                        {WELL_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Yol ve Makine Erişimi */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm mb-1 font-medium">🛣️ Yol Durumu</label>
+                      <select
+                        className={selectClass}
+                        value={roadCondition}
+                        onChange={(e) => setRoadCondition(e.target.value)}
+                      >
+                        <option value="">Yol durumunu seçin</option>
+                        {ROAD_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-1 font-medium">🚜 Makine Erişimi</label>
+                      <select
+                        className={selectClass}
+                        value={machineryAccess}
+                        onChange={(e) => setMachineryAccess(e.target.value)}
+                      >
+                        <option value="">Makine erişimini seçin</option>
+                        {MACHINERY_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* İmar Durumu */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm mb-1 font-medium">📋 İmar Durumu</label>
+                      <select
+                        className={selectClass}
+                        value={zoningStatus}
+                        onChange={(e) => setZoningStatus(e.target.value)}
+                      >
+                        <option value="">İmar durumunu seçin</option>
+                        {ZONING_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Genel Detaylar - Sadece Bina Türleri için */}
+              {!isLand(propertyType) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
-                    <label className="block text-sm mb-1">Aylık Aidat (TL)</label>
+                    <label className="block text-sm mb-1">Isıtma Türü</label>
+                    <select
+                      className={selectClass}
+                      value={heatingType}
+                      onChange={(e) => setHeatingType(e.target.value)}
+                    >
+                      <option value="">Isıtma türü seçin</option>
+                      {HEATING_OPTIONS.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Bina Yaşı</label>
                     <input
-                      type="text"
+                      type="number"
                       className={inputClass}
-                      placeholder="500"
-                      value={formatTL(monthlyFee)}
-                      onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, '')
-                        setMonthlyFee(digits)
-                      }}
-                      inputMode="numeric"
+                      placeholder="5"
+                      value={buildingAge}
+                      onChange={(e) => setBuildingAge(e.target.value)}
+                      min="0"
+                      max="200"
                     />
                   </div>
-                )}
-                <div>
-                  <label className="block text-sm mb-1">Balkon</label>
-                  <div className="flex items-center space-x-4 pt-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={hasBalcony}
-                        onChange={(e) => setHasBalcony(e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Balkon var</span>
-                    </label>
+                </div>
+              )}
+
+              {!isLand(propertyType) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm mb-1">Eşya Durumu</label>
+                    <select
+                      className={selectClass}
+                      value={furnishedStatus}
+                      onChange={(e) => setFurnishedStatus(e.target.value)}
+                    >
+                      <option value="">Eşya durumu seçin</option>
+                      {FURNISHED_OPTIONS.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">Satılık için opsiyonel</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Kullanım Durumu</label>
+                    <select
+                      className={selectClass}
+                      value={usageStatus}
+                      onChange={(e) => setUsageStatus(e.target.value)}
+                    >
+                      <option value="">Kullanım durumu seçin</option>
+                      {USAGE_OPTIONS.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Aidat ve Balkon - Sadece Bina Türleri için */}
+              {!isLand(propertyType) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {isApartment(propertyType) && (
+                    <div>
+                      <label className="block text-sm mb-1">Aylık Aidat (TL)</label>
+                      <input
+                        type="text"
+                        className={inputClass}
+                        placeholder="500"
+                        value={formatTL(monthlyFee)}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '')
+                          setMonthlyFee(digits)
+                        }}
+                        inputMode="numeric"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm mb-1">Balkon</label>
+                    <div className="flex items-center space-x-4 pt-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={hasBalcony}
+                          onChange={(e) => setHasBalcony(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Balkon var</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Tapu Durumu - Sadece Satılık için */}
               <div className="mb-6">
@@ -707,21 +868,55 @@ function SellPage() {
                   </li>
                   <li><span className="text-gray-500">Mahalle:</span> {neighborhood || '-'}</li>
                   <li><span className="text-gray-500">Tür:</span> {propertyType}</li>
-                  <li><span className="text-gray-500">Oda:</span> {rooms || '-'}</li>
+                  {!isLand(propertyType) && (
+                    <li><span className="text-gray-500">Oda:</span> {rooms || '-'}</li>
+                  )}
                   <li><span className="text-gray-500">m²:</span> {area ? formatTL(area) : '-'}</li>
                   <li><span className="text-gray-500">Fiyat:</span> {price ? `${formatTL(price)} TL` : '-'}</li>
-                  {/* Yeni alanlar */}
-                  {isApartment(propertyType) && floorNumber && (
-                    <li><span className="text-gray-500">Kat:</span> {floorNumber}{totalFloors ? `/${totalFloors}` : ''}</li>
+                  
+                  {/* Bina Detayları */}
+                  {!isLand(propertyType) && (
+                    <>
+                      {isApartment(propertyType) && floorNumber && (
+                        <li><span className="text-gray-500">Kat:</span> {floorNumber}{totalFloors ? `/${totalFloors}` : ''}</li>
+                      )}
+                      {heatingType && (
+                        <li><span className="text-gray-500">Isıtma:</span> {heatingType}</li>
+                      )}
+                      {furnishedStatus && (
+                        <li><span className="text-gray-500">Eşya:</span> {furnishedStatus}</li>
+                      )}
+                      {deedStatus && (
+                        <li><span className="text-gray-500">Tapu:</span> {deedStatus}</li>
+                      )}
+                    </>
                   )}
-                  {heatingType && (
-                    <li><span className="text-gray-500">Isıtma:</span> {heatingType}</li>
-                  )}
-                  {furnishedStatus && (
-                    <li><span className="text-gray-500">Eşya:</span> {furnishedStatus}</li>
-                  )}
-                  {deedStatus && (
-                    <li><span className="text-gray-500">Tapu:</span> {deedStatus}</li>
+                  
+                  {/* Tarla Detayları */}
+                  {isLand(propertyType) && (
+                    <>
+                      {landType && (
+                        <li><span className="text-gray-500">🌱 Tarla Türü:</span> {landType}</li>
+                      )}
+                      {irrigationStatus && (
+                        <li><span className="text-gray-500">💧 Sulama:</span> {irrigationStatus}</li>
+                      )}
+                      {electricityStatus && (
+                        <li><span className="text-gray-500">⚡ Elektrik:</span> {electricityStatus}</li>
+                      )}
+                      {wellStatus && (
+                        <li><span className="text-gray-500">🚰 Su Kuyusu:</span> {wellStatus}</li>
+                      )}
+                      {roadCondition && (
+                        <li><span className="text-gray-500">🛣️ Yol:</span> {roadCondition}</li>
+                      )}
+                      {machineryAccess && (
+                        <li><span className="text-gray-500">🚜 Makine Erişimi:</span> {machineryAccess}</li>
+                      )}
+                      {zoningStatus && (
+                        <li><span className="text-gray-500">📋 İmar:</span> {zoningStatus}</li>
+                      )}
+                    </>
                   )}
                 </ul>
               </div>

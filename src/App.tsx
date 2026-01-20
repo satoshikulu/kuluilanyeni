@@ -187,10 +187,10 @@ function App() {
           © {new Date().getFullYear()} Kulu İlan · Kulu Emlak Pazarı -
           {" "}
           <span
-            className="text-xs text-gray-500 inline-block transition-all duration-200 [text-shadow:0_1px_1px_rgba(0,0,0,0.15)] hover:[text-shadow:0_2px_4px_rgba(0,0,0,0.28)] hover:text-gray-600"
-            title="Y.A & S.Ç"
+            className="text-xs text-gray-500 inline-block transition-all duration-200 [text-shadow:0_1px_1px_rgba(0,0,0,0.15)] hover:[text-shadow:0_2px_4px_rgba(0,0,0,0.28)] hover:text-orange-500 hover:font-semibold cursor-pointer"
+            title="YASC"
           >
-            Y.A <span className="mx-1">&</span> S.Ç
+            YASC
           </span>
         </div>
       </footer>

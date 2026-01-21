@@ -187,6 +187,7 @@ export type LandType =
   | 'Buğday Tarlası'
   | 'Arpa Tarlası'
   | 'Mısır Tarlası'
+  | 'Pancar Tarlası'
   | 'Sebze Tarlası'
   | 'Meyve Bahçesi'
   | 'Boş Tarla'
@@ -235,6 +236,7 @@ export const LAND_TYPE_OPTIONS: LandType[] = [
   'Buğday Tarlası',
   'Arpa Tarlası',
   'Mısır Tarlası',
+  'Pancar Tarlası',
   'Sebze Tarlası',
   'Meyve Bahçesi',
   'Boş Tarla',

@@ -183,7 +183,7 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               to="/ilanlar"
-              className="inline-flex items-center rounded-xl bg-blue-600/95 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-black/20 ring-1 ring-white/20 hover:bg-orange-500 hover:ring-orange-300 transition-colors"
+              className="inline-flex items-center rounded-xl bg-orange-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-black/20 ring-1 ring-white/20 hover:bg-blue-600 hover:ring-blue-300 transition-colors"
             >
               İlanlara Bak
             </Link>

@@ -277,21 +277,32 @@ export async function isAdmin(): Promise<boolean> {
       return false
     }
 
-    // Backend'den de admin kontrolü yap
-    const { data, error } = await supabase
-      .from('simple_users')
-      .select('role, status')
-      .eq('id', user.id)
-      .eq('role', 'admin')
-      .eq('status', 'approved')
-      .single()
-
-    if (error || !data) {
-      console.error('Admin backend kontrolü başarısız:', error)
-      return false
+    // Sabit admin ID kontrolü (hardcoded admin)
+    if (user.id === '00000000-0000-0000-0000-000000000001') {
+      console.log('✅ Hardcoded admin detected:', user.id)
+      return true
     }
 
-    return true
+    // Backend'den de admin kontrolü yap (diğer adminler için)
+    try {
+      const { data, error } = await supabase
+        .from('simple_users')
+        .select('role, status')
+        .eq('id', user.id)
+        .eq('role', 'admin')
+        .eq('status', 'approved')
+        .single()
+
+      if (error || !data) {
+        console.log('Admin backend kontrolü başarısız (normal admin için):', error)
+        return false
+      }
+
+      return true
+    } catch (backendError) {
+      console.log('Backend admin kontrolü hatası:', backendError)
+      return false
+    }
   } catch (error) {
     console.error('Admin kontrol hatası:', error)
     return false

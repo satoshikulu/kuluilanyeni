@@ -1132,7 +1132,7 @@ function AdminPage() {
                         </span>
                       </button>
                       <button 
-                        onClick={() => alert('İlan düzenleme özelliği yakında eklenecek!')}
+                        onClick={() => alert('İlan düzenleme özelliği geliştiriliyor. Şimdilik ilanı silip yeniden oluşturabilirsiniz.')}
                         className="group/btn rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                       >
                         <span className="flex items-center justify-center gap-2">

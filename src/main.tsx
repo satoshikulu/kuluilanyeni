@@ -22,7 +22,7 @@ import FavoritesPage from './pages/FavoritesPage.tsx'
 import DebugAuthPage from './pages/DebugAuthPage.tsx'
 import MyListingsPage from './pages/MyListingsPage.tsx'
 import OneSignalTestPage from './pages/OneSignalTestPage.tsx'
-// import EditListingPage from './pages/EditListingPage'
+// import EditListingPage from './pages/EditListingPage.tsx'
 
 // Security Components
 import ProtectedRoute from './components/ProtectedRoute.tsx'

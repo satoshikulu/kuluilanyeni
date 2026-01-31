@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { MapPin, Zap, ArrowRight, TrendingDown, MessageCircle, Eye } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { getMultipleListingInterestCounts, recordListingInterest } from '../lib/listingInterests'
+import { getCurrentUser } from '../lib/simpleAuth'
 
 function HomePage() {
   const [typewriterText, setTypewriterText] = useState('')
@@ -13,6 +14,8 @@ function HomePage() {
   const [loading, setLoading] = useState(true)
   const [opportunityLoading, setOpportunityLoading] = useState(true)
   const [interestCounts, setInterestCounts] = useState<Record<string, number>>({})
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [userLoading, setUserLoading] = useState(true)
   
   const texts = [
     'Kulu Emlak Pazarı',
@@ -48,6 +51,22 @@ function HomePage() {
   useEffect(() => {
     fetchFeaturedListings()
     fetchOpportunityListings()
+  }, [])
+
+  // Kullanıcı durumunu kontrol et
+  useEffect(() => {
+    async function checkUser() {
+      try {
+        const user = await getCurrentUser()
+        setCurrentUser(user)
+      } catch (error) {
+        console.error('Kullanıcı kontrolü hatası:', error)
+        setCurrentUser(null)
+      } finally {
+        setUserLoading(false)
+      }
+    }
+    checkUser()
   }, [])
 
   useEffect(() => {
@@ -187,12 +206,14 @@ ${listing.area_m2 ? `📐 Alan: ${listing.area_m2} m²` : ''}
             >
               İlanlara Bak
             </Link>
-            <Link
-              to="/giris"
-              className="inline-flex items-center rounded-xl bg-white px-5 py-3 text-base font-semibold text-gray-900 shadow-lg shadow-black/20 ring-1 ring-white/40 hover:bg-orange-50 hover:text-orange-700 hover:ring-orange-300 transition-colors"
-            >
-              Giriş Yap
-            </Link>
+            {!currentUser && !userLoading && (
+              <Link
+                to="/giris"
+                className="inline-flex items-center rounded-xl bg-white px-5 py-3 text-base font-semibold text-gray-900 shadow-lg shadow-black/20 ring-1 ring-white/40 hover:bg-orange-50 hover:text-orange-700 hover:ring-orange-300 transition-colors"
+              >
+                Giriş Yap
+              </Link>
+            )}
           </div>
         </div>
       </section>

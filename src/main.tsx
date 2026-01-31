@@ -22,6 +22,7 @@ import FavoritesPage from './pages/FavoritesPage.tsx'
 import DebugAuthPage from './pages/DebugAuthPage.tsx'
 import MyListingsPage from './pages/MyListingsPage.tsx'
 import OneSignalTestPage from './pages/OneSignalTestPage.tsx'
+// import EditListingPage from './pages/EditListingPage'
 
 // Security Components
 import ProtectedRoute from './components/ProtectedRoute.tsx'
@@ -81,6 +82,14 @@ const router = createBrowserRouter([
         )
       },
       { path: 'admin/login', element: <AdminLoginPage /> },
+      // { 
+      //   path: 'admin/edit-listing/:id', 
+      //   element: (
+      //     <AdminRoute>
+      //       <EditListingPage />
+      //     </AdminRoute>
+      //   )
+      // },
       { 
         path: 'admin-dashboard', 
         element: (

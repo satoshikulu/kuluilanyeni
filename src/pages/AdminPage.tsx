@@ -1131,6 +1131,14 @@ function AdminPage() {
                           ✕ Reddet
                         </span>
                       </button>
+                      <button 
+                        onClick={() => alert('İlan düzenleme özelliği yakında eklenecek!')}
+                        className="group/btn rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2.5 text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                      >
+                        <span className="flex items-center justify-center gap-2">
+                          ✏️ Düzenle
+                        </span>
+                      </button>
                       <button onClick={() => void deleteListing(l.id, l.title)} className="group/btn rounded-xl bg-gradient-to-r from-gray-700 to-gray-900 text-white px-4 py-2.5 text-sm font-semibold hover:from-red-700 hover:to-red-900 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                         <span className="flex items-center justify-center gap-2">
                           🗑️ Sil
